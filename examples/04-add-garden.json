@@ -1,0 +1,8 @@
+{
+  "@class": "AddSpace",
+  "spaceId": "example-garden",
+  "homeId": "example-home",
+  "enclosingSpaceId": null,
+  "name": "Tuin",
+  "kind": "OUTDOOR"
+}

@@ -1,0 +1,11 @@
+{
+  "@class": "AddDevice",
+  "deviceId": "example-heating",
+  "spaceId": "example-living",
+  "name": "Verwarming",
+  "label": null,
+  "capabilities": [
+    "TEMPERATURE"
+  ],
+  "measurements": []
+}

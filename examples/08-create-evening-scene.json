@@ -1,0 +1,28 @@
+{
+  "@class": "DefineScene",
+  "sceneId": "example-evening",
+  "homeId": "example-home",
+  "name": "Een fijne avond",
+  "actions": [
+    {
+      "target": {
+        "kind": "space",
+        "spaceId": "example-living"
+      },
+      "setting": {
+        "kind": "lightLevel",
+        "percent": 25
+      }
+    },
+    {
+      "target": {
+        "kind": "space",
+        "spaceId": "example-living"
+      },
+      "setting": {
+        "kind": "temperature",
+        "celsius": 21
+      }
+    }
+  ]
+}

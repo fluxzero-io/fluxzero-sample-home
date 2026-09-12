@@ -1,0 +1,12 @@
+{
+  "@class": "AddDevice",
+  "deviceId": "example-light",
+  "spaceId": "example-living",
+  "name": "Leeslamp",
+  "label": "example-reading-light",
+  "capabilities": [
+    "POWER",
+    "LIGHT_LEVEL"
+  ],
+  "measurements": []
+}

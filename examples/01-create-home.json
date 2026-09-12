@@ -1,0 +1,6 @@
+{
+  "@class": "CreateHome",
+  "homeId": "example-home",
+  "name": "Voorbeeldhuis",
+  "timeZone": "Europe/Amsterdam"
+}

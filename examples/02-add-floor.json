@@ -1,0 +1,8 @@
+{
+  "@class": "AddSpace",
+  "spaceId": "example-floor",
+  "homeId": "example-home",
+  "enclosingSpaceId": null,
+  "name": "Begane grond",
+  "kind": "FLOOR"
+}

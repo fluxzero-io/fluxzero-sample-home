@@ -1,0 +1,6 @@
+version: 1
+environment: local
+fastCompiler: true
+idp: external
+commands:
+  - examples/*.json
