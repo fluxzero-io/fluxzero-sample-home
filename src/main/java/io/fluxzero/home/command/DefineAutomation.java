@@ -1,6 +1,5 @@
 package io.fluxzero.home.command;
 
-import io.fluxzero.common.serialization.Revision;
 import io.fluxzero.home.model.Automation;
 import io.fluxzero.home.model.AutomationDetails;
 import io.fluxzero.home.model.AutomationId;
@@ -23,7 +22,6 @@ import java.time.Duration;
 import static io.fluxzero.home.model.Rules.require;
 
 /** Describe when a scene should react, with an optional quiet interval between activations. */
-@Revision(1)
 public record DefineAutomation(AutomationId automationId, HomeId homeId, @NotNull @Valid AutomationDetails details, SceneId sceneId,
                                AutomationTrigger trigger, Duration cooldown) {
     @AssertLegal void validate(Graph<Home> home, @Nullable Automation automation) {

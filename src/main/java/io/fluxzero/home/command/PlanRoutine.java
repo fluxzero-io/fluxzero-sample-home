@@ -1,6 +1,5 @@
 package io.fluxzero.home.command;
 
-import io.fluxzero.common.serialization.Revision;
 import io.fluxzero.home.model.Home;
 import io.fluxzero.home.model.HomeId;
 import io.fluxzero.home.model.Routine;
@@ -21,7 +20,6 @@ import jakarta.validation.constraints.NotNull;
 import static io.fluxzero.home.model.Rules.require;
 
 /** Plan a scene once or on selected days; revising a routine replaces its next scheduled execution. */
-@Revision(1)
 public record PlanRoutine(RoutineId routineId, HomeId homeId, @NotNull @Valid RoutineDetails details, SceneId sceneId, RoutineTiming timing) {
     @AssertLegal void validate(Graph<Home> home, @Nullable Routine routine, Message message) {
         require(timing != null, "Choose when the routine should run.");

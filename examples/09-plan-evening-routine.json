@@ -1,6 +1,5 @@
 {
   "@class": "PlanRoutine",
-  "@revision": 1,
   "routineId": "example-evening-routine",
   "homeId": "example-home",
   "sceneId": "example-evening",

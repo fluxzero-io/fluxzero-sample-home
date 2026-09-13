@@ -1,6 +1,5 @@
 {
   "@class": "CreateHome",
-  "@revision": 1,
   "homeId": "example-home",
   "timeZone": "Europe/Amsterdam",
   "details": {

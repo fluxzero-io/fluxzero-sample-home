@@ -1,6 +1,5 @@
 package io.fluxzero.home.model;
 
-import io.fluxzero.common.serialization.Revision;
 import io.fluxzero.sdk.modeling.EntityId;
 import io.fluxzero.sdk.modeling.Model;
 import io.fluxzero.sdk.modeling.Parent;
@@ -9,7 +8,6 @@ import lombok.With;
 
 /** Durable timing intent for a scene, with a generation that makes obsolete deliveries harmless. */
 @Model
-@Revision(1)
 @With
 public record Routine(@EntityId RoutineId routineId, @Parent(pathInParent = "routines") HomeId homeId,
                       RoutineDetails details, SceneId sceneId, RoutineTiming timing, boolean enabled,

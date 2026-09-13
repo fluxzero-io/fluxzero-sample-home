@@ -5,7 +5,7 @@ De build importeert `io.fluxzero:fluxzero-bom:2.0.0-rc.11-local.d88696f27d26`, e
 | SDK-mogelijkheid | Concrete toepassing |
 | --- | --- |
 | Zelfstandige `@Model`-grenzen | Huis, ruimte, apparaat, bewoner, zone, scène, routine en automatisering hebben hun eigen levenscyclus. |
-| Cohesieve details en schema-evolutie | Acht details-value-objects met gevalideerde commandinvoer; versie-1-upcasters lezen de oorspronkelijke vlakke namen en ruimtegegevens. |
+| Cohesieve details | Acht details-value-objects met gevalideerde commandinvoer en gerichte wijzigingen die andere gegevens behouden. |
 | Getypeerde `Id<T>` | De naamruimte van iedere soort ID voorkomt botsingen tussen bijvoorbeeld een kamer en lamp met dezelfde naam. |
 | Automatische commandafhandeling | Commands dragen hun eigen `@Apply`; er zijn geen doorgeefhandlers met handmatig laden en opslaan. |
 | `@Parent` en recursieve relaties | Ruimtes vormen een vrije boom; apparaten blijven zelfstandige kinderen van hun ruimte. |
@@ -55,12 +55,10 @@ Dubbele `CreateHome`, `AddSpace`, `AddDevice` en `AddResident` worden door de SD
 
 De routineconsumer reconcilieert de actuele toestand met één tracker, ook na een historisch event. Zijn sole-Graph-handler ontvangt zowel directe wijzigingen als cascadeverwijdering. Er is geen aanvullende `RemoveHome`-opruimhandler nodig. Deadlines en generaties beschermen nog steeds tegen oude of al afgeleverde opdrachten.
 
-## Bestaande data en publicatie
+## Voorbeelddata en publicatie
 
-De overgang van `DeviceStatus` naar event sourcing behoudt de historie van de oorspronkelijke Home-configuratie. Hoewel rc.11 de actuele status uit een document laadde, bewaarde de standaard publicatiestrategie ook haar events. `StorageCompatibilityTest` laadt echte opslagberichten uit die versie, vergelijkt document en gereconstrueerde status en controleert vorige waarnemingen en de eerste nieuwe grensoverschrijding. Er worden geen oude waarnemingen opnieuw gepubliceerd of beginstanden verzonnen.
+Deze app is nog niet uitgerold en begint met het huidige details-schema. Er zijn geen upcasters, expliciete schemarevisies of migratiefixtures nodig. Gebruik bij een onverenigbare schemawijziging een nieuwe tijdelijke runtime voor het voorbeeldhuis.
 
-De details-refactor leest oude commands/events en Modeldocumenten via `DetailsUpcaster`. De [uitleg over bestaande opslag](bestaande-opslag.md) beschrijft de versiegrens, querypaden en de grens van deze overgang. Retentie van waarnemingen blijft een afzonderlijke productkeuze.
-
-De cascadeverwijzingen worden door nieuwe commits geschreven. Reeds opgeslagen oude verwijder-events krijgen daarmee niet achteraf nieuwe child-notificaties. Oude afleveringen van nieuw gevormde cascade-events zijn wel afgedekt door de reconciliatietest.
+Gewone event-sourced replay en historische waarnemingen blijven onderdeel van het domein. De revisies waarmee automatiseringen dubbele reacties voorkomen en de generaties van routines zijn geen schemarevisies. De gedragstests blijven herladen, vorige metingen, oude afleveringen en schedulecleanup controleren. Retentie van waarnemingen blijft een afzonderlijke productkeuze.
 
 De kandidaat is nog geen openbare SDK-release en de commit was bij toepassing nog niet op GitHub beschikbaar. Lokale builds gebruiken de meegegeven SDK-repository. CI en deployment halen dezelfde commit op en kunnen pas draaien nadat die bron is gepubliceerd. Vervang de lokale versie pas door een gepubliceerde SDK-versie die deze commit bevat.

@@ -1,6 +1,5 @@
 package io.fluxzero.home.model;
 
-import io.fluxzero.common.serialization.Revision;
 import io.fluxzero.sdk.modeling.Alias;
 import io.fluxzero.sdk.modeling.EntityId;
 import io.fluxzero.sdk.modeling.Model;
@@ -12,7 +11,6 @@ import lombok.With;
 
 /** A named device and the desired settings requested by the household. */
 @Model
-@Revision(1)
 @With
 public record Device(@EntityId DeviceId deviceId,
                      @Parent(pathInParent = "devices") SpaceId spaceId,

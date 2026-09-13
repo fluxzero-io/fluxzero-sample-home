@@ -1,6 +1,5 @@
 {
   "@class": "AddSpace",
-  "@revision": 1,
   "spaceId": "example-garden",
   "homeId": "example-home",
   "enclosingSpaceId": null,

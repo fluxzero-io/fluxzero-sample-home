@@ -1,6 +1,5 @@
 {
   "@class": "DefineScene",
-  "@revision": 1,
   "sceneId": "example-evening",
   "homeId": "example-home",
   "actions": [

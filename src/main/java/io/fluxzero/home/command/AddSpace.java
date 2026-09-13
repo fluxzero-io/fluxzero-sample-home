@@ -1,6 +1,5 @@
 package io.fluxzero.home.command;
 
-import io.fluxzero.common.serialization.Revision;
 import io.fluxzero.home.model.Home;
 import io.fluxzero.home.model.HomeId;
 import io.fluxzero.home.model.Space;
@@ -16,7 +15,6 @@ import jakarta.validation.constraints.NotNull;
 import static io.fluxzero.home.model.Rules.require;
 
 /** Add a building, floor, room or outdoor space, optionally inside another space. */
-@Revision(1)
 public record AddSpace(SpaceId spaceId, HomeId homeId, SpaceId enclosingSpaceId, @NotNull @Valid SpaceDetails details) {
     @AssertLegal void validate(Home home, @Nullable @Association("enclosingSpaceId") Space enclosingSpace) {
         require(enclosingSpaceId == null || enclosingSpace != null, "Choose an existing enclosing space.");

@@ -1,6 +1,5 @@
 {
   "@class": "AddDevice",
-  "@revision": 1,
   "deviceId": "example-light",
   "spaceId": "example-living",
   "label": "example-reading-light",

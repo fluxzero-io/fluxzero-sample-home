@@ -1,16 +1,13 @@
 package io.fluxzero.home;
 
 import io.fluxzero.home.command.*;
-import io.fluxzero.home.migration.DetailsUpcaster;
 import io.fluxzero.home.model.*;
 import io.fluxzero.sdk.Fluxzero;
-import io.fluxzero.sdk.test.TestFixture;
 import io.fluxzero.sdk.tracking.handling.validation.ValidationException;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.time.Duration;
-import java.util.List;
 import java.util.Set;
 
 import static io.fluxzero.home.HouseExample.*;
@@ -75,20 +72,5 @@ class DetailsBehaviorTest {
         }
         fixture.whenExecuting(f -> assertEquals(evening().details(), Fluxzero.loadModel(EVENING).get().details()))
                 .expectNoErrors();
-    }
-
-    @ParameterizedTest @ValueSource(booleans = {false, true})
-    void originalExampleCommandsStillBuildAndControlTheHouse(boolean async) {
-        (async ? TestFixture.createAsync() : TestFixture.create())
-                .registerCasters(new DetailsUpcaster()).atFixedTime(NOW).withProperty("fluxzero.defaults.version", "2026.09.10")
-                .givenCommands("/legacy/house-rev0.json")
-                .whenExecuting(f -> {
-                    f.cache().clear();
-                    assertEquals(new HomeDetails("Voorbeeldhuis"), Fluxzero.loadModel(new HomeId("example-home")).get().details());
-                    var room = Fluxzero.loadModel(new SpaceId("example-living")).get();
-                    assertEquals(new SpaceDetails("Woonkamer", SpaceKind.ROOM), room.details());
-                    assertEquals(new DeviceSetting.LightLevel(25), Fluxzero.loadModel(new DeviceId("example-light"))
-                            .get().desiredSettings().get(Capability.LIGHT_LEVEL));
-                }).expectNoErrors();
     }
 }

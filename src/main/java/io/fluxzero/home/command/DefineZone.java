@@ -1,6 +1,5 @@
 package io.fluxzero.home.command;
 
-import io.fluxzero.common.serialization.Revision;
 import io.fluxzero.home.model.Home;
 import io.fluxzero.home.model.HomeId;
 import io.fluxzero.home.model.ScenePlan;
@@ -20,7 +19,6 @@ import java.util.Set;
 import static io.fluxzero.home.model.Rules.require;
 
 /** Group spaces without changing their place in the home. */
-@Revision(1)
 public record DefineZone(io.fluxzero.home.model.ZoneId zoneId, HomeId homeId, @NotNull @Valid ZoneDetails details, Set<SpaceId> spaces) {
     public DefineZone { spaces = Set.copyOf(spaces); }
     @AssertLegal void validate(Graph<Home> home, @Nullable Zone zone) {

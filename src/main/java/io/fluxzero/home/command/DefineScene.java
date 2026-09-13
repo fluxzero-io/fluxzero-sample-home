@@ -1,6 +1,5 @@
 package io.fluxzero.home.command;
 
-import io.fluxzero.common.serialization.Revision;
 import io.fluxzero.home.model.DeviceSetting;
 import io.fluxzero.home.model.Home;
 import io.fluxzero.home.model.HomeId;
@@ -20,7 +19,6 @@ import java.util.List;
 import static io.fluxzero.home.model.Rules.require;
 
 /** Create or revise a scene after checking every action against its home. */
-@Revision(1)
 public record DefineScene(SceneId sceneId, HomeId homeId, @NotNull @Valid SceneDetails details, List<SceneAction> actions) {
     public DefineScene { actions = List.copyOf(actions); }
     @AssertLegal List<DeviceSetting> validate(Graph<Home> home, @Nullable Scene scene) {
