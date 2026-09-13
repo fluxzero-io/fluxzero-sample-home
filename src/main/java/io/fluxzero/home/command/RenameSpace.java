@@ -10,5 +10,5 @@ import static io.fluxzero.home.model.Rules.named;
 /** Give a space a more useful name. */
 public record RenameSpace(SpaceId spaceId, String name) {
     @AssertLegal void validate() { named(name); }
-    @Apply Space apply(Space space) { return space.withName(name); }
+    @Apply Space apply(Space space) { return space.withDetails(space.details().withName(name)); }
 }

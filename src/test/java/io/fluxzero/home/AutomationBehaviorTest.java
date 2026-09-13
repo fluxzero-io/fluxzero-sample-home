@@ -21,12 +21,10 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class AutomationBehaviorTest {
     DefineAutomation onAway() {
-        return new DefineAutomation(REACTION, HOME, "Leaving home", EVENING,
-                new AutomationTrigger.HomeBecomes(HomeMode.AWAY), Duration.ZERO);
+        return new DefineAutomation(REACTION, HOME, new AutomationDetails("Leaving home"), EVENING, new AutomationTrigger.HomeBecomes(HomeMode.AWAY), Duration.ZERO);
     }
     DefineAutomation onHeat() {
-        return new DefineAutomation(REACTION, HOME, "Too warm", EVENING,
-                new AutomationTrigger.MeasurementCrosses(SENSOR, Measurement.TEMPERATURE,
+        return new DefineAutomation(REACTION, HOME, new AutomationDetails("Too warm"), EVENING, new AutomationTrigger.MeasurementCrosses(SENSOR, Measurement.TEMPERATURE,
                         AutomationTrigger.Direction.RISES_ABOVE, new BigDecimal("24")), Duration.ofMinutes(5));
     }
     @ParameterizedTest @ValueSource(booleans = {false, true})
@@ -61,7 +59,7 @@ class AutomationBehaviorTest {
     }
     @Test void otherHomesDoNotTriggerThisHousehold() {
         var other = new HomeId("other");
-        house(new HomeReactions()).givenCommands(evening(), onAway(), new CreateHome(other, "Other", AMSTERDAM))
+        house(new HomeReactions()).givenCommands(evening(), onAway(), new CreateHome(other, new HomeDetails("Other"), AMSTERDAM))
                 .whenCommand(new ChangeHomeMode(other, HomeMode.AWAY)).expectNoErrors()
                 .expectThat(f -> assertEquals(0, Fluxzero.loadModel(REACTION).get().executionCount()));
     }
@@ -122,7 +120,7 @@ class AutomationBehaviorTest {
     @Test void downwardCrossingCanActivateAScene() {
         var trigger = new AutomationTrigger.MeasurementCrosses(SENSOR, Measurement.TEMPERATURE,
                 AutomationTrigger.Direction.FALLS_BELOW, new BigDecimal("18"));
-        house(new HomeReactions()).givenCommands(evening(), new DefineAutomation(REACTION, HOME, "Cold", EVENING, trigger, Duration.ZERO),
+        house(new HomeReactions()).givenCommands(evening(), new DefineAutomation(REACTION, HOME, new AutomationDetails("Cold"), EVENING, trigger, Duration.ZERO),
                 temperature(NOW.minusSeconds(1), "19"))
                 .whenCommand(temperature(NOW, "17")).expectNoErrors()
                 .expectThat(f -> assertEquals(1, Fluxzero.loadModel(REACTION).get().executionCount()));

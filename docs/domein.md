@@ -16,6 +16,14 @@ Een huis vormt de samenhang, niet één groot opslagobject. Een lamp kan worden 
 
 Alle bovenstaande begrippen zijn zelfstandige Models. De relaties die bezit uitdrukken zijn `@Parent`-relaties. Scene-acties en instellingen zijn waardes: ze hebben geen eigen identiteit of levenscyclus. Daarom worden ze niet kunstmatig tot Models of Members gemaakt.
 
+## Beschrijvende gegevens
+
+Ieder benoembaar begrip heeft zijn eigen immutable details-value-object: `HomeDetails`, `SpaceDetails`, `DeviceDetails`, `ResidentDetails`, `ZoneDetails`, `SceneDetails`, `RoutineDetails` en `AutomationDetails`. De naam hoort daarin, met dezelfde grens van 1–120 tekens. `SpaceDetails` bevat ook de soort ruimte: samen beschrijven die wat de plek is.
+
+Identiteit en relaties staan op het Model. Het apparaatlabel blijft een alternatieve identiteit; mogelijkheden, gewenste instellingen, huishoudrol en tijdzone behouden hun eigen betekenis. Actuele status, volgende uitvoering, generaties en tellers behoren evenmin tot de beschrijving. Nieuwe beschrijvende velden kunnen later binnen het passende details-object worden toegevoegd.
+
+`CreateHome` en `AddSpace` ontvangen de volledige beschrijving. `RenameSpace` ontvangt alleen de nieuwe naam en behoudt onder meer de soort ruimte, ouder en het primaire licht. De invoer valideert ook geneste details en weigert ontbrekende waarden.
+
 ## Indeling en grenzen
 
 Een ruimte heeft een `homeId` en eventueel een `enclosingSpaceId`. De daadwerkelijke ouder is óf het huis óf die andere ruimte. Daardoor verschijnt iedere ruimte op precies één plek in de huis-Graph. De SDK weigert concrete cycli; de app weigert verplaatsen tussen verschillende huizen.

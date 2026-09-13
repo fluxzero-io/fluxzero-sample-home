@@ -59,7 +59,7 @@ class RoutineBehaviorTest {
     @Test void weeklyRoutineResumesAtNextMoment() {
         var timing = new RoutineTiming.Weekly(Set.of(DayOfWeek.MONDAY), LocalTime.of(20, 0));
         var due = Instant.parse("2026-09-14T18:00:00Z");
-        house(new RoutineSchedules()).givenCommands(evening(), new PlanRoutine(BEDTIME, HOME, "Monday", EVENING, timing), new PauseRoutine(BEDTIME))
+        house(new RoutineSchedules()).givenCommands(evening(), new PlanRoutine(BEDTIME, HOME, new RoutineDetails("Monday"), EVENING, timing), new PauseRoutine(BEDTIME))
                 .whenCommand(new ResumeRoutine(BEDTIME)).expectOnlySchedules(scheduled(3, due))
                 .andThen().whenTimeAdvancesTo(due).expectNoErrors()
                 .expectOnlySchedules(scheduled(4, due.plus(Duration.ofDays(7))));
@@ -71,14 +71,14 @@ class RoutineBehaviorTest {
     @Test void springClockGapIsSkipped() {
         var timing = new RoutineTiming.Weekly(Set.of(DayOfWeek.SUNDAY), LocalTime.of(2, 30));
         house(new RoutineSchedules()).givenCommands(evening()).atFixedTime(Instant.parse("2026-03-28T12:00:00Z"))
-                .whenCommand(new PlanRoutine(BEDTIME, HOME, "Sunday", EVENING, timing))
+                .whenCommand(new PlanRoutine(BEDTIME, HOME, new RoutineDetails("Sunday"), EVENING, timing))
                 .expectOnlySchedules(scheduled(1, Instant.parse("2026-04-05T00:30:00Z")));
     }
     @Test void autumnClockOverlapRunsOnlyOnce() {
         var timing = new RoutineTiming.Weekly(Set.of(DayOfWeek.SUNDAY), LocalTime.of(2, 30));
         var due = Instant.parse("2026-10-25T00:30:00Z");
         house(new RoutineSchedules()).givenCommands(evening()).atFixedTime(Instant.parse("2026-10-24T12:00:00Z"))
-                .whenCommand(new PlanRoutine(BEDTIME, HOME, "Sunday", EVENING, timing)).expectOnlySchedules(scheduled(1, due))
+                .whenCommand(new PlanRoutine(BEDTIME, HOME, new RoutineDetails("Sunday"), EVENING, timing)).expectOnlySchedules(scheduled(1, due))
                 .andThen().whenTimeAdvancesTo(due).expectNoErrors()
                 .expectOnlySchedules(scheduled(2, Instant.parse("2026-11-01T01:30:00Z")))
                 .andThen().whenTimeAdvancesTo(due.plusSeconds(3600)).expectNoEvents()

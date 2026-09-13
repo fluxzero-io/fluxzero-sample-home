@@ -1,8 +1,8 @@
 {
   "@class": "DefineScene",
+  "@revision": 1,
   "sceneId": "example-evening",
   "homeId": "example-home",
-  "name": "Een fijne avond",
   "actions": [
     {
       "target": {
@@ -24,5 +24,8 @@
         "celsius": 21
       }
     }
-  ]
+  ],
+  "details": {
+    "name": "Een fijne avond"
+  }
 }

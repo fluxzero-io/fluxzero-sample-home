@@ -1,12 +1,15 @@
 {
   "@class": "AddDevice",
+  "@revision": 1,
   "deviceId": "example-sensor",
   "spaceId": "example-living",
-  "name": "Kamersensor",
   "label": null,
   "capabilities": [],
   "measurements": [
     "TEMPERATURE",
     "MOTION"
-  ]
+  ],
+  "details": {
+    "name": "Kamersensor"
+  }
 }

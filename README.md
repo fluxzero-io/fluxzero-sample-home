@@ -35,12 +35,14 @@ flowchart LR
 
 Begin bij [Het huis als domein](docs/domein.md), daarna bij [Scènes en tijd](docs/scenes-en-tijd.md). [SDK 2.0 in dit voorbeeld](docs/sdk-2.md) koppelt de nieuwe SDK-mogelijkheden aan concrete code. De gedragstests onder `src/test/java/io/fluxzero/home` zijn uitvoerbare gebruiksvoorbeelden.
 
+Beschrijvende gegevens zitten in eigen waarden zoals `HomeDetails`, `SpaceDetails` en `DeviceDetails`. Aanmaak- en definitiecommands ontvangen die waarden; een gerichte hernoeming verandert alleen de naam. Oude opgeslagen gegevens blijven leesbaar via versieconversie. Zie [bestaande opslag](docs/bestaande-opslag.md).
+
 Alle modellen gebruiken gewone `@Model`. Ook apparaatwaarnemingen bewaren historie, zodat automatiseringen vorige en nieuwe metingen kunnen vergelijken. Apparaatzoeken en automatiseringen gebruiken de relaties binnen een bekend huis; daarvoor onderhouden de bestaande compositiepaden de benodigde interne documenten. De [uitleg over opslag en zoeken](docs/sdk-2.md#opslag-en-zoeken-in-dit-huis) maakt de keuzes concreet.
 
 Een comfortabele avond is bijvoorbeeld:
 
 ```java
-new DefineScene(evening, home, "Een fijne avond", List.of(
+new DefineScene(evening, home, new SceneDetails("Een fijne avond"), List.of(
     new SceneAction(new SceneTarget.InSpace(livingRoom), new DeviceSetting.LightLevel(25)),
     new SceneAction(new SceneTarget.InSpace(livingRoom),
                     new DeviceSetting.Temperature(new BigDecimal("21")))

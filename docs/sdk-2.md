@@ -5,6 +5,7 @@ De build importeert `io.fluxzero:fluxzero-bom:2.0.0-rc.11-local.d88696f27d26`, e
 | SDK-mogelijkheid | Concrete toepassing |
 | --- | --- |
 | Zelfstandige `@Model`-grenzen | Huis, ruimte, apparaat, bewoner, zone, scène, routine en automatisering hebben hun eigen levenscyclus. |
+| Cohesieve details en schema-evolutie | Acht details-value-objects met gevalideerde commandinvoer; versie-1-upcasters lezen de oorspronkelijke vlakke namen en ruimtegegevens. |
 | Getypeerde `Id<T>` | De naamruimte van iedere soort ID voorkomt botsingen tussen bijvoorbeeld een kamer en lamp met dezelfde naam. |
 | Automatische commandafhandeling | Commands dragen hun eigen `@Apply`; er zijn geen doorgeefhandlers met handmatig laden en opslaan. |
 | `@Parent` en recursieve relaties | Ruimtes vormen een vrije boom; apparaten blijven zelfstandige kinderen van hun ruimte. |
@@ -56,7 +57,9 @@ De routineconsumer reconcilieert de actuele toestand met één tracker, ook na e
 
 ## Bestaande data en publicatie
 
-Dit project is een lokale voorbeeldapp. De opslagwijziging van `DeviceStatus` is gekwalificeerd vanaf nieuwe waarnemingen; er is geen automatische migratie van bestaande document-only statusopslag of herstel van ontbrekende historische versies geïmplementeerd. Een bestaande installatie moet haar waarnemingsgeschiedenis en een eventuele expliciete beginstand kwalificeren voordat zij dezelfde wijziging overneemt. Event sourcing bewaart voortaan meer waarnemingshistorie; retentie is een afzonderlijke productkeuze.
+De overgang van `DeviceStatus` naar event sourcing behoudt de historie van de oorspronkelijke Home-configuratie. Hoewel rc.11 de actuele status uit een document laadde, bewaarde de standaard publicatiestrategie ook haar events. `StorageCompatibilityTest` laadt echte opslagberichten uit die versie, vergelijkt document en gereconstrueerde status en controleert vorige waarnemingen en de eerste nieuwe grensoverschrijding. Er worden geen oude waarnemingen opnieuw gepubliceerd of beginstanden verzonnen.
+
+De details-refactor leest oude commands/events en Modeldocumenten via `DetailsUpcaster`. De [uitleg over bestaande opslag](bestaande-opslag.md) beschrijft de versiegrens, querypaden en de grens van deze overgang. Retentie van waarnemingen blijft een afzonderlijke productkeuze.
 
 De cascadeverwijzingen worden door nieuwe commits geschreven. Reeds opgeslagen oude verwijder-events krijgen daarmee niet achteraf nieuwe child-notificaties. Oude afleveringen van nieuw gevormde cascade-events zijn wel afgedekt door de reconciliatietest.
 

@@ -41,16 +41,16 @@ final class HouseExample {
     }
     static TestFixture populate(TestFixture fixture) {
         return fixture.atFixedTime(NOW).withProperty("fluxzero.defaults.version", "2026.09.10")
-            .givenCommands(new CreateHome(HOME, "Canal house", AMSTERDAM),
-                new AddSpace(FLOOR, HOME, null, "Ground floor", SpaceKind.FLOOR),
-                new AddSpace(LIVING, HOME, FLOOR, "Living room", SpaceKind.ROOM),
-                new AddSpace(GARDEN, HOME, null, "Garden", SpaceKind.OUTDOOR),
-                new AddDevice(LIGHT, LIVING, "Reading light", "reading-light", Set.of(Capability.POWER, Capability.LIGHT_LEVEL), Set.of()),
-                new AddDevice(HEAT, LIVING, "Heating", null, Set.of(Capability.TEMPERATURE), Set.of()),
-                new AddDevice(SENSOR, LIVING, "Room sensor", null, Set.of(), Set.of(Measurement.TEMPERATURE, Measurement.MOTION)));
+            .givenCommands(new CreateHome(HOME, new HomeDetails("Canal house"), AMSTERDAM),
+                new AddSpace(FLOOR, HOME, null, new SpaceDetails("Ground floor", SpaceKind.FLOOR)),
+                new AddSpace(LIVING, HOME, FLOOR, new SpaceDetails("Living room", SpaceKind.ROOM)),
+                new AddSpace(GARDEN, HOME, null, new SpaceDetails("Garden", SpaceKind.OUTDOOR)),
+                new AddDevice(LIGHT, LIVING, new DeviceDetails("Reading light"), "reading-light", Set.of(Capability.POWER, Capability.LIGHT_LEVEL), Set.of()),
+                new AddDevice(HEAT, LIVING, new DeviceDetails("Heating"), null, Set.of(Capability.TEMPERATURE), Set.of()),
+                new AddDevice(SENSOR, LIVING, new DeviceDetails("Room sensor"), null, Set.of(), Set.of(Measurement.TEMPERATURE, Measurement.MOTION)));
     }
     static DefineScene evening() {
-        return new DefineScene(EVENING, HOME, "A comfortable evening", List.of(
+        return new DefineScene(EVENING, HOME, new SceneDetails("A comfortable evening"), List.of(
             new SceneAction(new SceneTarget.InSpace(LIVING), new DeviceSetting.LightLevel(25)),
             new SceneAction(new SceneTarget.InSpace(LIVING), new DeviceSetting.Temperature(new BigDecimal("21")))));
     }
@@ -59,7 +59,7 @@ final class HouseExample {
                 Map.of(), Map.of(Measurement.TEMPERATURE, new BigDecimal(value)));
     }
     static PlanRoutine once(Instant due) {
-        return new PlanRoutine(BEDTIME, HOME, "Evening comfort", EVENING, new RoutineTiming.Once(due));
+        return new PlanRoutine(BEDTIME, HOME, new RoutineDetails("Evening comfort"), EVENING, new RoutineTiming.Once(due));
     }
     static Predicate<Schedule> scheduled(long generation, Instant due) {
         return s -> s.getScheduleId().equals(RoutineSchedules.scheduleId(BEDTIME).toString()) && s.getDeadline().equals(due)

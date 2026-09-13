@@ -1,8 +1,8 @@
 {
   "@class": "PlanRoutine",
+  "@revision": 1,
   "routineId": "example-evening-routine",
   "homeId": "example-home",
-  "name": "Avondritme",
   "sceneId": "example-evening",
   "timing": {
     "kind": "weekly",
@@ -16,5 +16,8 @@
       "SUNDAY"
     ],
     "time": "20:00:00"
+  },
+  "details": {
+    "name": "Avondritme"
   }
 }

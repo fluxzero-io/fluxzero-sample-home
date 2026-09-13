@@ -35,17 +35,17 @@ class RoutineReconciliationTest {
         var fixture = (async ? TestFixture.createAsync(schedules, observer) : TestFixture.create(schedules, observer))
                 .atFixedTime(now).withProperty("fluxzero.defaults.version", "2026.09.10");
         Object[] homeCommands = {
-                new CreateHome(home, "Home", ZoneId.of("Europe/Amsterdam")),
-                new AddSpace(space, home, null, "Room", SpaceKind.ROOM),
-                new AddDevice(light, space, "Light", null, Set.of(Capability.POWER), Set.of()),
-                new DefineScene(scene, home, "Evening", List.of(new SceneAction(new SceneTarget.OneDevice(light), new DeviceSetting.Power(false))))
+                new CreateHome(home, new HomeDetails("Home"), ZoneId.of("Europe/Amsterdam")),
+                new AddSpace(space, home, null, new SpaceDetails("Room", SpaceKind.ROOM)),
+                new AddDevice(light, space, new DeviceDetails("Light"), null, Set.of(Capability.POWER), Set.of()),
+                new DefineScene(scene, home, new SceneDetails("Evening"), List.of(new SceneAction(new SceneTarget.OneDevice(light), new DeviceSetting.Power(false))))
         };
         fixture.givenCommands(homeCommands)
-                .givenCommands(new PlanRoutine(routine, home, "Old", scene, new RoutineTiming.Once(now.plusSeconds(60))))
+                .givenCommands(new PlanRoutine(routine, home, new RoutineDetails("Old"), scene, new RoutineTiming.Once(now.plusSeconds(60))))
                 .whenCommand(new RemoveHome(home)).expectNoErrors().expectNoSchedules().andThen();
         var newDue = now.plus(Duration.ofHours(2));
         fixture.givenCommands(homeCommands)
-                .givenCommands(new PlanRoutine(routine, home, "New", scene, new RoutineTiming.Once(newDue)))
+                .givenCommands(new PlanRoutine(routine, home, new RoutineDetails("New"), scene, new RoutineTiming.Once(newDue)))
                 // Supplemental consumer-replay probe with the actual historical graph captured above.
                 .whenExecuting(f -> {
                     assertNotNull(oldDeletion.get());

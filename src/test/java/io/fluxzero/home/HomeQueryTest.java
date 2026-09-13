@@ -1,5 +1,11 @@
 package io.fluxzero.home;
 
+import io.fluxzero.home.model.HomeDetails;
+import io.fluxzero.home.model.SpaceDetails;
+import io.fluxzero.home.model.DeviceDetails;
+import io.fluxzero.home.model.SceneDetails;
+import io.fluxzero.home.model.AutomationDetails;
+
 import io.fluxzero.home.automation.HomeReactions;
 import io.fluxzero.home.command.AddDevice;
 import io.fluxzero.home.command.AddSpace;
@@ -47,10 +53,9 @@ class HomeQueryTest {
         var otherRoom = new SpaceId("other-room");
         var otherLight = new DeviceId("other-light");
         (asynchronous ? asyncHouse() : house()).givenCommands(
-                new CreateHome(otherHome, "Other home", AMSTERDAM),
-                new AddSpace(otherRoom, otherHome, null, "Other room", SpaceKind.ROOM),
-                new AddDevice(otherLight, otherRoom, "Other light", null,
-                              Set.of(Capability.POWER, Capability.LIGHT_LEVEL), Set.of()))
+                new CreateHome(otherHome, new HomeDetails("Other home"), AMSTERDAM),
+                new AddSpace(otherRoom, otherHome, null, new SpaceDetails("Other room", SpaceKind.ROOM)),
+                new AddDevice(otherLight, otherRoom, new DeviceDetails("Other light"), null, Set.of(Capability.POWER, Capability.LIGHT_LEVEL), Set.of()))
                 .whenQuery(new FindDevices(HOME, Capability.LIGHT_LEVEL))
                 .expectResult((List<Device> devices) -> ids(devices).equals(Set.of(LIGHT)))
                 .expectThat(f -> {
@@ -95,13 +100,13 @@ class HomeQueryTest {
         var otherAutomation = new AutomationId("other-reaction");
         var trigger = new AutomationTrigger.HomeBecomes(HomeMode.AWAY);
         (asynchronous ? asyncHouse(new HomeReactions()) : house(new HomeReactions())).givenCommands(
-                evening(), new DefineAutomation(REACTION, HOME, "Leaving home", EVENING, trigger, Duration.ZERO),
-                new CreateHome(otherHome, "Other home", AMSTERDAM),
-                new AddSpace(otherRoom, otherHome, null, "Other room", SpaceKind.ROOM),
-                new AddDevice(otherLight, otherRoom, "Other light", null, Set.of(Capability.LIGHT_LEVEL), Set.of()),
-                new DefineScene(otherScene, otherHome, "Other evening", List.of(
+                evening(), new DefineAutomation(REACTION, HOME, new AutomationDetails("Leaving home"), EVENING, trigger, Duration.ZERO),
+                new CreateHome(otherHome, new HomeDetails("Other home"), AMSTERDAM),
+                new AddSpace(otherRoom, otherHome, null, new SpaceDetails("Other room", SpaceKind.ROOM)),
+                new AddDevice(otherLight, otherRoom, new DeviceDetails("Other light"), null, Set.of(Capability.LIGHT_LEVEL), Set.of()),
+                new DefineScene(otherScene, otherHome, new SceneDetails("Other evening"), List.of(
                         new SceneAction(new SceneTarget.OneDevice(otherLight), new DeviceSetting.LightLevel(10)))),
-                new DefineAutomation(otherAutomation, otherHome, "Leaving other home", otherScene, trigger, Duration.ZERO))
+                new DefineAutomation(otherAutomation, otherHome, new AutomationDetails("Leaving other home"), otherScene, trigger, Duration.ZERO))
                 .whenCommand(new ChangeHomeMode(HOME, HomeMode.AWAY)).expectNoErrors()
                 .expectThat(f -> {
                     assertTrue(Fluxzero.search(Automation.class).fetchAll().isEmpty());

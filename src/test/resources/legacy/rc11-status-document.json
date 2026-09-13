@@ -1,0 +1,28 @@
+{
+  "@type" : "getDocumentResult",
+  "requestId" : 67,
+  "document" : {
+    "id" : "devicestatus:legacy-sensor",
+    "timestamp" : 1789380000000,
+    "end" : 1789380000000,
+    "collection" : "DeviceStatus",
+    "document" : {
+      "value" : "AAABHfUWALpkZXZpY2VzdGF0dXM6bGVnYWN5LXNlbnNvcs8AAAGgn1v5AAkAIaxELQARUy0AOZcArS8AIpKuSwACHgAySWSoDwDwBElkALQyMDI2LTA5LTE0VDA5OjUDAP9AWpGqb2JzZXJ2ZWRBdACmT05MSU5FkaxhdmFpbGFiaWxpdHkApXBvd2VykbtyZXBvcnRlZFNldHRpbmdzL1BPV0VSL2tpbmQCpHRydWWRuSMABMFvbgGiMjORtHJlYWQ6APoLVEVNUEVSQVRVUkUBojIykbxwcmV2aW91c1IiAFBBVFVSRQ==",
+      "type" : "io.fluxzero.home.model.DeviceStatus",
+      "revision" : 0,
+      "format" : "document"
+    },
+    "summary" : "legacy-sensor 2026-09-14t09:59:59z online power true 23 22",
+    "facets" : [ ],
+    "indexes" : [ ]
+  },
+  "modelHead" : {
+    "modelId" : "devicestatus:legacy-sensor",
+    "modelType" : "DeviceStatus",
+    "sequenceNumber" : 1,
+    "stateIndex" : 117268807680000009,
+    "historyComplete" : true,
+    "deleted" : false
+  },
+  "timestamp" : 1789311311778
+}

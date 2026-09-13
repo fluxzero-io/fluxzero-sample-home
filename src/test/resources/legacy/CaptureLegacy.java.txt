@@ -1,0 +1,57 @@
+import io.fluxzero.home.command.*;
+import io.fluxzero.home.model.*;
+import io.fluxzero.sdk.Fluxzero;
+import io.fluxzero.sdk.common.Message;
+import io.fluxzero.sdk.configuration.DefaultFluxzero;
+import io.fluxzero.sdk.configuration.client.LocalClient;
+import io.fluxzero.sdk.persisting.eventsourcing.client.EventStoreClient;
+import io.fluxzero.common.api.modeling.CommitModels;
+import io.fluxzero.common.api.search.GetDocument;
+import io.fluxzero.common.serialization.JsonUtils;
+import java.lang.reflect.Proxy;
+import java.nio.file.*;
+import java.time.*;
+import java.math.BigDecimal;
+import java.util.*;
+
+public class CaptureLegacy {
+    public static void main(String[] args) throws Exception {
+        var commits = new ArrayList<com.fasterxml.jackson.databind.JsonNode>();
+        var client = new LocalClient(null) {
+            @Override protected EventStoreClient createEventStoreClient() {
+                var delegate = super.createEventStoreClient();
+                return (EventStoreClient) Proxy.newProxyInstance(EventStoreClient.class.getClassLoader(),
+                        new Class<?>[]{EventStoreClient.class}, (proxy, method, values) -> {
+                    if (method.getName().equals("commitModels")) commits.add(JsonUtils.writer.valueToTree(values[0]));
+                    return method.invoke(delegate, values);
+                });
+            }
+        };
+        try (var f = DefaultFluxzero.builder().disableAutomaticTracking().disableShutdownHook().disableKeepalive().build(client)) {
+            var now=Instant.parse("2026-09-14T10:00:00Z");
+            f.withClock(Clock.fixed(now, java.time.ZoneOffset.UTC));
+            var home=new HomeId("legacy");var space=new SpaceId("legacy-room");
+            var sensor=new DeviceId("legacy-sensor");var status=new DeviceStatusId(sensor.getFunctionalId());
+            var scene=new SceneId("legacy-evening");
+            Object[] commands={
+                new CreateHome(home,"Old house",java.time.ZoneId.of("Europe/Amsterdam")),
+                new AddSpace(space,home,null,"Old room",SpaceKind.ROOM),
+                new AddDevice(sensor,space,"Old sensor","old-sensor",Set.of(Capability.POWER),Set.of(Measurement.TEMPERATURE)),
+                new AddResident(new ResidentId("legacy-alex"),home,"Alex",HouseholdRole.OWNER),
+                new DefineZone(new io.fluxzero.home.model.ZoneId("legacy-zone"),home,"Downstairs",Set.of(space)),
+                new DefineScene(scene,home,"Evening",List.of(new SceneAction(new SceneTarget.OneDevice(sensor),new DeviceSetting.Power(false)))),
+                new PlanRoutine(new RoutineId("legacy-routine"),home,"Evening routine",scene,new RoutineTiming.Once(now.plusSeconds(3600))),
+                new DefineAutomation(new AutomationId("legacy-automation"),home,"Too warm",scene,
+                    new AutomationTrigger.MeasurementCrosses(sensor,Measurement.TEMPERATURE,AutomationTrigger.Direction.RISES_ABOVE,new BigDecimal("24")),Duration.ZERO),
+                new ReportDeviceStatus(status,sensor,now.minusSeconds(2),Availability.ONLINE,Map.of(Capability.POWER,new DeviceSetting.Power(true)),Map.of(Measurement.TEMPERATURE,new BigDecimal("22"))),
+                new ReportDeviceStatus(status,sensor,now.minusSeconds(1),Availability.ONLINE,Map.of(Capability.POWER,new DeviceSetting.Power(true)),Map.of(Measurement.TEMPERATURE,new BigDecimal("23")))
+            };
+            for(var command:commands) f.apply(fc -> fc.executeModelCommit(new Message(command)).join());
+            var output=Path.of(args[0]);Files.createDirectories(output);
+            Files.writeString(output.resolve("rc11-commits.json"),JsonUtils.writer.writerWithDefaultPrettyPrinter().writeValueAsString(commits)+"\n");
+            var doc=client.getSearchClient().fetchModelDocument(new GetDocument(status.toString(),"DeviceStatus",true));
+            Files.writeString(output.resolve("rc11-status-document.json"),JsonUtils.writer.writerWithDefaultPrettyPrinter().writeValueAsString(doc)+"\n");
+            System.out.println("Captured "+commits.size()+" old commits; status document present="+(doc.getDocument()!=null));
+        }
+    }
+}

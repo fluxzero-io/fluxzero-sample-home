@@ -10,5 +10,5 @@ import static io.fluxzero.home.model.Rules.named;
 /** Change what the household calls its home. */
 public record RenameHome(HomeId homeId, String name) {
     @AssertLegal void validate() { named(name); }
-    @Apply Home apply(Home home) { return home.withName(name); }
+    @Apply Home apply(Home home) { return home.withDetails(home.details().withName(name)); }
 }

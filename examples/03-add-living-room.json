@@ -1,8 +1,11 @@
 {
   "@class": "AddSpace",
+  "@revision": 1,
   "spaceId": "example-living",
   "homeId": "example-home",
   "enclosingSpaceId": "example-floor",
-  "name": "Woonkamer",
-  "kind": "ROOM"
+  "details": {
+    "name": "Woonkamer",
+    "kind": "ROOM"
+  }
 }

@@ -28,7 +28,7 @@ class SceneBehaviorTest {
                     assertEquals(1, Fluxzero.loadModel(EVENING).get().activationCount()); });
     }
     @Test void invalidSceneDoesNotPartlyChangeDevices() {
-        var invalid = new DefineScene(EVENING, HOME, "Broken", List.of(
+        var invalid = new DefineScene(EVENING, HOME, new SceneDetails("Broken"), List.of(
                 new SceneAction(new SceneTarget.OneDevice(LIGHT), new DeviceSetting.LightLevel(20)),
                 new SceneAction(new SceneTarget.OneDevice(LIGHT), new DeviceSetting.Temperature(new BigDecimal("21")))));
         house().whenCommand(invalid).expectExceptionalResult(HomeRuleViolation.class).expectNoEvents()
@@ -41,15 +41,15 @@ class SceneBehaviorTest {
     }
     @Test void sceneCannotReachIntoAnotherHome() {
         var other = new HomeId("other");
-        house().givenCommands(new CreateHome(other, "Other", AMSTERDAM))
-                .whenCommand(new DefineScene(new SceneId("foreign"), other, "Foreign", List.of(
+        house().givenCommands(new CreateHome(other, new HomeDetails("Other"), AMSTERDAM))
+                .whenCommand(new DefineScene(new SceneId("foreign"), other, new SceneDetails("Foreign"), List.of(
                         new SceneAction(new SceneTarget.OneDevice(LIGHT), new DeviceSetting.Power(true)))))
                 .expectExceptionalResult(HomeRuleViolation.class).expectNoEvents();
     }
     @Test void overlappingZoneVisitsEachDeviceOnceAndLastSettingWins() {
         var zone = new io.fluxzero.home.model.ZoneId("downstairs");
-        house().givenCommands(new DefineZone(zone, HOME, "Downstairs", Set.of(FLOOR, LIVING)),
-                new DefineScene(EVENING, HOME, "Soft light", List.of(
+        house().givenCommands(new DefineZone(zone, HOME, new ZoneDetails("Downstairs"), Set.of(FLOOR, LIVING)),
+                new DefineScene(EVENING, HOME, new SceneDetails("Soft light"), List.of(
                         new SceneAction(new SceneTarget.InZone(zone), new DeviceSetting.LightLevel(50)),
                         new SceneAction(new SceneTarget.OneDevice(LIGHT), new DeviceSetting.LightLevel(20)))))
                 .whenCommand(new ActivateScene(EVENING)).expectEvents(new ActivateScene(EVENING)).expectNoErrors()
@@ -62,7 +62,7 @@ class SceneBehaviorTest {
     }
 
     @Test void wholeHomeTargetsOnlyDevicesWithTheRequestedCapability() {
-        house().givenCommands(new DefineScene(EVENING, HOME, "Lights out", List.of(
+        house().givenCommands(new DefineScene(EVENING, HOME, new SceneDetails("Lights out"), List.of(
                 new SceneAction(new SceneTarget.WholeHome(), new DeviceSetting.Power(false)))))
                 .whenCommand(new ActivateScene(EVENING)).expectNoErrors().expectThat(f -> {
                     assertEquals(new DeviceSetting.Power(false), Fluxzero.loadModel(LIGHT).get().desiredSettings().get(Capability.POWER));
@@ -70,7 +70,7 @@ class SceneBehaviorTest {
                 });
     }
     @Test void emptySceneIsRejected() {
-        house().whenCommand(new DefineScene(EVENING, HOME, "Empty", List.of()))
+        house().whenCommand(new DefineScene(EVENING, HOME, new SceneDetails("Empty"), List.of()))
                 .expectExceptionalResult(HomeRuleViolation.class).expectNoEvents();
     }
     static class AtomicSceneObserver {

@@ -1,6 +1,9 @@
 {
   "@class": "CreateHome",
+  "@revision": 1,
   "homeId": "example-home",
-  "name": "Voorbeeldhuis",
-  "timeZone": "Europe/Amsterdam"
+  "timeZone": "Europe/Amsterdam",
+  "details": {
+    "name": "Voorbeeldhuis"
+  }
 }

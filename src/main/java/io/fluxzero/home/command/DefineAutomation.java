@@ -1,6 +1,8 @@
 package io.fluxzero.home.command;
 
+import io.fluxzero.common.serialization.Revision;
 import io.fluxzero.home.model.Automation;
+import io.fluxzero.home.model.AutomationDetails;
 import io.fluxzero.home.model.AutomationId;
 import io.fluxzero.home.model.AutomationTrigger;
 import io.fluxzero.home.model.Device;
@@ -14,16 +16,18 @@ import io.fluxzero.sdk.modeling.AssertLegal;
 import io.fluxzero.sdk.modeling.Graph;
 import io.fluxzero.sdk.persisting.eventsourcing.Apply;
 import jakarta.annotation.Nullable;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import java.time.Duration;
 
-import static io.fluxzero.home.model.Rules.named;
 import static io.fluxzero.home.model.Rules.require;
 
 /** Describe when a scene should react, with an optional quiet interval between activations. */
-public record DefineAutomation(AutomationId automationId, HomeId homeId, String name, SceneId sceneId,
+@Revision(1)
+public record DefineAutomation(AutomationId automationId, HomeId homeId, @NotNull @Valid AutomationDetails details, SceneId sceneId,
                                AutomationTrigger trigger, Duration cooldown) {
     @AssertLegal void validate(Graph<Home> home, @Nullable Automation automation) {
-        named(name); require(trigger != null && cooldown != null && !cooldown.isNegative(), "Choose a trigger and a non-negative cooldown.");
+        require(trigger != null && cooldown != null && !cooldown.isNegative(), "Choose a trigger and a non-negative cooldown.");
         require(automation == null || automation.homeId().equals(homeId), "An automation cannot move between homes.");
         ScenePlan.find(home, sceneId, Scene.class);
         switch (trigger) {
@@ -37,7 +41,7 @@ public record DefineAutomation(AutomationId automationId, HomeId homeId, String 
         }
     }
     @Apply Automation apply(@Nullable Automation automation, Graph<Home> home, Message message) {
-        return new Automation(automationId, homeId, name, sceneId, trigger, cooldown, true, message.getTimestamp(),
+        return new Automation(automationId, homeId, details, sceneId, trigger, cooldown, true, message.getTimestamp(),
                 trigger.sourceRevision(home), automation == null ? 0 : automation.executionCount(), automation == null ? null : automation.lastExecutedAt(), null);
     }
 }
