@@ -1,6 +1,6 @@
 # SDK 2.0 in dit voorbeeld
 
-De build importeert `io.fluxzero:fluxzero-bom:2.0.0-rc.11-local.d88696f27d26`, een lokale build van SDK-commit `d88696f27d26c03c29785c6fbf1c32cee270ae67`. De Maven Compiler voert ook de bijpassende SDK-annotationprocessor uit, zodat model- en type-indexen worden gegenereerd. `scripts/prepare-sdk.sh` bouwt de bron van deze commit met een eigen versienaam; er wordt niets gepubliceerd en de gepubliceerde rc.11 wordt niet vervangen.
+De build importeert `io.fluxzero:fluxzero-bom:2.0.0-rc.11-local.9ae3f349a2a`, een lokale build van SDK-commit `9ae3f349a2a94f9353e0e8419dd2ace299cc9fd7`. De Maven Compiler voert ook de bijpassende SDK-annotationprocessor uit, zodat model- en type-indexen worden gegenereerd. `scripts/prepare-sdk.sh` bouwt de bron van deze commit met een eigen versienaam; er wordt niets gepubliceerd en de gepubliceerde rc.11 wordt niet vervangen.
 
 | SDK-mogelijkheid | Concrete toepassing |
 | --- | --- |
@@ -15,7 +15,8 @@ De build importeert `io.fluxzero:fluxzero-bom:2.0.0-rc.11-local.d88696f27d26`, e
 | Legale en recursieve assertions | Huisgrenzen, mogelijkheden en instellingswaarden worden vóór uitvoering gecontroleerd. `DefineScene` geeft instellingsvalidators terug. |
 | Doelgerichte opslag en historie | Alle negen Models gebruiken gewone `@Model`. Ook apparaatwaarnemingen hebben historie nodig voor het herkennen van grensoverschrijdingen. |
 | Creationcompatibiliteit en optionele relaties | De SDK weigert dubbele creatie; `AddSpace` injecteert zijn optionele bovenliggende ruimte en bewaakt zelf de huisgrens. |
-| Complete Graph-change-handlers | `RoutineSchedules` ontvangt ook cascaderende routineverwijdering na huisverwijdering. Eén tracker verzorgt alle schedule-effecten. |
+| Complete Graph-change-handlers | `RoutineSchedules` reconcilieert status en deadlines vanuit de actuele routine, ook na een ouder event. |
+| Schedules met `@Parent` | `RunRoutine.routineId` koppelt een uitvoering aan de levensduur van haar Routine. Directe en cascaderende verwijdering annuleren opgeslagen uitvoeringen zonder applicatiecleanup. |
 | Relatiebewust zoeken | `FindDevices` selecteert via `whereAncestor(homeId)` en de gevraagde mogelijkheid. |
 | Alternatieve identiteit | Een optioneel apparaatlabel is een `@Alias`; de echte apparaat-ID blijft stabiel. |
 | Actuele en eventgebonden Graphs | Consumers kunnen de toestand bij een verandering lezen; schedule-reconciliatie kiest juist expliciet de actuele routine. |
@@ -53,7 +54,9 @@ Dubbele `CreateHome`, `AddSpace`, `AddDevice` en `AddResident` worden door de SD
 
 `AddSpace` onderscheidt een bewust ontbrekende bovenliggende ruimte van een opgegeven maar onbekende ruimte. Nullable injectie maakt beide technisch mogelijk; de domeinassertion weigert een onbekende identiteit of een ruimte uit een ander huis.
 
-De routineconsumer reconcilieert de actuele toestand met één tracker, ook na een historisch event. Zijn sole-Graph-handler ontvangt zowel directe wijzigingen als cascadeverwijdering. Er is geen aanvullende `RemoveHome`-opruimhandler nodig. Deadlines en generaties beschermen nog steeds tegen oude of al afgeleverde opdrachten.
+De routineconsumer reconcilieert de actuele toestand met één tracker, ook na een historisch event. Zijn sole-Graph-handler ontvangt zowel directe wijzigingen als cascadeverwijdering. Voor een afwezige routine doet de consumer niets: `@Parent` op `RunRoutine.routineId` laat de SDK de opgeslagen uitvoering annuleren. Pauzeren, afronden en herplannen blijven expliciete schedule-effecten van de actuele routine. Deadlines en generaties beschermen nog steeds tegen oude of al afgeleverde opdrachten.
+
+De parent moet al gecommit zijn wanneer de uitvoering wordt gepland; de bestaande post-commit consumer voldoet daaraan. Annulering is asynchroon en werkt ook zonder actieve applicatieconsumer. De lokale TestServer hoort bij dezelfde SDK-kandidaat. Een aparte gedeployde Runtime moet deze ownershipfunctie ondersteunen. `RoutineOwnershipTest` bewijst cleanup zonder routineconsumer en dat hercreatie met hetzelfde ID een oude opgeslagen uitvoering niet opnieuw geldig maakt.
 
 ## Voorbeelddata en publicatie
 
@@ -61,4 +64,4 @@ Deze app is nog niet uitgerold en begint met het huidige details-schema. Er zijn
 
 Gewone event-sourced replay en historische waarnemingen blijven onderdeel van het domein. De revisies waarmee automatiseringen dubbele reacties voorkomen en de generaties van routines zijn geen schemarevisies. De gedragstests blijven herladen, vorige metingen, oude afleveringen en schedulecleanup controleren. Retentie van waarnemingen blijft een afzonderlijke productkeuze.
 
-De kandidaat is nog geen openbare SDK-release en de commit was bij toepassing nog niet op GitHub beschikbaar. Lokale builds gebruiken de meegegeven SDK-repository. CI en deployment halen dezelfde commit op en kunnen pas draaien nadat die bron is gepubliceerd. Vervang de lokale versie pas door een gepubliceerde SDK-versie die deze commit bevat.
+De kandidaat is geen openbare SDK-release. Lokale builds gebruiken de meegegeven SDK-repository. CI en deployment moeten dezelfde commit uit de SDK-repository kunnen ophalen. Vervang de lokale versie pas door een gepubliceerde SDK-versie die deze commit bevat.

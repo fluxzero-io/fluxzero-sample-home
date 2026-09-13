@@ -23,7 +23,10 @@ Elke routine heeft één stabiele schedule-identiteit en een oplopende generatie
 - Een late aflevering voert één keer uit en slaat gemiste herhalingen over.
 - Hervatten start bij de volgende toekomstige gelegenheid. Een verstreken eenmalige afspraak moet opnieuw worden gepland.
 - Herplannen vervangt het actieve tijdstip en maakt de vorige generatie ongeldig.
-- Pauzeren, verwijderen en het verwijderen van het huis ruimen geplande uitvoeringen op.
+- Pauzeren annuleert de volgende uitvoering via de routineconsumer.
+- `RunRoutine` verwijst met `@Parent` naar haar routine. De SDK annuleert opgeslagen uitvoeringen bij verwijdering van die routine, ook wanneer haar huis cascaderend wordt verwijderd en de routineconsumer niet actief is.
+
+Deze automatische annulering is asynchroon en trekt reeds afgeleverde opdrachten niet terug. Daarom blijven de controles op actuele toestand, generatie en deadline nodig. Een nieuwe routine met hetzelfde ID krijgt een nieuwe levensduur: een eerder opgeslagen uitvoering kan niet opnieuw aan die nieuwe routine worden gekoppeld.
 
 Als een scène door een gewijzigde huisinrichting niet meer uitgevoerd kan worden, wordt de routine gepauzeerd met een begrijpelijke reden in `problem`. Geen van de apparaatinstellingen wordt dan gedeeltelijk toegepast. Na herstel kan een herhalende routine hervat worden; een gemiste eenmalige routine kan opnieuw worden gepland.
 
@@ -37,8 +40,8 @@ De rustperiode beperkt herhaald activeren. De laatst verwerkte bronrevisie voork
 
 Een onuitvoerbare reactie pauzeert de automatisering met een reden. Tijdelijke technische storingen worden niet als domeinfout vermomd: de Fluxzero-consumer kan die opnieuw proberen.
 
-De routineconsumer verwerkt scheduling op één tracker. Daardoor kunnen een huisverwijdering en een routinewijziging niet tegelijkertijd elkaars schedule-effect overschrijven. Dezelfde routinehandler verwerkt directe wijzigingen en cascadeverwijdering; hij leest steeds de actuele bedoeling. Een oude verwijdermelding kan daardoor geen nieuwe routine onder dezelfde identiteit annuleren.
+De routineconsumer verwerkt planning en statuswijzigingen op één tracker en leest steeds de actuele bedoeling. Voor een afwezige routine doet hij niets: opruimen bij verwijdering hoort bij de SDK. Bij een inmiddels opnieuw aangemaakte routine reconcilieert ook een oude verwijdermelding uitsluitend de nieuwe actuele bedoeling.
 
 ## Wat de tests bewijzen
 
-De tests verplaatsen de tijd; ze slapen niet. Ze controleren actieve schedules met exacte identiteit, deadline en generatie, plus de toestand direct vóór en op de uitvoering. Er zijn synchrone en asynchrone scenario's. Herladen na het legen van caches bewijst reconstructie uit opgeslagen Model-geschiedenis binnen de fixture; het is geen claim dat een externe productieopslag een procesrestart heeft doorstaan.
+De tests verplaatsen de tijd; ze slapen niet. Ze controleren actieve schedules met exacte identiteit, deadline en generatie, plus de toestand direct vóór en op de uitvoering. `RoutineOwnershipTest` registreert geen routineconsumer en controleert zowel directe als cascaderende verwijdering, de bijbehorende `ScheduleAutoCancelled`-metric en bescherming van een opnieuw aangemaakte routine tegen oude opgeslagen uitvoeringen. Er zijn synchrone en asynchrone scenario's. Herladen na het legen van caches bewijst reconstructie uit opgeslagen Model-geschiedenis binnen de fixture; het is geen claim dat een externe productieopslag een procesrestart heeft doorstaan.

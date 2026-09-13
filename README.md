@@ -1,6 +1,6 @@
 # Fluxzero Home
 
-Een huis beschreven zoals je erin leeft: ruimtes, bewoners, licht, comfort, muziek, tuin en dagelijkse gewoontes. Fluxzero Home is een merkonafhankelijke voorbeeldapp op **Fluxzero SDK-commit `d88696f27d26`**, met een werkende domeinkern en uitvoerbare voorbeelden. De lokale kandidaat bouwt voort op rc.11.
+Een huis beschreven zoals je erin leeft: ruimtes, bewoners, licht, comfort, muziek, tuin en dagelijkse gewoontes. Fluxzero Home is een merkonafhankelijke voorbeeldapp op **Fluxzero SDK-commit `9ae3f349a2a`**, met een werkende domeinkern en uitvoerbare voorbeelden. De lokale kandidaat bouwt voort op rc.11.
 
 Je kunt er een appartement mee beschrijven, maar ook een landgoed met meerdere gebouwen, verdiepingen, tuinen en bijgebouwen. Ruimtes mogen vrij worden genest. Zones zoals *beneden*, *buiten* of *de slaapvertrekken* kunnen elkaar overlappen.
 
@@ -27,7 +27,7 @@ flowchart LR
 - **Bewoners:** huishoudrol en expliciete aanwezigheid. Het vertrek van één bewoner zet het huis niet ongemerkt op afwezig.
 - **Apparaten:** mogelijkheden voor licht, kleur, temperatuur, zonwering, sloten, media, volume, ventilatie, irrigatie en laden. Een apparaat kan meerdere mogelijkheden én metingen hebben.
 - **Scènes:** één apparaat, een hele ruimte met onderliggende ruimtes, een zone of het hele huis. Alle wijzigingen slagen samen of geen enkele wordt toegepast.
-- **Routines:** eenmalig of op gekozen weekdagen, volgens de tijdzone van het huis. Pauzeren, hervatten, herplannen, annuleren en foutmeldingen behoren tot het model.
+- **Routines:** eenmalig of op gekozen weekdagen, volgens de tijdzone van het huis. Pauzeren, hervatten, herplannen, annuleren en foutmeldingen behoren tot het model. Geplande uitvoeringen horen bij hun routine en worden automatisch geannuleerd wanneer die routine of haar huis verdwijnt.
 - **Automatiseringen:** reageren op een thuismodus of het overschrijden van een meetgrens, met een instelbare rustperiode tussen activaties.
 - **Gemelde toestand:** bereikbaarheid, feitelijke instellingen en metingen blijven gescheiden van de gewenste instellingen. Een verzoek om een deur te vergrendelen betekent nog niet dat die deur vergrendeld is.
 
@@ -77,7 +77,7 @@ Voor CI of een expliciet volledige controle, buiten een actieve ontwikkelomgevin
 ./mvnw -B verify
 ```
 
-De SDK staat vast op `2.0.0-rc.11-local.d88696f27d26`, gebouwd uit `d88696f27d26c03c29785c6fbf1c32cee270ae67`. Dit is geen officiële release. De CI-workflows bereiden dezelfde SDK voor; ze kunnen deze commit pas ophalen nadat hij in de SDK-repository is gepubliceerd. `fluxzero.defaults.version=2026.09.10` activeert de nieuwe defaults voor Model-conflicten en routing. De lokale tools-versie staat apart in het buildbestand.
+De SDK staat vast op `2.0.0-rc.11-local.9ae3f349a2a`, gebouwd uit `9ae3f349a2a94f9353e0e8419dd2ace299cc9fd7`. Dit is geen officiële release. De CI-workflows bereiden dezelfde SDK voor; ze kunnen deze commit pas ophalen nadat hij in de SDK-repository is gepubliceerd. `fluxzero.defaults.version=2026.09.10` activeert de nieuwe defaults voor Model-conflicten en routing. De lokale tools-versie staat apart in het buildbestand.
 
 ## Fase 2
 

@@ -40,7 +40,7 @@ jobs:
         uses: actions/checkout@v5
         with:
           repository: fluxzero-io/fluxzero-sdk-java
-          ref: d88696f27d26c03c29785c6fbf1c32cee270ae67
+          ref: 9ae3f349a2a94f9353e0e8419dd2ace299cc9fd7
           path: .sdk-source
 
       - name: Prepare local SDK candidate

@@ -2,8 +2,8 @@
 set -euo pipefail
 
 # Build the requested, unpublished SDK commit without changing its source checkout.
-sdk_commit=d88696f27d26c03c29785c6fbf1c32cee270ae67
-sdk_version=2.0.0-rc.11-local.d88696f27d26
+sdk_commit=9ae3f349a2a94f9353e0e8419dd2ace299cc9fd7
+sdk_version=2.0.0-rc.11-local.9ae3f349a2a
 project_dir=$(cd "$(dirname "$0")/.." && pwd)
 sdk_source=${1:-"$project_dir/../fluxzero-sdk-java"}
 resolved_commit=$(git -C "$sdk_source" rev-parse "$sdk_commit^{commit}")

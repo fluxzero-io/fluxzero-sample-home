@@ -22,7 +22,8 @@ public class RoutineSchedules {
 
     private void reconcile(RoutineId id) {
         var routine = Fluxzero.loadCurrentGraph(id).get();
-        if (routine == null || !routine.enabled() || routine.nextRun() == null) {
+        if (routine == null) return; // Parent ownership cancels work belonging to a deleted routine.
+        if (!routine.enabled() || routine.nextRun() == null) {
             Fluxzero.cancelSchedule(scheduleId(id));
         } else {
             Fluxzero.scheduleCommand(new RunRoutine(id, routine.generation(), routine.nextRun()),

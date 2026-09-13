@@ -8,6 +8,7 @@ import io.fluxzero.sdk.Fluxzero;
 import io.fluxzero.sdk.modeling.*;
 import io.fluxzero.sdk.test.*;
 import io.fluxzero.sdk.scheduling.Schedule;
+import io.fluxzero.common.api.scheduling.ScheduleAutoCancelled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.*;
@@ -34,7 +35,7 @@ class RoutineBehaviorTest {
     @Test void pausedRoutineCannotExecuteEvenIfDeliveryWasAlreadyQueued() {
         var due = NOW.plusSeconds(60);
         house(new RoutineSchedules()).givenCommands(evening(), once(due))
-                .whenCommand(new PauseRoutine(BEDTIME)).expectNoSchedules()
+                .whenCommand(new PauseRoutine(BEDTIME)).expectNoSchedules().expectNoMetricsLike(ScheduleAutoCancelled.class)
                 .andThen().whenTimeAdvancesTo(due).expectNoEvents()
                 .andThen().whenCommand(new RunRoutine(BEDTIME, 1, due)).expectNoEvents().expectNoSchedules()
                 .expectThat(f -> assertEquals(0, Fluxzero.loadModel(EVENING).get().activationCount()));
@@ -44,7 +45,10 @@ class RoutineBehaviorTest {
         house(new RoutineSchedules()).givenCommands(evening(), once(oldDue))
                 .whenCommand(once(newDue)).expectOnlySchedules(scheduled(2, newDue))
                 .andThen().whenTimeAdvancesTo(oldDue).expectNoEvents()
-                .andThen().whenCommand(new RunRoutine(BEDTIME, 1, oldDue)).expectNoEvents().expectOnlySchedules(scheduled(2, newDue));
+                .andThen().whenCommand(new RunRoutine(BEDTIME, 1, oldDue)).expectNoEvents().expectOnlySchedules(scheduled(2, newDue))
+                .andThen().whenCommand(new RemoveRoutine(BEDTIME)).expectNoErrors().expectOnlyActiveScheduledCommands()
+                .<ScheduleAutoCancelled>expectMetric(metric -> metric.deadline() == newDue.toEpochMilli()
+                        && metric.scheduleId().equals(RoutineSchedules.scheduleId(BEDTIME).toString()));
     }
     @Test void removingRoutineCancelsItsDeadline() {
         house(new RoutineSchedules()).givenCommands(evening(), once(NOW.plusSeconds(60)))
@@ -62,7 +66,10 @@ class RoutineBehaviorTest {
         house(new RoutineSchedules()).givenCommands(evening(), new PlanRoutine(BEDTIME, HOME, new RoutineDetails("Monday"), EVENING, timing), new PauseRoutine(BEDTIME))
                 .whenCommand(new ResumeRoutine(BEDTIME)).expectOnlySchedules(scheduled(3, due))
                 .andThen().whenTimeAdvancesTo(due).expectNoErrors()
-                .expectOnlySchedules(scheduled(4, due.plus(Duration.ofDays(7))));
+                .expectOnlySchedules(scheduled(4, due.plus(Duration.ofDays(7))))
+                .andThen().whenCommand(new RemoveRoutine(BEDTIME)).expectNoErrors().expectOnlyActiveScheduledCommands()
+                .<ScheduleAutoCancelled>expectMetric(metric -> metric.deadline() == due.plus(Duration.ofDays(7)).toEpochMilli()
+                        && metric.scheduleId().equals(RoutineSchedules.scheduleId(BEDTIME).toString()));
     }
     @Test void invalidPastRoutineCreatesNoWork() {
         house(new RoutineSchedules()).givenCommands(evening()).whenCommand(once(NOW.minusSeconds(1)))

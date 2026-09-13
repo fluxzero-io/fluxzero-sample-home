@@ -8,6 +8,7 @@ import io.fluxzero.home.model.Scene;
 import io.fluxzero.home.model.ScenePlan;
 import io.fluxzero.sdk.common.Message;
 import io.fluxzero.sdk.modeling.Graph;
+import io.fluxzero.sdk.modeling.Parent;
 import io.fluxzero.sdk.persisting.eventsourcing.Apply;
 import io.fluxzero.sdk.persisting.eventsourcing.InterceptApply;
 import jakarta.annotation.Nullable;
@@ -15,8 +16,8 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
 
-/** Internal deadline delivery; obsolete or early deliveries do not change the home. */
-public record RunRoutine(RoutineId routineId, long generation, Instant due) {
+/** A planned execution belongs to its routine; obsolete or early deliveries do not change the home. */
+public record RunRoutine(@Parent RoutineId routineId, long generation, Instant due) {
     @InterceptApply Object prepare(@Nullable Routine routine, Graph<Home> home, Message message) {
         if (routine == null || !routine.enabled() || routine.generation() != generation
                 || !Objects.equals(routine.nextRun(), due) || due.isAfter(message.getTimestamp())) return null;
