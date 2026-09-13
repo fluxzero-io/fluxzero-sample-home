@@ -7,11 +7,8 @@ import java.time.Duration;
 import java.time.Instant;
 import lombok.With;
 
-import static io.fluxzero.sdk.modeling.ModelPersistence.DOCUMENT;
-import static io.fluxzero.sdk.modeling.ModelPersistence.EVENT_SOURCED;
-
 /** A scene that reacts to a meaningful change, with a cooldown and durable duplicate suppression. */
-@Model(persistence = {EVENT_SOURCED, DOCUMENT})
+@Model
 @With
 public record Automation(@EntityId AutomationId automationId, @Parent(pathInParent = "automations") HomeId homeId,
                          String name, SceneId sceneId, AutomationTrigger trigger, Duration cooldown, boolean enabled,

@@ -9,11 +9,8 @@ import java.util.Map;
 import java.util.Set;
 import lombok.With;
 
-import static io.fluxzero.sdk.modeling.ModelPersistence.DOCUMENT;
-import static io.fluxzero.sdk.modeling.ModelPersistence.EVENT_SOURCED;
-
 /** A named device and the desired settings requested by the household. */
-@Model(persistence = {EVENT_SOURCED, DOCUMENT})
+@Model
 @With
 public record Device(@EntityId DeviceId deviceId,
                      @Parent(pathInParent = "devices") SpaceId spaceId,

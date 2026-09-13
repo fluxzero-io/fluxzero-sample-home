@@ -1,6 +1,6 @@
 # Fluxzero Home
 
-Een huis beschreven zoals je erin leeft: ruimtes, bewoners, licht, comfort, muziek, tuin en dagelijkse gewoontes. Fluxzero Home is een merkonafhankelijke voorbeeldapp op **Fluxzero SDK 2.0.0-RC10**, met een werkende domeinkern en uitvoerbare voorbeelden.
+Een huis beschreven zoals je erin leeft: ruimtes, bewoners, licht, comfort, muziek, tuin en dagelijkse gewoontes. Fluxzero Home is een merkonafhankelijke voorbeeldapp op **Fluxzero SDK 2.0.0-rc.11**, met een werkende domeinkern en uitvoerbare voorbeelden.
 
 Je kunt er een appartement mee beschrijven, maar ook een landgoed met meerdere gebouwen, verdiepingen, tuinen en bijgebouwen. Ruimtes mogen vrij worden genest. Zones zoals *beneden*, *buiten* of *de slaapvertrekken* kunnen elkaar overlappen.
 
@@ -35,6 +35,8 @@ flowchart LR
 
 Begin bij [Het huis als domein](docs/domein.md), daarna bij [Scènes en tijd](docs/scenes-en-tijd.md). [SDK 2.0 in dit voorbeeld](docs/sdk-2.md) koppelt de nieuwe SDK-mogelijkheden aan concrete code. De gedragstests onder `src/test/java/io/fluxzero/home` zijn uitvoerbare gebruiksvoorbeelden.
 
+De modellen beginnen met gewone `@Model`. Apparaatzoeken en automatiseringen gebruiken de relaties binnen een bekend huis; daarvoor onderhouden de bestaande compositiepaden de benodigde interne documenten. Alleen de gemelde apparaatstatus heeft een expliciete `DOCUMENT`-opslagvorm. De [uitleg over opslag en zoeken](docs/sdk-2.md#opslag-en-zoeken-in-dit-huis) maakt de keuzes concreet.
+
 Een comfortabele avond is bijvoorbeeld:
 
 ```java
@@ -57,7 +59,7 @@ Vereist: Git, de Fluxzero CLI en Java 25. De Maven Wrapper zit in de repository.
 fz dev
 ```
 
-De ontwikkelomgeving start de bijpassende RC10-runtime, de app en de gerichte tests. Dit is een backendproject; er is nog geen dashboard of openbare HTTP-bedieningslaag. De app heeft geen API-sleutels nodig. De [voorbeeldcommando’s](examples/README.md) beschrijven een klein huis dat de ontwikkelomgeving kan laden.
+De ontwikkelomgeving start de bijpassende runtime voor SDK rc.11, de app en de gerichte tests. Dit is een backendproject; er is nog geen dashboard of openbare HTTP-bedieningslaag. De app heeft geen API-sleutels nodig. De [voorbeeldcommando’s](examples/README.md) beschrijven een klein huis dat de ontwikkelomgeving kan laden.
 
 Voor CI of een expliciet volledige controle, buiten een actieve ontwikkelomgeving:
 
@@ -65,7 +67,7 @@ Voor CI of een expliciet volledige controle, buiten een actieve ontwikkelomgevin
 ./mvnw -B verify
 ```
 
-SDK en runtime blijven op `2.0.0-RC10`. `fluxzero.defaults.version=2026.09.10` activeert de nieuwe defaults voor Model-conflicten en routing. De lokale tools-versie staat apart in het buildbestand.
+De SDK staat vast op `2.0.0-rc.11`; de ontwikkelomgeving kiest de bijpassende lokale runtime. `fluxzero.defaults.version=2026.09.10` activeert de nieuwe defaults voor Model-conflicten en routing. De lokale tools-versie staat apart in het buildbestand.
 
 ## Fase 2
 

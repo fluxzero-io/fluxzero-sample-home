@@ -8,7 +8,11 @@ import io.fluxzero.sdk.tracking.handling.HandleQuery;
 import io.fluxzero.sdk.tracking.handling.Request;
 import java.util.List;
 
-/** Find devices in a home by what they can do, using current documents and durable ancestry. */
+/**
+ * Find devices within a known home, optionally filtered by capability.
+ * The devices relationship supplies current component documents; no public device collection is required.
+ * Results reflect committed search state, not an event-bound Graph or transactional membership read.
+ */
 public record FindDevices(HomeId homeId, Capability capability) implements Request<List<Device>> {
     @HandleQuery List<Device> handle() {
         var search = Fluxzero.search(Device.class).whereAncestor(homeId);

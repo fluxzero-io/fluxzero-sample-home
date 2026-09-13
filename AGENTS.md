@@ -8,8 +8,10 @@ Use the plugin as the single documentation source; do not add repository-local F
 
 ## Fluxzero Home
 
-Read `README.md` and the relevant product documents in `docs/` before changing the domain. Keep this application on SDK 2.0.0-RC10 unless the user requests an upgrade. Use the work backlog in `../work-backlog` for plans and qualification notes.
+Read `README.md` and the relevant product documents in `docs/` before changing the domain. Keep this application on SDK 2.0.0-rc.11 unless the user requests an upgrade. Use the work backlog in `../work-backlog` for plans and qualification notes.
 
 Preserve independent Model lifecycles and the boundary between desired settings and reported device state. Scenes and their constituent commands must remain one atomic Model commit. Scheduling effects follow committed intent and reconcile from current state. Device brands, credentials and physical delivery belong to future integration adapters. Do not add public control endpoints without household-scoped authentication and authorization.
+
+The existing home-scoped queries use component documents from explicit relationship paths. Keep ordinary history-bearing Models on plain `@Model`; justify additional persistence against an actual query or authoritative load requirement. `DeviceStatus` deliberately loads its current document. See `docs/sdk-2.md` for this application's choices and the versioned SDK query guide for the full contract.
 
 Use `feature/`, `fix/`, `docs/` or `chore/` branch names; never use `codex/`. Use Conventional Commits. Commit messages describe intent and behavioral impact, without test commands or results. Do not commit generated build outputs or `.fluxzero/dev/`, and do not push without a request.
