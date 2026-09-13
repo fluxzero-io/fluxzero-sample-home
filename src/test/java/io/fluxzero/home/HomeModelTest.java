@@ -34,10 +34,37 @@ class HomeModelTest {
         TestFixture.create().whenCommand(new CreateHome(HOME, " ", AMSTERDAM))
                 .expectExceptionalResult(HomeRuleViolation.class).expectNoEvents();
     }
-    @Test void duplicateCreationCannotOverwriteHome() {
-        house().whenCommand(new CreateHome(HOME, "Another name", AMSTERDAM))
-                .expectExceptionalResult().expectNoEvents()
+    @ParameterizedTest @ValueSource(booleans = {false, true})
+    void duplicateCreationCannotOverwriteHome(boolean async) {
+        (async ? asyncHouse() : house()).whenCommand(new CreateHome(HOME, "Another name", AMSTERDAM))
+                .expectExceptionalResult(Entity.ALREADY_EXISTS_EXCEPTION).expectNoEvents()
                 .expectThat(f -> assertEquals("Canal house", Fluxzero.loadModel(HOME).get().name()));
+    }
+    @ParameterizedTest @ValueSource(booleans = {false, true})
+    void optionalEnclosingSpaceMustExistWhenSpecified(boolean async) {
+        var fixture = async ? asyncHouse() : house();
+        fixture.whenCommand(new AddSpace(new SpaceId("attic"), HOME, null, "Attic", SpaceKind.ROOM))
+                .expectNoErrors().expectThat(f -> assertNull(Fluxzero.loadModel(new SpaceId("attic")).get().enclosingSpaceId()))
+                .andThen().whenCommand(new AddSpace(new SpaceId("closet"), HOME, new SpaceId("missing"), "Closet", SpaceKind.ROOM))
+                .expectExceptionalResult(HomeRuleViolation.class).expectNoEvents()
+                .expectThat(f -> assertNull(Fluxzero.loadModel(new SpaceId("closet")).get()));
+    }
+    @ParameterizedTest @ValueSource(booleans = {false, true})
+    void duplicateChildCreationKeepsExistingState(boolean async) {
+        var resident = new ResidentId("alex");
+        (async ? asyncHouse() : house()).givenCommands(new AddResident(resident, HOME, "Alex", HouseholdRole.OWNER))
+                .whenCommand(new AddSpace(LIVING, HOME, null, "Replacement", SpaceKind.OUTDOOR))
+                .expectExceptionalResult(Entity.ALREADY_EXISTS_EXCEPTION).expectNoEvents()
+                .andThen().whenCommand(new AddDevice(LIGHT, GARDEN, "Replacement", null, Set.of(Capability.POWER), Set.of()))
+                .expectExceptionalResult(Entity.ALREADY_EXISTS_EXCEPTION).expectNoEvents()
+                .andThen().whenCommand(new AddResident(resident, HOME, "Replacement", HouseholdRole.GUEST))
+                .expectExceptionalResult(Entity.ALREADY_EXISTS_EXCEPTION).expectNoEvents()
+                .expectThat(f -> {
+                    f.cache().clear();
+                    assertEquals(FLOOR, Fluxzero.loadModel(LIVING).get().enclosingSpaceId());
+                    assertEquals(LIVING, Fluxzero.loadModel(LIGHT).get().spaceId());
+                    assertEquals("Alex", Fluxzero.loadModel(resident).get().name());
+                });
     }
     @Test void spaceCannotHaveAParentFromAnotherHome() {
         var other = new HomeId("other");

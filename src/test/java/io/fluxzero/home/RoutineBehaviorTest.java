@@ -94,8 +94,9 @@ class RoutineBehaviorTest {
                     assertTrue(Fluxzero.loadModel(LIGHT).get().desiredSettings().isEmpty());
                 });
     }
-    @Test void homeDeletionCancelsDescendantRoutines() {
-        house(new RoutineSchedules()).givenCommands(evening(), once(NOW.plusSeconds(60)))
+    @ParameterizedTest @ValueSource(booleans = {false, true})
+    void homeDeletionCancelsDescendantRoutines(boolean async) {
+        (async ? asyncHouse(new RoutineSchedules()) : house(new RoutineSchedules())).givenCommands(evening(), once(NOW.plusSeconds(60)))
                 .whenCommand(new RemoveHome(HOME)).expectNoErrors().expectNoSchedules();
     }
 }

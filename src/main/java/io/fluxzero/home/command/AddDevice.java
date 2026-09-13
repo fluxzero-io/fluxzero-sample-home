@@ -8,7 +8,6 @@ import io.fluxzero.home.model.Space;
 import io.fluxzero.home.model.SpaceId;
 import io.fluxzero.sdk.modeling.AssertLegal;
 import io.fluxzero.sdk.persisting.eventsourcing.Apply;
-import jakarta.annotation.Nullable;
 import java.util.Map;
 import java.util.Set;
 
@@ -22,9 +21,6 @@ public record AddDevice(DeviceId deviceId, SpaceId spaceId, String name, String 
     @AssertLegal void validate(Space space) {
         named(name); require(!capabilities.isEmpty() || !measurements.isEmpty(), "A device must do or measure something.");
         require(label == null || !label.isBlank(), "A device label cannot be blank.");
-    }
-    @AssertLegal void requireNew(@Nullable Device existing) {
-        require(existing == null, "This device already exists.");
     }
     @Apply Device apply(Space space) { return new Device(deviceId, spaceId, name, label, capabilities, measurements, Map.of()); }
 }

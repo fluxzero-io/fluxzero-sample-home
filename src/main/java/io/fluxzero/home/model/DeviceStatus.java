@@ -7,20 +7,16 @@ import java.time.Instant;
 import java.util.Map;
 import lombok.With;
 
-import static io.fluxzero.sdk.modeling.ModelPersistence.DOCUMENT;
-
-/** The latest complete device report, separate from intentions and their event histories. */
-@Model(persistence = DOCUMENT)
+/** Device observations retain their own history for event-bound comparisons, separate from intentions. */
+@Model
 @With
 public record DeviceStatus(@EntityId DeviceStatusId deviceStatusId,
                            @Parent(pathInParent = "status") DeviceId deviceId,
                            Instant observedAt, Availability availability,
                            Map<Capability, DeviceSetting> reportedSettings,
-                           Map<Measurement, java.math.BigDecimal> readings,
-                           Map<Measurement, java.math.BigDecimal> previousReadings) {
+                           Map<Measurement, java.math.BigDecimal> readings) {
     public DeviceStatus {
         reportedSettings = Map.copyOf(reportedSettings);
         readings = Map.copyOf(readings);
-        previousReadings = Map.copyOf(previousReadings);
     }
 }

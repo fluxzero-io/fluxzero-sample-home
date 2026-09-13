@@ -9,7 +9,7 @@ Een huis vormt de samenhang, niet één groot opslagobject. Een lamp kan worden 
 | `Zone` | Een benoemde verzameling ruimtes. Overlap is toegestaan; een zone bezit haar ruimtes niet. |
 | `Resident` | Een bewoner met eigen naam, huishoudrol en aanwezigheid. |
 | `Device` | Een apparaat op een plek, met mogelijkheden, ondersteunde metingen en gewenste instellingen. |
-| `DeviceStatus` | Het laatste volledige rapport van een apparaat: waargenomen tijd, bereikbaarheid, instellingen en metingen. De vorige meting blijft erbij voor grensdetectie. |
+| `DeviceStatus` | Apparaatwaarnemingen met tijd, bereikbaarheid, instellingen en metingen. De actuele waarde is het laatste volledige rapport; de eigen historie levert vorige metingen voor grensdetectie. |
 | `Scene` | Een benoemde verzameling bedoelingen, inclusief het aantal activaties en de laatste activatie. |
 | `Routine` | Een scène met een tijdpatroon, volgende uitvoering, pauzestand en uitvoeringsgeschiedenis. |
 | `Automation` | Een scène gekoppeld aan een betekenisvolle verandering, met pauzestand, rustperiode en uitvoeringsgeschiedenis. |

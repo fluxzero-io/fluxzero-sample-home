@@ -37,8 +37,9 @@ class AutomationBehaviorTest {
                 .andThen().whenCommand(new ChangeHomeMode(HOME, HomeMode.AWAY)).expectNoErrors()
                 .expectThat(f -> assertEquals(1, Fluxzero.loadModel(REACTION).get().executionCount()));
     }
-    @Test void crossingNeedsPreviousEvidenceAndHonorsCooldown() {
-        house(new HomeReactions()).givenCommands(evening(), onHeat())
+    @ParameterizedTest @ValueSource(booleans = {false, true})
+    void crossingNeedsPreviousEvidenceAndHonorsCooldown(boolean async) {
+        (async ? asyncHouse(new HomeReactions()) : house(new HomeReactions())).givenCommands(evening(), onHeat())
                 .whenCommand(temperature(NOW, "25")).expectNoErrors()
                 .expectThat(f -> assertEquals(0, Fluxzero.loadModel(REACTION).get().executionCount()))
                 .andThen().whenTimeElapses(Duration.ofSeconds(1)).expectNoErrors()
@@ -73,13 +74,32 @@ class AutomationBehaviorTest {
                     assertTrue(Fluxzero.loadModel(LIGHT).get().desiredSettings().isEmpty());
                 });
     }
-    @Test void latestObservationCarriesThePreviousReadingForDurableCrossingDetection() {
-        house().givenCommands(temperature(NOW.minusSeconds(1), "23"))
+    @ParameterizedTest @ValueSource(booleans = {false, true})
+    void observationHistorySurvivesCacheClear(boolean async) {
+        (async ? asyncHouse() : house()).givenCommands(temperature(NOW.minusSeconds(1), "23"))
                 .whenCommand(temperature(NOW, "25")).expectNoErrors().expectThat(f -> {
                     f.cache().clear();
-                    var status = Fluxzero.loadModel(new DeviceStatusId(SENSOR.getFunctionalId())).get();
-                    assertEquals(new BigDecimal("23"), status.previousReadings().get(Measurement.TEMPERATURE));
-                    assertEquals(new BigDecimal("25"), status.readings().get(Measurement.TEMPERATURE));
+                    var status = Fluxzero.loadGraph(new DeviceStatusId(SENSOR.getFunctionalId()));
+                    assertEquals(new BigDecimal("23"), status.previous().get().readings().get(Measurement.TEMPERATURE));
+                    assertEquals(new BigDecimal("25"), status.get().readings().get(Measurement.TEMPERATURE));
+                });
+    }
+    @ParameterizedTest @ValueSource(booleans = {false, true})
+    void olderObservationKeepsItsOwnBeforeAndAfter(boolean async) {
+        var crossing = new java.util.concurrent.atomic.AtomicReference<Graph<DeviceStatus>>();
+        var observer = new Object() {
+            @io.fluxzero.sdk.tracking.handling.HandleEvent
+            void observed(ReportDeviceStatus event, Graph<DeviceStatus> graph) {
+                if (event.observedAt().equals(NOW.minusSeconds(1))) crossing.set(graph);
+            }
+        };
+        (async ? asyncHouse(observer) : house(observer))
+                .givenCommands(temperature(NOW.minusSeconds(2), "23"), temperature(NOW.minusSeconds(1), "25"))
+                .whenCommand(temperature(NOW, "22")).expectNoErrors().expectThat(f -> {
+                    f.cache().clear();
+                    assertEquals(new BigDecimal("23"), crossing.get().previous().get().readings().get(Measurement.TEMPERATURE));
+                    assertEquals(new BigDecimal("25"), crossing.get().get().readings().get(Measurement.TEMPERATURE));
+                    assertEquals(new BigDecimal("22"), Fluxzero.loadModel(new DeviceStatusId(SENSOR.getFunctionalId())).get().readings().get(Measurement.TEMPERATURE));
                 });
     }
     @Test void resumingDoesNotRetroactivelyReactToAChangeWhilePaused() {

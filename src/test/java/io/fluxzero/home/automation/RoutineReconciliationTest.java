@@ -6,7 +6,8 @@ import io.fluxzero.sdk.Fluxzero;
 import io.fluxzero.sdk.modeling.Graph;
 import io.fluxzero.sdk.test.TestFixture;
 import io.fluxzero.sdk.tracking.handling.HandleEvent;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -18,18 +19,21 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.junit.jupiter.api.Assertions.*;
 
 class RoutineReconciliationTest {
-    @Test void oldHomeDeletionCannotCancelARoutineInARecreatedHome() {
+    @ParameterizedTest @ValueSource(booleans = {false, true})
+    void oldCascadeDeletionCannotCancelARoutineInARecreatedHome(boolean async) {
         var home = new HomeId("recreated");
         var space = new SpaceId("room");
         var light = new DeviceId("light");
         var scene = new SceneId("evening");
         var routine = new RoutineId("evening");
         var now = Instant.parse("2026-09-14T10:00:00Z");
-        var oldDeletion = new AtomicReference<Graph<Home>>();
+        var oldDeletion = new AtomicReference<Graph<Routine>>();
         var schedules = new RoutineSchedules();
-        var fixture = TestFixture.create(schedules, new Object() {
-            @HandleEvent void deleted(RemoveHome event, Graph<Home> graph) { oldDeletion.set(graph); }
-        }).atFixedTime(now).withProperty("fluxzero.defaults.version", "2026.09.10");
+        var observer = new Object() {
+            @HandleEvent void changed(Graph<Routine> graph) { if (graph.isEmpty()) oldDeletion.set(graph); }
+        };
+        var fixture = (async ? TestFixture.createAsync(schedules, observer) : TestFixture.create(schedules, observer))
+                .atFixedTime(now).withProperty("fluxzero.defaults.version", "2026.09.10");
         Object[] homeCommands = {
                 new CreateHome(home, "Home", ZoneId.of("Europe/Amsterdam")),
                 new AddSpace(space, home, null, "Room", SpaceKind.ROOM),
@@ -43,7 +47,11 @@ class RoutineReconciliationTest {
         fixture.givenCommands(homeCommands)
                 .givenCommands(new PlanRoutine(routine, home, "New", scene, new RoutineTiming.Once(newDue)))
                 // Supplemental consumer-replay probe with the actual historical graph captured above.
-                .whenExecuting(f -> schedules.removed(new RemoveHome(home), oldDeletion.get()))
+                .whenExecuting(f -> {
+                    assertNotNull(oldDeletion.get());
+                    assertEquals(routine, oldDeletion.get().previous().get().routineId());
+                    schedules.changed(oldDeletion.get());
+                })
                 .expectNoErrors().expectOnlySchedules((java.util.function.Predicate<io.fluxzero.sdk.scheduling.Schedule>) s ->
                         s.getScheduleId().equals(RoutineSchedules.scheduleId(routine).toString()) && s.getDeadline().equals(newDue))
                 .expectThat(f -> assertEquals(newDue, Fluxzero.loadModel(routine).get().nextRun()));

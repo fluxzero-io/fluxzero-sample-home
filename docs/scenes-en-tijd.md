@@ -31,9 +31,13 @@ Als een scène door een gewijzigde huisinrichting niet meer uitgevoerd kan worde
 
 Een automatisering kan reageren wanneer het huis een bepaalde modus krijgt, of wanneer een sensorwaarde een grens omhoog of omlaag passeert. Een eerste sensorwaarde bewijst nog geen grensovergang. Waarden die aan dezelfde kant van de grens blijven, activeren de scène niet opnieuw.
 
+Waarnemingen bewaren hun eigen eventgeschiedenis. De reactie vergelijkt de toestand vóór en na het betreffende rapport, ook na cachewissen of wanneer inmiddels nieuwere rapporten bestaan. Vorige meetwaarden worden niet als extra velden in het huidige rapport gekopieerd.
+
 De rustperiode beperkt herhaald activeren. De laatst verwerkte bronrevisie voorkomt dubbele verwerking. Een achterhaalde bronrevisie wordt genegeerd wanneer de bron intussen alweer is gewijzigd. Alleen veranderingen aan thuismodus en gemelde sensortoestand starten de reactie; de gewenste instellingen die uit de scène volgen voeden geen lus terug.
 
 Een onuitvoerbare reactie pauzeert de automatisering met een reden. Tijdelijke technische storingen worden niet als domeinfout vermomd: de Fluxzero-consumer kan die opnieuw proberen.
+
+De routineconsumer verwerkt scheduling op één tracker. Daardoor kunnen een huisverwijdering en een routinewijziging niet tegelijkertijd elkaars schedule-effect overschrijven. Dezelfde routinehandler verwerkt directe wijzigingen en cascadeverwijdering; hij leest steeds de actuele bedoeling. Een oude verwijdermelding kan daardoor geen nieuwe routine onder dezelfde identiteit annuleren.
 
 ## Wat de tests bewijzen
 

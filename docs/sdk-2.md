@@ -1,6 +1,6 @@
 # SDK 2.0 in dit voorbeeld
 
-De build importeert `io.fluxzero:fluxzero-bom:2.0.0-rc.11`. De Maven Compiler voert ook de bijpassende SDK-annotationprocessor uit, zodat model- en type-indexen worden gegenereerd. De ontwikkelomgeving gebruikt de bijpassende runtime voor SDK rc.11.
+De build importeert `io.fluxzero:fluxzero-bom:2.0.0-rc.11-local.d88696f27d26`, een lokale build van SDK-commit `d88696f27d26c03c29785c6fbf1c32cee270ae67`. De Maven Compiler voert ook de bijpassende SDK-annotationprocessor uit, zodat model- en type-indexen worden gegenereerd. `scripts/prepare-sdk.sh` bouwt de bron van deze commit met een eigen versienaam; er wordt niets gepubliceerd en de gepubliceerde rc.11 wordt niet vervangen.
 
 | SDK-mogelijkheid | Concrete toepassing |
 | --- | --- |
@@ -12,7 +12,9 @@ De build importeert `io.fluxzero:fluxzero-bom:2.0.0-rc.11`. De Maven Compiler vo
 | Interceptie en atomaire meerdere Models | `ActivateScene` breidt de bedoeling uit tot gewone apparaatcommands en de activatie zelf binnen één commit. |
 | RC10: schrijven naar bestaande ouders | `RemoveDevice` wist een apparaat én corrigeert het primaire licht van de bestaande kamer, zonder haar ID in het command. `@Association("devices")` onderscheidt de kamer van bovenliggende ruimtes. |
 | Legale en recursieve assertions | Huisgrenzen, mogelijkheden en instellingswaarden worden vóór uitvoering gecontroleerd. `DefineScene` geeft instellingsvalidators terug. |
-| Doelgerichte opslag | Acht Models gebruiken gewone `@Model`: hun eventstream blijft leidend. Alleen `DeviceStatus` gebruikt `DOCUMENT` als actuele bron. |
+| Doelgerichte opslag en historie | Alle negen Models gebruiken gewone `@Model`. Ook apparaatwaarnemingen hebben historie nodig voor het herkennen van grensoverschrijdingen. |
+| Creationcompatibiliteit en optionele relaties | De SDK weigert dubbele creatie; `AddSpace` injecteert zijn optionele bovenliggende ruimte en bewaakt zelf de huisgrens. |
+| Complete Graph-change-handlers | `RoutineSchedules` ontvangt ook cascaderende routineverwijdering na huisverwijdering. Eén tracker verzorgt alle schedule-effecten. |
 | Relatiebewust zoeken | `FindDevices` selecteert via `whereAncestor(homeId)` en de gevraagde mogelijkheid. |
 | Alternatieve identiteit | Een optioneel apparaatlabel is een `@Alias`; de echte apparaat-ID blijft stabiel. |
 | Actuele en eventgebonden Graphs | Consumers kunnen de toestand bij een verandering lezen; schedule-reconciliatie kiest juist expliciet de actuele routine. |
@@ -25,14 +27,14 @@ De applicatie gebruikt geen legacy Aggregates voor nieuwe toestand. Scènestappe
 
 ## Opslag en zoeken in dit huis
 
-`Home`, `Space`, `Device`, `Zone`, `Resident`, `Scene`, `Routine` en `Automation` gebruiken gewone `@Model`. Hun eigen eventstream blijft de bron voor laden en herladen. `DeviceStatus` gebruikt `@Model(persistence = DOCUMENT)`: daar is het laatste volledige rapport de actuele bron. Die keuze staat los van het publiceren van veranderingen.
+`Home`, `Space`, `Device`, `Zone`, `Resident`, `Scene`, `Routine`, `Automation` en `DeviceStatus` gebruiken gewone `@Model`. Hun eigen eventstream blijft de bron voor laden en herladen. `DeviceStatus` bevat alleen het huidige rapport; de eventgebonden Graph levert de vorige waarneming via `previous()`. Die vergelijking blijft beschikbaar na cachewissen en bij latere rapporten, zonder een dubbel opgeslagen `previousReadings`-veld.
 
 | Vraag in de app | Gebruikte route | Waarom deze opslag volstaat |
 | --- | --- | --- |
 | Hoe is dit bekende huis ingedeeld? | `GetHome` laadt `Graph<Home>` via HomeId. | Laden via identiteit en navigeren door relaties vereisen geen directe documentprojectie op `Home`. |
 | Welke apparaten in dit huis kunnen dimmen? | `FindDevices` zoekt `Device` via `whereAncestor(homeId)` en filtert op `capabilities`. | Het bestaande `devices`-compositiepad onderhoudt geïndexeerde interne apparaatdocumenten. Het bekende huis heeft hiervoor geen eigen document nodig. |
 | Welke automatiseringen horen bij deze verandering? | `HomeReactions` zoekt via `whereParent(homeId)`. | Het bestaande `automations`-compositiepad onderhoudt de interne documenten voor deze begrensde selectie. |
-| Wat heeft het apparaat werkelijk gemeld? | `GetDeviceStatus` laadt via DeviceStatusId. | Alleen hier is het actuele document de gekozen bron voor de Modelwaarde. |
+| Wat heeft het apparaat werkelijk gemeld? | `GetDeviceStatus` laadt via DeviceStatusId. | De eigen waarnemingsgeschiedenis reconstrueert het actuele rapport; de relatie naar het apparaat blijft gelijk. |
 
 `Fluxzero.search(Device.class)` zonder huisselectie geeft met deze configuratie geen apparaten terug. Een globale apparatenlijst is geen huidige applicatiequery. Daarvoor zou een expliciete directe documentprojectie een nieuwe, te onderbouwen keuze zijn. Zoekzichtbaarheid is geen toegangscontrole.
 
@@ -40,4 +42,22 @@ De applicatie gebruikt geen legacy Aggregates voor nieuwe toestand. Scènestappe
 
 Zoekresultaten tonen gecommitteerde actuele documenten en zijn geen historische eventtoestand of transactionele leesafhankelijkheden. Domeinregels blijven daarom de geïnjecteerde Models/Graphs gebruiken. De scheduler vraagt met `loadCurrentGraph` bewust naar de actuele routine; rc.11 legt daarvoor tijdens de aanroep een verse opslaggrens vast, ook wanneer de root al in de cache staat.
 
-De [rc.11-releasebeschrijving](https://github.com/fluxzero-io/fluxzero-sdk-java/releases/tag/2.0.0-rc.11) bevat de verduidelijkte querycontracten en het herstel voor expliciet actuele Graphreads. De correctie voor bestaande ouderrelaties uit RC10 blijft in dit voorbeeld zichtbaar. Voor de complete mogelijkhedenmatrix is de [versiegebonden querykeuzehulp](https://github.com/fluxzero-io/fluxzero-sdk-java/blob/2.0.0-rc.11/docs/developer/guides/Modeling%20%26%20persistence/205-model-query-guide.mdx) leidend; deze app beschrijft alleen haar eigen keuzes.
+De querycontracten van rc.11 blijven behouden. De lokale kandidaat voegt lifecycleafwijzingen, nullable leesreferenties, revisiebehoud bij dynamische schrijftargets en cascaderende Graph-notificaties toe. De bijbehorende agentdocumentatie zit in het lokaal geïnstalleerde `agent-docs`-archief met dezelfde versie en broncommit; `AGENTS.md` beschrijft het laden via de Fluxzero-plugin.
+
+## Keuzes na het Modelcontractherstel
+
+Een scène blijft uit gewone apparaatcommands bestaan. Dat geeft herkenbare gebeurtenissen en laat ieder command zijn eigen regels toepassen. Het is geen technische noodzaak meer om dynamische schrijftargets te vermijden: `DynamicSceneContractTest` gebruikt dezelfde selectie en echte apparaatmodels, retourneert ze rechtstreeks met verschillende revisies en controleert ook herladen na cachewissen.
+
+Dubbele `CreateHome`, `AddSpace`, `AddDevice` en `AddResident` worden door de SDK functioneel afgewezen. Daarvoor staan geen extra `requireNew`-assertions meer in de app. Commands die herdefinitie bedoelen, zoals `DefineScene` en `PlanRoutine`, hebben expliciet een nullable huidige Modelparameter. De app bewaakt nog steeds haar eigen businessregels en gebruikt daarvoor `HomeRuleViolation`, een `FunctionalException`.
+
+`AddSpace` onderscheidt een bewust ontbrekende bovenliggende ruimte van een opgegeven maar onbekende ruimte. Nullable injectie maakt beide technisch mogelijk; de domeinassertion weigert een onbekende identiteit of een ruimte uit een ander huis.
+
+De routineconsumer reconcilieert de actuele toestand met één tracker, ook na een historisch event. Zijn sole-Graph-handler ontvangt zowel directe wijzigingen als cascadeverwijdering. Er is geen aanvullende `RemoveHome`-opruimhandler nodig. Deadlines en generaties beschermen nog steeds tegen oude of al afgeleverde opdrachten.
+
+## Bestaande data en publicatie
+
+Dit project is een lokale voorbeeldapp. De opslagwijziging van `DeviceStatus` is gekwalificeerd vanaf nieuwe waarnemingen; er is geen automatische migratie van bestaande document-only statusopslag of herstel van ontbrekende historische versies geïmplementeerd. Een bestaande installatie moet haar waarnemingsgeschiedenis en een eventuele expliciete beginstand kwalificeren voordat zij dezelfde wijziging overneemt. Event sourcing bewaart voortaan meer waarnemingshistorie; retentie is een afzonderlijke productkeuze.
+
+De cascadeverwijzingen worden door nieuwe commits geschreven. Reeds opgeslagen oude verwijder-events krijgen daarmee niet achteraf nieuwe child-notificaties. Oude afleveringen van nieuw gevormde cascade-events zijn wel afgedekt door de reconciliatietest.
+
+De kandidaat is nog geen openbare SDK-release en de commit was bij toepassing nog niet op GitHub beschikbaar. Lokale builds gebruiken de meegegeven SDK-repository. CI en deployment halen dezelfde commit op en kunnen pas draaien nadat die bron is gepubliceerd. Vervang de lokale versie pas door een gepubliceerde SDK-versie die deze commit bevat.

@@ -36,6 +36,16 @@ jobs:
           java-version: '25'
           cache: maven
 
+      - name: Checkout pinned SDK candidate
+        uses: actions/checkout@v5
+        with:
+          repository: fluxzero-io/fluxzero-sdk-java
+          ref: d88696f27d26c03c29785c6fbf1c32cee270ae67
+          path: .sdk-source
+
+      - name: Prepare local SDK candidate
+        run: scripts/prepare-sdk.sh .sdk-source
+
       - name: Build and test with Maven
         run: ./mvnw -B -ntp -T1C package
 

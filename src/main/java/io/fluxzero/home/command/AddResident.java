@@ -8,7 +8,6 @@ import io.fluxzero.home.model.Resident;
 import io.fluxzero.home.model.ResidentId;
 import io.fluxzero.sdk.modeling.AssertLegal;
 import io.fluxzero.sdk.persisting.eventsourcing.Apply;
-import jakarta.annotation.Nullable;
 
 import static io.fluxzero.home.model.Rules.named;
 import static io.fluxzero.home.model.Rules.require;
@@ -16,8 +15,5 @@ import static io.fluxzero.home.model.Rules.require;
 /** Introduce someone who belongs to the household. */
 public record AddResident(ResidentId residentId, HomeId homeId, String name, HouseholdRole role) {
     @AssertLegal void validate(Home home) { named(name); require(role != null, "Choose a household role."); }
-    @AssertLegal void requireNew(@Nullable Resident existing) {
-        require(existing == null, "This resident already exists.");
-    }
     @Apply Resident apply(Home home) { return new Resident(residentId, homeId, name, role, Presence.UNKNOWN); }
 }

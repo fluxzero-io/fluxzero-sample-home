@@ -34,6 +34,6 @@ public record ReportDeviceStatus(DeviceStatusId deviceStatusId, DeviceId deviceI
         readings.forEach((kind,value) -> { require(device.measurements().contains(kind), "This device does not measure " + kind + "."); kind.validate(value); });
     }
     @Apply DeviceStatus apply(@Nullable DeviceStatus status, Device device) {
-        return new DeviceStatus(deviceStatusId, deviceId, observedAt, availability, reportedSettings, readings, status == null ? Map.of() : status.readings());
+        return new DeviceStatus(deviceStatusId, deviceId, observedAt, availability, reportedSettings, readings);
     }
 }

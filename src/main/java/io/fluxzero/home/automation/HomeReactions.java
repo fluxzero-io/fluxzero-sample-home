@@ -30,8 +30,9 @@ public class HomeReactions {
     @HandleEvent
     void observed(ReportDeviceStatus event, Graph<DeviceStatus> status, Message message) {
         var home = status.ancestor(Home.class).orElseThrow();
+        var previous = status.previous();
         react(home.get().homeId(), new HomeSignal(status.get().deviceStatusId(), status.revisionStateIndex(), message.getTimestamp(),
-                null, null, status.get().previousReadings(), status.get().readings()));
+                null, null, previous == null || previous.isEmpty() ? Map.of() : previous.get().readings(), status.get().readings()));
     }
     private void react(HomeId homeId, HomeSignal signal) {
         Fluxzero.search(Automation.class).whereParent(homeId).fetchAll().forEach(automation -> {
