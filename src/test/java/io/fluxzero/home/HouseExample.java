@@ -63,8 +63,7 @@ final class HouseExample {
     }
     static Predicate<Schedule> scheduled(long generation, Instant due) {
         return s -> s.getScheduleId().equals(RoutineSchedules.scheduleId(BEDTIME).toString()) && s.getDeadline().equals(due)
-                && s.getPayload() instanceof io.fluxzero.sdk.scheduling.ScheduledCommand command
-                && new RunRoutine(BEDTIME, generation, due).equals(Fluxzero.get().serializer().deserialize(command.getCommand().getData()));
+                && new RunRoutine(BEDTIME, generation, due).equals(s.getPayload());
     }
     static void assertEvening() {
         assertEquals(new DeviceSetting.LightLevel(25), Fluxzero.loadModel(LIGHT).get().desiredSettings().get(Capability.LIGHT_LEVEL));
