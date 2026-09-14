@@ -1,28 +1,32 @@
 package io.fluxzero.home;
 
-import io.fluxzero.home.model.*;
-import io.fluxzero.home.command.*;
-import io.fluxzero.home.query.*;
 import io.fluxzero.home.automation.*;
+import io.fluxzero.home.command.*;
+import io.fluxzero.home.model.*;
+import io.fluxzero.home.query.*;
 import io.fluxzero.sdk.Fluxzero;
 import io.fluxzero.sdk.modeling.*;
-import io.fluxzero.sdk.test.*;
 import io.fluxzero.sdk.scheduling.Schedule;
+import io.fluxzero.sdk.test.*;
+import io.fluxzero.sdk.tracking.handling.IllegalCommandException;
+import io.fluxzero.sdk.tracking.handling.validation.ValidationException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.*;
-import java.time.*;
+
 import java.math.BigDecimal;
+import java.time.*;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
+
 import static io.fluxzero.home.HouseExample.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 class DeviceBehaviorTest {
     static Stream<DeviceCommand> intentions() {
-        return Stream.of(new TurnOn(LIGHT), new TurnOff(LIGHT), new DimLight(LIGHT, 42), new SetLightColor(LIGHT, 120, 70),
-                new SetRoomTemperature(LIGHT, new BigDecimal("20.5")), new SetOpening(LIGHT, 30), new LockDoor(LIGHT),
+        return Stream.of(new TurnOn(LIGHT), new TurnOff(LIGHT), new DimLight(LIGHT, new LightLevel(42)), new SetLightColor(LIGHT, 120, 70),
+                new SetRoomTemperature(LIGHT, new RoomTemperature(new BigDecimal("20.5"))), new SetOpening(LIGHT, 30), new LockDoor(LIGHT),
                 new UnlockDoor(LIGHT), new PlayMedia(LIGHT, "Evening jazz"), new StopMedia(LIGHT), new SetVolume(LIGHT, 30),
                 new SetFanSpeed(LIGHT, 60), new StartWatering(LIGHT), new StopWatering(LIGHT), new EnableCharging(LIGHT), new PauseCharging(LIGHT));
     }
@@ -38,12 +42,12 @@ class DeviceBehaviorTest {
     }
     @ParameterizedTest @ValueSource(ints = {-1, 101})
     void invalidBrightnessLeavesDeviceUntouched(int percent) {
-        house().whenCommand(new DimLight(LIGHT, percent)).expectExceptionalResult(HomeRuleViolation.class)
+        house().whenCommand(new DimLight(LIGHT, new LightLevel(percent))).expectExceptionalResult(ValidationException.class)
                 .expectNoEvents().expectThat(f -> assertTrue(Fluxzero.loadModel(LIGHT).get().desiredSettings().isEmpty()));
     }
     @Test void aLightCannotSetRoomTemperature() {
-        house().whenCommand(new SetRoomTemperature(LIGHT, new BigDecimal("21")))
-                .expectExceptionalResult(HomeRuleViolation.class).expectNoEvents();
+        house().whenCommand(new SetRoomTemperature(LIGHT, new RoomTemperature(new BigDecimal("21"))))
+                .expectExceptionalResult(IllegalCommandException.class).expectNoEvents();
     }
     @Test void aNewerObservationWinsAndDesiredSettingsRemainIndependent() {
         house().givenCommands(temperature(NOW.minusSeconds(10), "19"))
@@ -64,13 +68,53 @@ class DeviceBehaviorTest {
     }
     @Test void unsupportedMeasurementsAreRejected() {
         house().whenCommand(new ReportDeviceStatus(new DeviceStatusId(SENSOR.getFunctionalId()), SENSOR, NOW, Availability.ONLINE,
-                Map.of(), Map.of(Measurement.HUMIDITY, new BigDecimal("50"))))
+                DeviceSettings.empty(), Map.of(Measurement.HUMIDITY, new BigDecimal("50"))))
                 .expectExceptionalResult(HomeRuleViolation.class).expectNoEvents();
+    }
+
+    @Test void unchangedBrightnessDoesNotRepublishAfterAnotherSettingChanges() {
+        house().givenCommands(new DimLight(LIGHT, new LightLevel(42)), new TurnOn(LIGHT))
+                .whenCommand(new DimLight(LIGHT, new LightLevel(42))).expectNoEvents();
+    }
+
+    @Test void colorValuesAreValidatedBeforeCheckingDeviceSupport() {
+        house().whenCommand(new SetLightColor(LIGHT, 360, 50))
+                .expectExceptionalResult(ValidationException.class).expectNoEvents();
+    }
+
+    static Stream<DeviceSettings> invalidReports() {
+        return Stream.of(new DeviceSettings(List.of(new LightLevel(101))),
+                new DeviceSettings(List.of(new LightLevel(10), new LightLevel(20))),
+                new DeviceSettings(Arrays.asList((DeviceSetting) null)), new DeviceSettings(null));
+    }
+
+    @ParameterizedTest @MethodSource("invalidReports")
+    void invalidReportedSettingsCreateNoObservation(DeviceSettings settings) {
+        house().whenCommand(new ReportDeviceStatus(new DeviceStatusId(LIGHT.getFunctionalId()), LIGHT, NOW,
+                        Availability.ONLINE, settings, Map.of()))
+                .expectExceptionalResult(ValidationException.class).expectNoEvents();
+    }
+
+    @Test void aDeviceCannotReportAnUnsupportedSetting() {
+        house().whenCommand(new ReportDeviceStatus(new DeviceStatusId(LIGHT.getFunctionalId()), LIGHT, NOW,
+                        Availability.ONLINE, new DeviceSettings(List.of(new RoomTemperature(new BigDecimal("21")))), Map.of()))
+                .expectExceptionalResult(IllegalCommandException.class).expectNoEvents();
+    }
+
+    @Test void reportedSettingsSurviveReloadAndStaySeparateFromIntent() {
+        var report = new DeviceSettings(List.of(new LightLevel(20), new Power(true)));
+        house().givenCommands(new DimLight(LIGHT, new LightLevel(42)),
+                        new ReportDeviceStatus(new DeviceStatusId(LIGHT.getFunctionalId()), LIGHT, NOW,
+                                Availability.ONLINE, report, Map.of()))
+                .whenExecuting(f -> f.cache().clear()).expectNoErrors().expectThat(f -> {
+                    assertEquals(report, Fluxzero.loadModel(new DeviceStatusId(LIGHT.getFunctionalId())).get().reportedSettings());
+                    assertEquals(new LightLevel(42), Fluxzero.loadModel(LIGHT).get().desiredSettings().get(Capability.LIGHT_LEVEL));
+                });
     }
 
     @ParameterizedTest @ValueSource(strings = {"4.9", "35.1"})
     void roomTemperatureLimitsAreExplicit(String celsius) {
-        house().whenCommand(new SetRoomTemperature(HEAT, new BigDecimal(celsius)))
-                .expectExceptionalResult(HomeRuleViolation.class).expectNoEvents();
+        house().whenCommand(new SetRoomTemperature(HEAT, new RoomTemperature(new BigDecimal(celsius))))
+                .expectExceptionalResult(ValidationException.class).expectNoEvents();
     }
 }

@@ -1,17 +1,18 @@
 package io.fluxzero.home.automation;
 
+import io.fluxzero.home.command.ActivateScene;
 import io.fluxzero.home.model.Home;
-import io.fluxzero.home.model.HomeRuleViolation;
 import io.fluxzero.home.model.Routine;
 import io.fluxzero.home.model.RoutineId;
-import io.fluxzero.home.model.Scene;
-import io.fluxzero.home.model.ScenePlan;
+import io.fluxzero.sdk.Fluxzero;
 import io.fluxzero.sdk.common.Message;
+import io.fluxzero.sdk.common.exception.FunctionalException;
 import io.fluxzero.sdk.modeling.Graph;
 import io.fluxzero.sdk.modeling.Parent;
 import io.fluxzero.sdk.persisting.eventsourcing.Apply;
 import io.fluxzero.sdk.persisting.eventsourcing.InterceptApply;
 import jakarta.annotation.Nullable;
+
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
@@ -22,10 +23,9 @@ public record RunRoutine(@Parent RoutineId routineId, long generation, Instant d
         if (routine == null || !routine.enabled() || routine.generation() != generation
                 || !Objects.equals(routine.nextRun(), due) || due.isAfter(message.getTimestamp())) return null;
         try {
-            var scene = ScenePlan.find(home, routine.sceneId(), Scene.class).get();
-            ScenePlan.devices(scene.actions(), home);
-            return List.of(new io.fluxzero.home.command.ActivateScene(routine.sceneId()), this);
-        } catch (HomeRuleViolation failure) {
+            Fluxzero.assertLegal(new ActivateScene(routine.sceneId()));
+            return List.of(new ActivateScene(routine.sceneId()), this);
+        } catch (FunctionalException failure) {
             return new PauseFailedRoutine(routineId, generation, due, failure.getMessage());
         }
     }

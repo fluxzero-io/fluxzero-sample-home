@@ -2,11 +2,15 @@
 
 ## Een scène als één bedoeling
 
-Een scène bevat geordende acties. Een actie richt zich op één apparaat, op een ruimte en haar onderliggende ruimtes, op een zone of op het hele huis.
+Een scène bevat geordende, concrete acties zoals `DimLights`, `SetHeating` en `SwitchPower`. Een actie richt zich op één apparaat, op een ruimte en haar onderliggende ruimtes, op een zone of op het hele huis.
 
-Bij één specifiek apparaat moet dat apparaat de instelling ondersteunen. Bij een grotere doelgroep worden alleen apparaten met de gevraagde mogelijkheid geselecteerd. Als er geen geschikt apparaat is, wordt de hele scène geweigerd. Zones met overlappende ruimtes passen dezelfde uiteindelijke instelling maar één keer toe. Een latere actie mag een eerdere instelling verfijnen.
+Bij één specifiek apparaat moet dat apparaat de instelling ondersteunen. Bij een grotere doelgroep worden alleen apparaten met de gevraagde mogelijkheid geselecteerd. Als er geen geschikt apparaat is, wordt de hele scène geweigerd. Zones met overlappende ruimtes passen dezelfde uiteindelijke instelling maar één keer toe. Een latere actie mag een eerdere instelling verfijnen. Ongeldige acties worden ook geweigerd wanneer een latere actie ze zou overschrijven.
 
 De selectie wordt opnieuw gemaakt bij iedere activatie. Daardoor hoort een lamp na verplaatsing bij haar nieuwe kamer. Alle controles en wijzigingen gebeuren op één vastgelegde Graph-toestand. Fluxzero voert de herkenbare deelhandelingen en de scène-activatie uit in één Model-transactie. Andere applicatiecomponenten krijgen geen half uitgevoerde scène te zien.
+
+De selecties `OneDevice`, `InSpace`, `InZone` en `WholeHome` bepalen welke apparaten meedoen. De concrete scèneactie maakt per apparaat een herkenbaar command. `ActivateScene` kiest per apparaat en mogelijkheid de laatste actie en laat de SDK die commands gezamenlijk toepassen. Er worden geen tijdelijke apparaatmodellen opgebouwd om daar achteraf commands uit af te leiden.
+
+Iedere geslaagde activatie wordt gepubliceerd en in de Model-historie vastgelegd met `@Apply(eventPublication = ALWAYS)`. `Scene` bewaart hiervoor geen teller of tijdstempel. Als de apparaten al goed staan, blijft alleen de activatie over als nieuw event.
 
 Dat is een garantie over de kern. Latere fysieke apparaten kunnen afzonderlijk bereikbaar zijn of falen; adapters zullen die voortgang afzonderlijk terugmelden.
 

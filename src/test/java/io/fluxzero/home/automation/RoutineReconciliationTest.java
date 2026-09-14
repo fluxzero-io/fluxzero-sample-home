@@ -38,7 +38,7 @@ class RoutineReconciliationTest {
                 new CreateHome(home, new HomeDetails("Home"), ZoneId.of("Europe/Amsterdam")),
                 new AddSpace(space, home, null, new SpaceDetails("Room", SpaceKind.ROOM)),
                 new AddDevice(light, space, new DeviceDetails("Light"), null, Set.of(Capability.POWER), Set.of()),
-                new DefineScene(scene, home, new SceneDetails("Evening"), List.of(new SceneAction(new SceneTarget.OneDevice(light), new DeviceSetting.Power(false))))
+                new DefineScene(scene, home, new SceneDetails("Evening"), List.of(new SwitchPower(new OneDevice(light), new Power(false))))
         };
         fixture.givenCommands(homeCommands)
                 .givenCommands(new PlanRoutine(routine, home, new RoutineDetails("Old"), scene, new RoutineTiming.Once(now.plusSeconds(60))))

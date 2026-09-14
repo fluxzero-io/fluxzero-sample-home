@@ -12,7 +12,8 @@ De build importeert `io.fluxzero:fluxzero-bom:2.0.0-rc.11-local.9ae3f349a2a`, ee
 | Luie, consistente `Graph<T>` | Huisgrenzen, zoneselectie, scènedoelen en verwijdervoorwaarden lezen alleen de benodigde relaties. |
 | Interceptie en atomaire meerdere Models | `ActivateScene` breidt de bedoeling uit tot gewone apparaatcommands en de activatie zelf binnen één commit. |
 | RC10: schrijven naar bestaande ouders | `RemoveDevice` wist een apparaat én corrigeert het primaire licht van de bestaande kamer, zonder haar ID in het command. `@Association("devices")` onderscheidt de kamer van bovenliggende ruimtes. |
-| Legale en recursieve assertions | Huisgrenzen, mogelijkheden en instellingswaarden worden vóór uitvoering gecontroleerd. `DefineScene` geeft instellingsvalidators terug. |
+| Modelregels en geneste invoervalidatie | `Device` bewaakt ondersteunde mogelijkheden via `@AssertLegal`. `@Valid` valideert concrete instellingen en scèneacties; bereikgrenzen staan op de waarden. |
+| Expliciete eventpublicatie | `ActivateScene` gebruikt `@Apply(eventPublication = ALWAYS)` en retourneert de bestaande scène: activatiehistorie zonder gekopieerde auditvelden. |
 | Doelgerichte opslag en historie | Alle negen Models gebruiken gewone `@Model`. Ook apparaatwaarnemingen hebben historie nodig voor het herkennen van grensoverschrijdingen. |
 | Creationcompatibiliteit en optionele relaties | De SDK weigert dubbele creatie; `AddSpace` injecteert zijn optionele bovenliggende ruimte en bewaakt zelf de huisgrens. |
 | Complete Graph-change-handlers | `RoutineSchedules` reconcilieert status en deadlines vanuit de actuele routine, ook na een ouder event. |
@@ -48,11 +49,13 @@ De querycontracten van rc.11 blijven behouden. De lokale kandidaat voegt lifecyc
 
 ## Keuzes na het Modelcontractherstel
 
-Een scène blijft uit gewone apparaatcommands bestaan. Dat geeft herkenbare gebeurtenissen en laat ieder command zijn eigen regels toepassen. Het is geen technische noodzaak meer om dynamische schrijftargets te vermijden: `DynamicSceneContractTest` gebruikt dezelfde selectie en echte apparaatmodels, retourneert ze rechtstreeks met verschillende revisies en controleert ook herladen na cachewissen.
+Een scène blijft uit gewone apparaatcommands bestaan. Dat geeft herkenbare gebeurtenissen en laat ieder command zijn eigen regels toepassen. `SceneAction` en `SceneTarget` zijn contracten zonder implementaties. Concrete acties maken de commands en concrete selecties lezen hun deel van de huis-Graph. De app bevat geen eigen Model-simulator of alternatieve route met dynamische Models om het SDK-contract opnieuw te testen.
 
-Dubbele `CreateHome`, `AddSpace`, `AddDevice` en `AddResident` worden door de SDK functioneel afgewezen. Daarvoor staan geen extra `requireNew`-assertions meer in de app. Commands die herdefinitie bedoelen, zoals `DefineScene` en `PlanRoutine`, hebben expliciet een nullable huidige Modelparameter. De app bewaakt nog steeds haar eigen businessregels en gebruikt daarvoor `HomeRuleViolation`, een `FunctionalException`.
+Dubbele `CreateHome`, `AddSpace`, `AddDevice` en `AddResident` worden door de SDK functioneel afgewezen. Daarvoor staan geen extra `requireNew`-assertions meer in de app. Commands die herdefinitie bedoelen, zoals `DefineScene` en `PlanRoutine`, hebben expliciet een nullable huidige Modelparameter. De app bewaakt nog steeds haar eigen businessregels. De vernieuwde apparaat- en scèneroute gebruikt declaratieve invoerconstraints en `IllegalCommandException`; andere domeinregels gebruiken nog `HomeRuleViolation`, eveneens een `FunctionalException`.
 
 `AddSpace` onderscheidt een bewust ontbrekende bovenliggende ruimte van een opgegeven maar onbekende ruimte. Nullable injectie maakt beide technisch mogelijk; de domeinassertion weigert een onbekende identiteit of een ruimte uit een ander huis.
+
+`ReactToHome` en `RunRoutine` gebruiken `Fluxzero.assertLegal(new ActivateScene(...))` om een onuitvoerbare scène functioneel te laten pauzeren. Dat gebruikt dezelfde commandcontroles als de activatie; het voert geen `@Apply` of after-handlercontroles uit. Daarna committen de echte apparaatcommands en de voortgang samen. De huidige scènecommands hebben geen aanvullende afwijzingsregels in die latere fasen. Deze voorcontrole is geen volledige proefuitvoering.
 
 De routineconsumer reconcilieert de actuele toestand met één tracker, ook na een historisch event. Zijn sole-Graph-handler ontvangt zowel directe wijzigingen als cascadeverwijdering. Voor een afwezige routine doet de consumer niets: `@Parent` op `RunRoutine.routineId` laat de SDK de opgeslagen uitvoering annuleren. Pauzeren, afronden en herplannen blijven expliciete schedule-effecten van de actuele routine. Deadlines en generaties beschermen nog steeds tegen oude of al afgeleverde opdrachten.
 

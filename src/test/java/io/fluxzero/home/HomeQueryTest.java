@@ -1,11 +1,5 @@
 package io.fluxzero.home;
 
-import io.fluxzero.home.model.HomeDetails;
-import io.fluxzero.home.model.SpaceDetails;
-import io.fluxzero.home.model.DeviceDetails;
-import io.fluxzero.home.model.SceneDetails;
-import io.fluxzero.home.model.AutomationDetails;
-
 import io.fluxzero.home.automation.HomeReactions;
 import io.fluxzero.home.command.AddDevice;
 import io.fluxzero.home.command.AddSpace;
@@ -17,18 +11,23 @@ import io.fluxzero.home.command.MoveDevice;
 import io.fluxzero.home.command.MoveSpace;
 import io.fluxzero.home.command.RemoveDevice;
 import io.fluxzero.home.model.Automation;
+import io.fluxzero.home.model.AutomationDetails;
 import io.fluxzero.home.model.AutomationId;
 import io.fluxzero.home.model.AutomationTrigger;
 import io.fluxzero.home.model.Capability;
 import io.fluxzero.home.model.Device;
+import io.fluxzero.home.model.DeviceDetails;
 import io.fluxzero.home.model.DeviceId;
-import io.fluxzero.home.model.DeviceSetting;
+import io.fluxzero.home.model.DimLights;
 import io.fluxzero.home.model.Home;
+import io.fluxzero.home.model.HomeDetails;
 import io.fluxzero.home.model.HomeId;
 import io.fluxzero.home.model.HomeMode;
-import io.fluxzero.home.model.SceneAction;
+import io.fluxzero.home.model.LightLevel;
+import io.fluxzero.home.model.OneDevice;
+import io.fluxzero.home.model.SceneDetails;
 import io.fluxzero.home.model.SceneId;
-import io.fluxzero.home.model.SceneTarget;
+import io.fluxzero.home.model.SpaceDetails;
 import io.fluxzero.home.model.SpaceId;
 import io.fluxzero.home.model.SpaceKind;
 import io.fluxzero.home.query.FindDevices;
@@ -105,7 +104,7 @@ class HomeQueryTest {
                 new AddSpace(otherRoom, otherHome, null, new SpaceDetails("Other room", SpaceKind.ROOM)),
                 new AddDevice(otherLight, otherRoom, new DeviceDetails("Other light"), null, Set.of(Capability.LIGHT_LEVEL), Set.of()),
                 new DefineScene(otherScene, otherHome, new SceneDetails("Other evening"), List.of(
-                        new SceneAction(new SceneTarget.OneDevice(otherLight), new DeviceSetting.LightLevel(10)))),
+                        new DimLights(new OneDevice(otherLight), new LightLevel(10)))),
                 new DefineAutomation(otherAutomation, otherHome, new AutomationDetails("Leaving other home"), otherScene, trigger, Duration.ZERO))
                 .whenCommand(new ChangeHomeMode(HOME, HomeMode.AWAY)).expectNoErrors()
                 .expectThat(f -> {
@@ -119,7 +118,7 @@ class HomeQueryTest {
                 .expectThat(f -> {
                     assertEquals(1, Fluxzero.loadModel(REACTION).get().executionCount());
                     assertEquals(1, Fluxzero.loadModel(otherAutomation).get().executionCount());
-                    assertEquals(new DeviceSetting.LightLevel(10),
+                    assertEquals(new LightLevel(10),
                                  Fluxzero.loadModel(otherLight).get().desiredSettings().get(Capability.LIGHT_LEVEL));
                 });
     }

@@ -1,22 +1,24 @@
 package io.fluxzero.home;
 
-import io.fluxzero.home.model.*;
-import io.fluxzero.home.command.*;
-import io.fluxzero.home.query.*;
+import io.fluxzero.common.api.scheduling.ScheduleAutoCancelled;
 import io.fluxzero.home.automation.*;
+import io.fluxzero.home.command.*;
+import io.fluxzero.home.model.*;
+import io.fluxzero.home.query.*;
 import io.fluxzero.sdk.Fluxzero;
 import io.fluxzero.sdk.modeling.*;
-import io.fluxzero.sdk.test.*;
 import io.fluxzero.sdk.scheduling.Schedule;
-import io.fluxzero.common.api.scheduling.ScheduleAutoCancelled;
+import io.fluxzero.sdk.test.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.*;
-import java.time.*;
+
 import java.math.BigDecimal;
+import java.time.*;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
+
 import static io.fluxzero.home.HouseExample.*;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -38,7 +40,7 @@ class RoutineBehaviorTest {
                 .whenCommand(new PauseRoutine(BEDTIME)).expectNoSchedules().expectNoMetricsLike(ScheduleAutoCancelled.class)
                 .andThen().whenTimeAdvancesTo(due).expectNoEvents()
                 .andThen().whenCommand(new RunRoutine(BEDTIME, 1, due)).expectNoEvents().expectNoSchedules()
-                .expectThat(f -> assertEquals(0, Fluxzero.loadModel(EVENING).get().activationCount()));
+                .expectThat(f -> assertTrue(Fluxzero.loadModel(LIGHT).get().desiredSettings().isEmpty()));
     }
     @Test void revisedDeadlineReplacesOldGeneration() {
         var oldDue = NOW.plusSeconds(30); var newDue = NOW.plusSeconds(90);

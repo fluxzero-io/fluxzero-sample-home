@@ -4,6 +4,7 @@ import io.fluxzero.home.model.Capability;
 import io.fluxzero.home.model.Device;
 import io.fluxzero.home.model.DeviceDetails;
 import io.fluxzero.home.model.DeviceId;
+import io.fluxzero.home.model.DeviceSettings;
 import io.fluxzero.home.model.Measurement;
 import io.fluxzero.home.model.Space;
 import io.fluxzero.home.model.SpaceId;
@@ -11,7 +12,7 @@ import io.fluxzero.sdk.modeling.AssertLegal;
 import io.fluxzero.sdk.persisting.eventsourcing.Apply;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
-import java.util.Map;
+
 import java.util.Set;
 
 import static io.fluxzero.home.model.Rules.require;
@@ -24,5 +25,5 @@ public record AddDevice(DeviceId deviceId, SpaceId spaceId, @NotNull @Valid Devi
         require(!capabilities.isEmpty() || !measurements.isEmpty(), "A device must do or measure something.");
         require(label == null || !label.isBlank(), "A device label cannot be blank.");
     }
-    @Apply Device apply(Space space) { return new Device(deviceId, spaceId, details, label, capabilities, measurements, Map.of()); }
+    @Apply Device apply(Space space) { return new Device(deviceId, spaceId, details, label, capabilities, measurements, DeviceSettings.empty()); }
 }

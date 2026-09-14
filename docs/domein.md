@@ -10,7 +10,7 @@ Een huis vormt de samenhang, niet één groot opslagobject. Een lamp kan worden 
 | `Resident` | Een bewoner met eigen naam, huishoudrol en aanwezigheid. |
 | `Device` | Een apparaat op een plek, met mogelijkheden, ondersteunde metingen en gewenste instellingen. |
 | `DeviceStatus` | Apparaatwaarnemingen met tijd, bereikbaarheid, instellingen en metingen. De actuele waarde is het laatste volledige rapport; de eigen historie levert vorige metingen voor grensdetectie. |
-| `Scene` | Een benoemde verzameling bedoelingen, inclusief het aantal activaties en de laatste activatie. |
+| `Scene` | Een benoemde verzameling bedoelingen; activaties staan in haar Model-historie. |
 | `Routine` | Een scène met een tijdpatroon, volgende uitvoering, pauzestand en uitvoeringsgeschiedenis. |
 | `Automation` | Een scène gekoppeld aan een betekenisvolle verandering, met pauzestand, rustperiode en uitvoeringsgeschiedenis. |
 
@@ -38,12 +38,14 @@ Een slimme speaker kan geluid afspelen en volume instellen. Een klimaatunit kan 
 
 Herkenbare commands zijn onder meer `TurnOn`, `TurnOff`, `DimLight`, `SetLightColor`, `SetRoomTemperature`, `SetOpening`, `LockDoor`, `UnlockDoor`, `PlayMedia`, `SetVolume`, `SetFanSpeed`, `StartWatering`, `StopWatering`, `EnableCharging` en `PauseCharging`.
 
+`LightLevel`, `LightColor`, `RoomTemperature` en de overige concrete instellingen dragen hun eigen declaratieve invoergrenzen. `Device` controleert of het apparaat de gevraagde of gerapporteerde mogelijkheid ondersteunt. `DeviceCommand` en `DeviceSetting` bevatten geen uitvoerings- of validatielogica.
+
 Percentages lopen van 0 tot 100. De kleurtoon loopt van 0 tot 359. De huidige comfortinstelling voor een ruimte loopt van 5 tot 35 °C. Dit is een expliciete grens van de comfortfunctie; bijzondere installaties zoals een sauna krijgen een eigen herkenbare instelling met een passend bereik, in plaats van deze grens stilzwijgend te verruimen.
 
 Metingen hebben een vaste eenheid: bijvoorbeeld °C, %, lx, W, kWh of ppm. Aan/uitwaarnemingen zoals beweging en waterlekkage gebruiken 0 en 1. Een oudere of gelijke waarneming overschrijft nooit een nieuwere. Een rapport is een volledige actuele waarneming; niet meegeleverde metingen zijn onbekend in dat rapport.
 
 ## Wens, waarneming en toegang
 
-`Device.desiredSettings` beschrijft wat gevraagd is. `DeviceStatus.reportedSettings` beschrijft wat een adapter heeft waargenomen. `Availability` zegt iets over bereikbaarheid. De kern voegt deze betekenissen niet samen.
+`Device.desiredSettings` beschrijft wat gevraagd is. `DeviceStatus.reportedSettings` beschrijft wat een adapter heeft waargenomen. `Availability` zegt iets over bereikbaarheid. De kern voegt deze betekenissen niet samen. Beide gebruiken `DeviceSettings`: een immutable verzameling met hoogstens één waarde per mogelijkheid. De mogelijkheid volgt uit de waarde; de invoer hoeft geen tweede sleutel bij te houden. In JSON zijn de instellingen een array van waarden met een `kind`, bijvoorbeeld `[{"kind":"lightLevel","percent":25}]`. Dubbele mogelijkheden en ongeldige waarden worden geweigerd.
 
 Een bewonersrol zoals eigenaar of gast is op dit moment een huishoudbegrip. De identiteit en bevoegdheid van een API-gebruiker moeten bij het aanbieden van externe toegang aan deze domeingrenzen worden gekoppeld. Er bestaat nog geen publiek endpoint waarmee onbevoegden huizen kunnen bedienen.

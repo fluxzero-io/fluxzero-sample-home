@@ -43,15 +43,14 @@ Een comfortabele avond is bijvoorbeeld:
 
 ```java
 new DefineScene(evening, home, new SceneDetails("Een fijne avond"), List.of(
-    new SceneAction(new SceneTarget.InSpace(livingRoom), new DeviceSetting.LightLevel(25)),
-    new SceneAction(new SceneTarget.InSpace(livingRoom),
-                    new DeviceSetting.Temperature(new BigDecimal("21")))
+    new DimLights(new InSpace(livingRoom), new LightLevel(25)),
+    new SetHeating(new InSpace(livingRoom), new RoomTemperature(new BigDecimal("21")))
 ));
 
 new ActivateScene(evening);
 ```
 
-Onder dezelfde scène zitten gewone handelingen zoals `DimLight` en `SetRoomTemperature`. Er zijn geen merknamen, protocolvelden of technische kanaalnamen nodig.
+Onder dezelfde scène zitten gewone handelingen zoals `DimLight` en `SetRoomTemperature`. Iedere concrete handeling bevat haar eigen kleine `@Apply`; de interfaces beschrijven uitsluitend contracten. Instellingen zoals `LightLevel` dragen hun eigen invoergrenzen. Een scène-activatie blijft in de Model-historie staan, ook als de gewenste instellingen al overeenkomen. Er zijn geen merknamen, protocolvelden of technische kanaalnamen nodig.
 
 ## Lokaal gebruiken
 

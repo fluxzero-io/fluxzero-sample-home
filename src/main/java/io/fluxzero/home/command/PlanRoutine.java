@@ -8,7 +8,6 @@ import io.fluxzero.home.model.RoutineId;
 import io.fluxzero.home.model.RoutineTiming;
 import io.fluxzero.home.model.Scene;
 import io.fluxzero.home.model.SceneId;
-import io.fluxzero.home.model.ScenePlan;
 import io.fluxzero.sdk.common.Message;
 import io.fluxzero.sdk.modeling.AssertLegal;
 import io.fluxzero.sdk.modeling.Graph;
@@ -24,7 +23,8 @@ public record PlanRoutine(RoutineId routineId, HomeId homeId, @NotNull @Valid Ro
     @AssertLegal void validate(Graph<Home> home, @Nullable Routine routine, Message message) {
         require(timing != null, "Choose when the routine should run.");
         require(routine == null || routine.homeId().equals(homeId), "A routine cannot move between homes.");
-        ScenePlan.find(home, sceneId, Scene.class);
+        require(sceneId != null && home.find(sceneId, Scene.class).isPresent(),
+                "Choose an existing scene from this home.");
         require(timing.nextAfter(message.getTimestamp(), home.get().timeZone()) != null, "Choose a future moment.");
     }
     @Apply Routine apply(@Nullable Routine routine, Home home, Message message) {

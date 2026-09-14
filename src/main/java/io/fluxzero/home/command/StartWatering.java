@@ -1,9 +1,18 @@
 package io.fluxzero.home.command;
 
+import io.fluxzero.home.model.Device;
 import io.fluxzero.home.model.DeviceId;
 import io.fluxzero.home.model.DeviceSetting;
+import io.fluxzero.home.model.Irrigation;
+import io.fluxzero.sdk.persisting.eventsourcing.Apply;
 
 /** Start watering a garden area. */
 public record StartWatering(DeviceId deviceId) implements DeviceCommand {
-    public DeviceSetting setting() { return new DeviceSetting.Irrigation(true); }
+    @Override
+    public DeviceSetting setting() { return new Irrigation(true); }
+
+    @Apply
+    Device apply(Device device) {
+        return device.withDesiredSettings(device.desiredSettings().with(setting()));
+    }
 }

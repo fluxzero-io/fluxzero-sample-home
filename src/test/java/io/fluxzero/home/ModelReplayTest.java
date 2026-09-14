@@ -1,8 +1,8 @@
 package io.fluxzero.home;
 
+import io.fluxzero.home.automation.RoutineSchedules;
 import io.fluxzero.home.command.*;
 import io.fluxzero.home.model.*;
-import io.fluxzero.home.automation.RoutineSchedules;
 import io.fluxzero.sdk.Fluxzero;
 import org.junit.jupiter.api.Test;
 
@@ -15,7 +15,7 @@ class ModelReplayTest {
                 .whenExecuting(f -> {
                     f.cache().clear();
                     assertEvening();
-                    assertEquals(1, Fluxzero.loadModel(EVENING).get().activationCount());
+                    assertEquals(evening().actions(), Fluxzero.loadModel(EVENING).get().actions());
                     assertEquals(3, Fluxzero.loadGraph(HOME).descendantModels(Device.class).size());
                 }).expectNoErrors();
     }

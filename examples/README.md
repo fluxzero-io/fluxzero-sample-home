@@ -2,7 +2,7 @@
 
 De JSON-commando's in deze map beschrijven een huis met een begane grond, woonkamer, tuin, leeslamp, verwarming en kamersensor. De scène *Een fijne avond* dimt de lamp en vraagt 21 °C. Een wekelijkse routine activeert die scène om 20:00 lokale tijd.
 
-Aanmaak- en definitiecommands gebruiken `details`. De voorbeelden gebruiken het huidige schema zonder expliciete schemarevisies of conversie van oude payloads.
+Aanmaak- en definitiecommands gebruiken `details`. Scèneacties hebben een eigen `kind`, zoals `dimLights` of `setHeating`, met een concrete waarde (`brightness` of `temperature`) en een doel zoals `{"kind":"space","spaceId":"example-living"}`. De voorbeelden gebruiken het huidige schema zonder expliciete schemarevisies of conversie van oude payloads.
 
 De bestanden staan in uitvoeringsvolgorde. De lokale ontwikkelconfiguratie laadt ze eenmaal per tijdelijke runtime. Ze bevatten geen echte apparaten of productiegegevens. Iedere nieuwe runtime begint opnieuw; de domeincommands weigeren bestaande identiteiten ongemerkt te overschrijven.
 

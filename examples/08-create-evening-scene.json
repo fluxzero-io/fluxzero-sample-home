@@ -8,7 +8,8 @@
         "kind": "space",
         "spaceId": "example-living"
       },
-      "setting": {
+      "kind": "dimLights",
+      "brightness": {
         "kind": "lightLevel",
         "percent": 25
       }
@@ -18,7 +19,8 @@
         "kind": "space",
         "spaceId": "example-living"
       },
-      "setting": {
+      "kind": "setHeating",
+      "temperature": {
         "kind": "temperature",
         "celsius": 21
       }
