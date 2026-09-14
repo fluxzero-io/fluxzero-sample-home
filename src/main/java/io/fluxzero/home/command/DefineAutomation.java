@@ -38,8 +38,8 @@ public record DefineAutomation(AutomationId automationId, HomeId homeId, @NotNul
             }
         }
     }
-    @Apply Automation apply(@Nullable Automation automation, Graph<Home> home, Message message) {
+    @Apply Automation apply(@Nullable Automation automation, Message message) {
         return new Automation(automationId, homeId, details, sceneId, trigger, cooldown, true, message.getTimestamp(),
-                trigger.sourceRevision(home), automation == null ? 0 : automation.executionCount(), automation == null ? null : automation.lastExecutedAt(), null);
+                automation == null ? 0 : automation.executionCount(), automation == null ? null : automation.lastExecutedAt(), null);
     }
 }

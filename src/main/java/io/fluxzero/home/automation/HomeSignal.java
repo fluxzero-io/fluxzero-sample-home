@@ -9,7 +9,7 @@ import java.time.Instant;
 import java.util.Map;
 
 /** Internal evidence of a committed change; it never pretends that a requested device setting was observed. */
-public record HomeSignal(DeviceStatusId statusId, long revision, Instant at, HomeMode beforeMode, HomeMode mode,
+public record HomeSignal(DeviceStatusId statusId, Instant at, HomeMode beforeMode, HomeMode mode,
                          Map<Measurement, BigDecimal> before, Map<Measurement, BigDecimal> readings) {
     public HomeSignal { before = Map.copyOf(before); readings = Map.copyOf(readings); }
     public boolean matches(AutomationTrigger trigger) {

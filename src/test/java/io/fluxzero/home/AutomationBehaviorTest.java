@@ -100,21 +100,34 @@ class AutomationBehaviorTest {
                     assertEquals(new BigDecimal("22"), Fluxzero.loadModel(new DeviceStatusId(SENSOR.getFunctionalId())).get().readings().get(Measurement.TEMPERATURE));
                 });
     }
-    @Test void resumingDoesNotRetroactivelyReactToAChangeWhilePaused() {
+    @Test void resumingWaitsForTheNextModeChange() {
         house(new HomeReactions()).givenCommands(evening(), onAway(), new PauseAutomation(REACTION),
                 new ChangeHomeMode(HOME, HomeMode.AWAY))
                 .whenCommand(new ResumeAutomation(REACTION)).expectNoErrors()
-                .andThen().whenEvent(new ChangeHomeMode(HOME, HomeMode.AWAY)).expectNoErrors()
                 .expectThat(f -> assertEquals(0, Fluxzero.loadModel(REACTION).get().executionCount()))
                 .andThen().whenCommand(new ChangeHomeMode(HOME, HomeMode.HOME)).expectNoErrors()
                 .andThen().whenCommand(new ChangeHomeMode(HOME, HomeMode.AWAY)).expectNoErrors()
                 .expectThat(f -> assertEquals(1, Fluxzero.loadModel(REACTION).get().executionCount()));
     }
 
-    @Test void duplicateSourceEventCannotRepeatAnActivation() {
-        house(new HomeReactions()).givenCommands(evening(), onAway(), new ChangeHomeMode(HOME, HomeMode.AWAY))
-                .whenEvent(new ChangeHomeMode(HOME, HomeMode.AWAY)).expectNoErrors()
-                .expectThat(f -> assertEquals(1, Fluxzero.loadModel(REACTION).get().executionCount()));
+    @ParameterizedTest @ValueSource(booleans = {false, true})
+    void renamingTheHomeDoesNotDiscardItsDeparture(boolean async) {
+        var departure = new HomeSignal(null, NOW, HomeMode.HOME, HomeMode.AWAY, Map.of(), Map.of());
+        (async ? asyncHouse() : house()).givenCommands(evening(), onAway(), new ChangeHomeMode(HOME, HomeMode.AWAY),
+                        new RenameHome(HOME, "Canal home"))
+                .whenCommand(new ReactToHome(REACTION, departure)).expectNoErrors()
+                .expectThat(f -> { assertEvening(); assertEquals(1, Fluxzero.loadModel(REACTION).get().executionCount()); });
+    }
+
+    @ParameterizedTest @ValueSource(booleans = {false, true})
+    void aLaterReadingAboveTheThresholdDoesNotDiscardTheCrossing(boolean async) {
+        var crossing = new HomeSignal(new DeviceStatusId(SENSOR.getFunctionalId()), NOW, null, null,
+                Map.of(Measurement.TEMPERATURE, new BigDecimal("23")),
+                Map.of(Measurement.TEMPERATURE, new BigDecimal("25")));
+        (async ? asyncHouse() : house()).givenCommands(evening(), onHeat(),
+                        temperature(NOW.minusSeconds(2), "23"), temperature(NOW.minusSeconds(1), "25"), temperature(NOW, "26"))
+                .whenCommand(new ReactToHome(REACTION, crossing)).expectNoErrors()
+                .expectThat(f -> { assertEvening(); assertEquals(1, Fluxzero.loadModel(REACTION).get().executionCount()); });
     }
 
     @Test void downwardCrossingCanActivateAScene() {

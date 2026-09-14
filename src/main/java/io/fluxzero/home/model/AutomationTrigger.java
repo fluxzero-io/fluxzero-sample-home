@@ -11,14 +11,6 @@ import java.math.BigDecimal;
     @JsonSubTypes.Type(value = AutomationTrigger.MeasurementCrosses.class, name = "measurementCrosses")
 })
 public sealed interface AutomationTrigger {
-    /** Current source revision when a rule is defined or resumed; existing evidence is not a new trigger. */
-    default long sourceRevision(io.fluxzero.sdk.modeling.Graph<Home> home) {
-        return switch (this) {
-            case HomeBecomes ignored -> home.revisionStateIndex();
-            case MeasurementCrosses trigger -> home.find(new DeviceStatusId(trigger.deviceId().getFunctionalId()), DeviceStatus.class)
-                    .map(io.fluxzero.sdk.modeling.Graph::revisionStateIndex).orElse(-1L);
-        };
-    }
     record HomeBecomes(HomeMode mode) implements AutomationTrigger {}
     record MeasurementCrosses(DeviceId deviceId, Measurement measurement, Direction direction,
                               BigDecimal threshold) implements AutomationTrigger {}

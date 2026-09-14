@@ -36,7 +36,9 @@ Een automatisering kan reageren wanneer het huis een bepaalde modus krijgt, of w
 
 Waarnemingen bewaren hun eigen eventgeschiedenis. De reactie vergelijkt de toestand vóór en na het betreffende rapport, ook na cachewissen of wanneer inmiddels nieuwere rapporten bestaan. Vorige meetwaarden worden niet als extra velden in het huidige rapport gekopieerd.
 
-De rustperiode beperkt herhaald activeren. De laatst verwerkte bronrevisie voorkomt dubbele verwerking. Een achterhaalde bronrevisie wordt genegeerd wanneer de bron intussen alweer is gewijzigd. Alleen veranderingen aan thuismodus en gemelde sensortoestand starten de reactie; de gewenste instellingen die uit de scène volgen voeden geen lus terug.
+De rustperiode beperkt herhaald activeren. Een latere bronwijziging maakt een eerdere overgang niet uitsluitend vanwege een nieuwe revisie ongeldig: een huis hernoemen wist bijvoorbeeld geen vertrek, en een volgende meting boven de grens wist de eerdere grensoverschrijding niet. Alleen veranderingen aan thuismodus en gemelde sensortoestand starten de reactie; de gewenste instellingen die uit de scène volgen voeden geen lus terug.
+
+Een gepauzeerde automatisering reageert niet. Hervatten activeert de bestaande situatie niet op zichzelf; een volgende passende verandering kan weer een scène activeren. De app houdt geen verwerkte bronrevisies of andere technische deduplicatieadministratie bij. Uitvoeringszekerheid bij herstel is een verantwoordelijkheid van SDK en Runtime. Volledige durable execution is voorzien, maar zit nog niet in de vastgelegde SDK-kandidaat; deze versie claimt daarom geen eenmaal-uitvoeringsgarantie bij opnieuw aangeboden events.
 
 Een onuitvoerbare reactie pauzeert de automatisering met een reden. Tijdelijke technische storingen worden niet als domeinfout vermomd: de Fluxzero-consumer kan die opnieuw proberen.
 

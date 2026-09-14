@@ -24,14 +24,14 @@ public class HomeReactions {
     @HandleEvent
     void changed(ChangeHomeMode event, Graph<Home> home, Message message) {
         var previous = home.previous();
-        react(home.get().homeId(), new HomeSignal(null, home.revisionStateIndex(), message.getTimestamp(),
+        react(home.get().homeId(), new HomeSignal(null, message.getTimestamp(),
                 previous == null || previous.get() == null ? null : previous.get().mode(), home.get().mode(), Map.of(), Map.of()));
     }
     @HandleEvent
     void observed(ReportDeviceStatus event, Graph<DeviceStatus> status, Message message) {
         var home = status.ancestor(Home.class).orElseThrow();
         var previous = status.previous();
-        react(home.get().homeId(), new HomeSignal(status.get().deviceStatusId(), status.revisionStateIndex(), message.getTimestamp(),
+        react(home.get().homeId(), new HomeSignal(status.get().deviceStatusId(), message.getTimestamp(),
                 null, null, previous == null || previous.isEmpty() ? Map.of() : previous.get().readings(), status.get().readings()));
     }
     private void react(HomeId homeId, HomeSignal signal) {
