@@ -76,7 +76,7 @@ Start daarna de ontwikkelomgeving:
 fz dev
 ```
 
-De ontwikkelomgeving start de bijpassende lokale SDK-runtime, de app en de gerichte tests. Dit is een backendproject; er is nog geen dashboard of openbare HTTP-bedieningslaag. De app heeft geen API-sleutels nodig. De [voorbeeldcommando’s](examples/README.md) beschrijven een klein huis dat de ontwikkelomgeving kan laden.
+De ontwikkelomgeving start de bijpassende lokale SDK-runtime, de app en de gerichte tests. Dit is een backendproject; er is nog geen dashboard of openbare HTTP-bedieningslaag. De kern en tests hebben geen API-sleutels nodig. Een optionele Home Assistant-koppeling gebruikt de configuratie van de gebruiker. De [voorbeeldcommando’s](examples/README.md) beschrijven een klein huis dat de ontwikkelomgeving kan laden.
 
 Voor CI of een expliciet volledige controle, buiten een actieve ontwikkelomgeving:
 
@@ -88,6 +88,8 @@ De SDK staat vast op `2.0.0-rc.11-local.9ae3f349a2a`, gebouwd uit `9ae3f349a2a94
 
 ## Fase 2
 
-De kern registreert intenties en verwerkt waarnemingen. Fysieke aansturing volgt via API-adapters voor drie bekende home automation-systemen. De selectie wordt in fase 2 onderbouwd op bekendheid, beschikbare API's en dekking; er zijn nu nog geen leveranciers gekozen of geïntegreerd.
+De eerste adapter koppelt [Home Assistant](docs/home-assistant.md): entities ontdekken, bewust aan apparaten koppelen, licht en schakelaars bedienen en sensormetingen teruglezen. Hij volgt de officiële REST API en is met een lokale HTTP-peer getest; echte hardware is niet nodig om het voorbeeld te draaien. De statusroute gebruikt Fluxzero-scheduling voor periodieke snapshots.
+
+[Matter en KNX](docs/standaarden.md) dienen als referentie voor apparaatfuncties en complete huisinstallaties. Home Assistant is de eerste praktische gateway. Directe merkadapters en een eigen Matter-controller zijn nog niet geïmplementeerd.
 
 [De integratiegrens](docs/integratiegrens.md) beschrijft waar die adapters komen, inclusief bevestigingen, onbekende apparaatmogelijkheden en de identiteit van de gebruiker. De huidige commands en queries zijn voor vertrouwde applicatiecomponenten; de huishoudrol is domeininformatie en vormt nog geen toegangscontrole voor een openbare API.

@@ -88,3 +88,13 @@ Deze app is nog niet uitgerold en begint met het huidige details-schema. Er zijn
 Gewone event-sourced replay en historische waarnemingen blijven onderdeel van het domein. Automatiseringen vergelijken eventgebonden vóór/na-toestand, zonder eigen bronrevisies voor deduplicatie of een eis dat de bron sindsdien ongewijzigd is gebleven. De gedragstests controleren triggers, rustperiodes en pauzeren; technische herafleveringsgaranties behoren bij SDK en Runtime. Volledige durable execution is nog geen garantie van de vastgelegde kandidaat. Routinegeneraties blijven de identiteit van een herplanning onderscheiden en zijn geen schemarevisies. Herladen, vorige metingen en schedulecleanup blijven afgedekt. Retentie van waarnemingen blijft een afzonderlijke productkeuze.
 
 De kandidaat is geen openbare SDK-release. Lokale builds gebruiken de meegegeven SDK-repository. CI en deployment moeten dezelfde commit uit de SDK-repository kunnen ophalen. Vervang de lokale versie pas door een gepubliceerde SDK-versie die deze commit bevat.
+
+## Home Assistant: gecommitteerde wensen en externe waarnemingen
+
+`HomeAssistantConnection` is een Model onder Home. `HomeAssistantDevice` heeft zowel Device als verbinding als parent: zij houdt op te bestaan zodra één van beide verdwijnt. Het apparaat wordt niet verwijderd wanneer zijn verbinding verdwijnt. De samengestelde entity-alias bevat de verbindingsidentiteit en voorkomt dubbele koppeling binnen die installatie. Beide Models blijven gewone event-sourced Models.
+
+`LinkHomeAssistantDevice` heeft een eigen `@TrackSelf`-commandhandler: hij haalt de actuele API-mogelijkheden op en past daarna één Modelcommand toe. De gateway wordt via `@Autowired` als handlerparameter geleverd; de fixture gebruikt daarvoor `withBean`. De checks voor huisgrenzen en modelbestaan blijven in de Modelpipeline.
+
+De post-commit eventconsumer levert apparaatinstellingen af. Een herpoging bevat alleen apparaat en verbinding en leest met `loadCurrentGraph` de actuele wens. Door de Device-Graph naar haar gekoppelde Model en status te navigeren blijft ook een nog afwezige of verwijderde koppeling een normale lege relatie.
+
+`RefreshHomeAssistant` en `DeliverHomeAssistantSettings` tonen schedule-ownership voor externe systemen. Een refresh produceert complete, gewijzigde `ReportDeviceStatus`-waarnemingen, zodat de bestaande eventgebonden automatiseringen zonder leverancierslogica blijven werken. `AcceptHomeAssistantObservation` controleert de nog gekozen route vóór het rapport in dezelfde Modelpipeline wordt toegepast. Zie de [integratiehandleiding](home-assistant.md) voor fysieke aflevering, polling en de grenzen van deze SDK-kandidaat.
