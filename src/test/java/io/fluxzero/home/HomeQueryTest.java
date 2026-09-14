@@ -53,7 +53,7 @@ class HomeQueryTest {
         var otherLight = new DeviceId("other-light");
         (asynchronous ? asyncHouse() : house()).givenCommands(
                 new CreateHome(otherHome, new HomeDetails("Other home"), AMSTERDAM),
-                new AddSpace(otherRoom, otherHome, null, new SpaceDetails("Other room", SpaceKind.ROOM)),
+                new AddSpace(otherRoom, otherHome, new SpaceDetails("Other room", SpaceKind.ROOM)),
                 new AddDevice(otherLight, otherRoom, new DeviceDetails("Other light"), null, Set.of(Capability.POWER, Capability.LIGHT_LEVEL), Set.of()))
                 .whenQuery(new FindDevices(HOME, Capability.LIGHT_LEVEL))
                 .expectResult((List<Device> devices) -> ids(devices).equals(Set.of(LIGHT)))
@@ -101,7 +101,7 @@ class HomeQueryTest {
         (asynchronous ? asyncHouse(new HomeReactions()) : house(new HomeReactions())).givenCommands(
                 evening(), new DefineAutomation(REACTION, HOME, new AutomationDetails("Leaving home"), EVENING, trigger, Duration.ZERO),
                 new CreateHome(otherHome, new HomeDetails("Other home"), AMSTERDAM),
-                new AddSpace(otherRoom, otherHome, null, new SpaceDetails("Other room", SpaceKind.ROOM)),
+                new AddSpace(otherRoom, otherHome, new SpaceDetails("Other room", SpaceKind.ROOM)),
                 new AddDevice(otherLight, otherRoom, new DeviceDetails("Other light"), null, Set.of(Capability.LIGHT_LEVEL), Set.of()),
                 new DefineScene(otherScene, otherHome, new SceneDetails("Other evening"), List.of(
                         new DimLights(new OneDevice(otherLight), new LightLevel(10)))),

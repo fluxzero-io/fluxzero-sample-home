@@ -20,7 +20,7 @@ class DetailsBehaviorTest {
                 .whenCommand(new RenameSpace(LIVING, "Study")).expectNoErrors()
                 .expectThat(f -> {
                     f.cache().clear();
-                    assertEquals(new Space(LIVING, HOME, FLOOR, new SpaceDetails("Study", SpaceKind.ROOM), LIGHT),
+                    assertEquals(new Space(LIVING, FLOOR, new SpaceDetails("Study", SpaceKind.ROOM), LIGHT),
                             Fluxzero.loadModel(LIVING).get());
                 });
     }
@@ -42,7 +42,7 @@ class DetailsBehaviorTest {
         for (String name : new String[]{null, " ", "x".repeat(121)}) {
             Object[] commands = {
                     new CreateHome(new HomeId("invalid"), new HomeDetails(name), AMSTERDAM),
-                    new AddSpace(new SpaceId("invalid"), HOME, null, new SpaceDetails(name, SpaceKind.ROOM)),
+                    new AddSpace(new SpaceId("invalid"), HOME, new SpaceDetails(name, SpaceKind.ROOM)),
                     new AddDevice(new DeviceId("invalid"), LIVING, new DeviceDetails(name), null, Set.of(Capability.POWER), Set.of()),
                     new AddResident(new ResidentId("invalid"), HOME, new ResidentDetails(name), HouseholdRole.OWNER),
                     new DefineZone(new io.fluxzero.home.model.ZoneId("invalid"), HOME, new ZoneDetails(name), Set.of(LIVING)),
@@ -55,11 +55,11 @@ class DetailsBehaviorTest {
                 fixture.whenCommand(command).expectExceptionalResult(ValidationException.class).expectNoEvents().andThen();
             }
         }
-        fixture.whenCommand(new AddSpace(new SpaceId("invalid"), HOME, null, new SpaceDetails("Attic", null)))
+        fixture.whenCommand(new AddSpace(new SpaceId("invalid"), HOME, new SpaceDetails("Attic", null)))
                 .expectExceptionalResult(ValidationException.class).expectNoEvents().andThen();
         Object[] missing = {
                 new CreateHome(new HomeId("invalid"), null, AMSTERDAM),
-                new AddSpace(new SpaceId("invalid"), HOME, null, null),
+                new AddSpace(new SpaceId("invalid"), HOME, null),
                 new AddDevice(new DeviceId("invalid"), LIVING, null, null, Set.of(Capability.POWER), Set.of()),
                 new AddResident(new ResidentId("invalid"), HOME, null, HouseholdRole.OWNER),
                 new DefineZone(new io.fluxzero.home.model.ZoneId("invalid"), HOME, null, Set.of(LIVING)),

@@ -112,7 +112,7 @@ class AutomationDefinitionTest {
     private static TestFixture twoHomes(boolean async) {
         return (async ? asyncHouse() : house()).givenCommands(evening(),
                 new CreateHome(OTHER_HOME, new HomeDetails("Other home"), AMSTERDAM),
-                new AddSpace(OTHER_ROOM, OTHER_HOME, null, new SpaceDetails("Other room", SpaceKind.ROOM)),
+                new AddSpace(OTHER_ROOM, OTHER_HOME, new SpaceDetails("Other room", SpaceKind.ROOM)),
                 new AddDevice(OTHER_DEVICE, OTHER_ROOM, new DeviceDetails("Other device"), null,
                         Set.of(Capability.LIGHT_LEVEL), Set.of(Measurement.TEMPERATURE)),
                 new DefineScene(OTHER_SCENE, OTHER_HOME, new SceneDetails("Other evening"),

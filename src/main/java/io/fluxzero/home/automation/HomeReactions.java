@@ -26,7 +26,7 @@ public class HomeReactions {
     @HandleEvent
     void changed(ChangeHomeMode event, Graph<Home> home, Message message) {
         var previous = home.previous();
-        react(home.get().homeId(), new HomeModeChanged(message.getTimestamp(),
+        react(home.get().id(), new HomeModeChanged(message.getTimestamp(),
                 previous == null || previous.isEmpty() ? null : previous.get().mode(), home.get().mode()));
     }
 
@@ -34,7 +34,7 @@ public class HomeReactions {
     void observed(ReportDeviceStatus event, Graph<DeviceStatus> status, Message message) {
         var home = status.ancestor(Home.class).orElseThrow();
         var previous = status.previous();
-        react(home.get().homeId(), new DeviceObservationChanged(status.get().deviceId(), message.getTimestamp(),
+        react(home.get().id(), new DeviceObservationChanged(status.get().deviceId(), message.getTimestamp(),
                 previous == null || previous.isEmpty() ? Map.of() : previous.get().readings(), status.get().readings()));
     }
 

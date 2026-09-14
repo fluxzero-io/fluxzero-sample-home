@@ -96,7 +96,7 @@ class SceneBehaviorTest {
             if (event.brightness().percent() == 25) {
                 // Event injection intentionally pins this individual event. Check the complete durable commit
                 // through an explicitly current view, as a live reader would see it.
-                home = Fluxzero.loadCurrentGraph(home.get().homeId());
+                home = Fluxzero.loadCurrentGraph(home.get().id());
                 assertEquals(new RoomTemperature(new BigDecimal("21")),
                         home.find(HEAT, Device.class).orElseThrow().get().desiredSettings().get(Capability.TEMPERATURE));
             }

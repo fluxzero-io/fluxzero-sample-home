@@ -1,10 +1,12 @@
 {
   "@class": "AddSpace",
   "spaceId": "example-floor",
-  "homeId": "example-home",
-  "enclosingSpaceId": null,
   "details": {
     "name": "Begane grond",
     "kind": "FLOOR"
-  }
+  },
+  "parentId": [
+    "home",
+    "example-home"
+  ]
 }

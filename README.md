@@ -37,6 +37,8 @@ Begin bij [Het huis als domein](docs/domein.md), daarna bij [Scènes en tijd](do
 
 Beschrijvende gegevens zitten in eigen waarden zoals `HomeDetails`, `SpaceDetails` en `DeviceDetails`. Invoerconstraints worden vooraf gevalideerd; model- en relatiecontroles volgen pas daarna. Aanmaak- en definitiecommands ontvangen die waarden; een gerichte hernoeming verandert alleen de naam. Deze nog niet uitgerolde voorbeeldapp gebruikt het huidige schema zonder upcasters of expliciete schemarevisies. Begin met een nieuwe tijdelijke runtime als een schemawijziging oude lokale voorbeelddata onbruikbaar maakt.
 
+`Home` en `Space` delen het `Place`-contract. Een ruimte heeft één ouder: `new AddSpace(livingRoom, groundFloor, details)` of rechtstreeks `new AddSpace(garden, home, details)`. `new MoveSpace(livingRoom, home)` plaatst haar met inhoud terug onder het huis. De huisrelatie volgt uit de indeling; er is geen tweede opgeslagen huis-ID op de ruimte.
+
 Alle modellen gebruiken gewone `@Model`. Ook apparaatwaarnemingen bewaren historie, zodat automatiseringen vorige en nieuwe metingen kunnen vergelijken. Apparaatzoeken en automatiseringen gebruiken de relaties binnen een bekend huis; daarvoor onderhouden de bestaande compositiepaden de benodigde interne documenten. De [uitleg over opslag en zoeken](docs/sdk-2.md#opslag-en-zoeken-in-dit-huis) maakt de keuzes concreet.
 
 Een comfortabele avond is bijvoorbeeld:

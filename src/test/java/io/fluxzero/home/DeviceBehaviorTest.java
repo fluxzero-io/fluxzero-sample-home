@@ -34,7 +34,7 @@ class DeviceBehaviorTest {
     @ParameterizedTest @MethodSource("intentions")
     void everydayCommandsKeepIntentSeparateFromObservation(DeviceCommand command) {
         TestFixture.create().givenCommands(new CreateHome(HOME, new HomeDetails("Home"), AMSTERDAM),
-                new AddSpace(LIVING, HOME, null, new SpaceDetails("Living", SpaceKind.ROOM)),
+                new AddSpace(LIVING, HOME, new SpaceDetails("Living", SpaceKind.ROOM)),
                 new AddDevice(LIGHT, LIVING, new DeviceDetails("Multifunction device"), null, EnumSet.allOf(Capability.class), Set.of()))
                 .whenCommand(command).expectOnlyEvents(command).expectThat(f -> {
                     assertEquals(command.setting(), Fluxzero.loadModel(LIGHT).get().desiredSettings().get(command.setting().capability()));

@@ -8,7 +8,7 @@ De build importeert `io.fluxzero:fluxzero-bom:2.0.0-rc.11-local.9ae3f349a2a`, ee
 | Cohesieve details | Acht details-value-objects met gevalideerde commandinvoer en gerichte wijzigingen die andere gegevens behouden. |
 | Getypeerde `Id<T>` | De naamruimte van iedere soort ID voorkomt botsingen tussen bijvoorbeeld een kamer en lamp met dezelfde naam. |
 | Automatische commandafhandeling | Commands dragen hun eigen `@Apply`; er zijn geen doorgeefhandlers met handmatig laden en opslaan. |
-| `@Parent` en recursieve relaties | Ruimtes vormen een vrije boom; apparaten blijven zelfstandige kinderen van hun ruimte. |
+| `@Parent` en recursieve relaties | `Space.parentId` kiest één Home of Space via `PlaceId<?>`; de gedeclareerde parenttypes en het pad `spaces` behouden de vrije boom. |
 | Luie, consistente `Graph<T>` | Huisgrenzen, zoneselectie, scènedoelen en verwijdervoorwaarden lezen alleen de benodigde relaties. |
 | Interceptie en atomaire meerdere Models | `ActivateScene` breidt de bedoeling uit tot gewone apparaatcommands en de activatie zelf binnen één commit. |
 | RC10: schrijven naar bestaande ouders | `RemoveDevice` wist een apparaat én corrigeert het primaire licht van de bestaande kamer, zonder haar ID in het command. `@Association("devices")` onderscheidt de kamer van bovenliggende ruimtes. |
@@ -16,7 +16,7 @@ De build importeert `io.fluxzero:fluxzero-bom:2.0.0-rc.11-local.9ae3f349a2a`, ee
 | Gedelegeerde Modelassertions | `@AssertLegal` op `DefineAutomation.trigger` laat de concrete `MeasurementCrosses` zelf haar sensor en meetmogelijkheid controleren via de gepinde huis-Graph. |
 | Expliciete eventpublicatie | `ActivateScene` gebruikt `@Apply(eventPublication = ALWAYS)` en retourneert de bestaande scène: activatiehistorie zonder gekopieerde auditvelden. |
 | Doelgerichte opslag en historie | Alle negen Models gebruiken gewone `@Model`. Ook apparaatwaarnemingen hebben historie nodig voor het herkennen van grensoverschrijdingen. |
-| Creationcompatibiliteit en optionele relaties | De SDK weigert dubbele creatie; `AddSpace` injecteert zijn optionele bovenliggende ruimte en bewaakt zelf de huisgrens. |
+| Creationcompatibiliteit en relaties | De SDK weigert dubbele creatie; `AddSpace` vereist één bestaande bestemming. `MoveSpace` bewaakt het oorspronkelijke huis. |
 | Complete Graph-change-handlers | `RoutineSchedules` reconcilieert status en deadlines vanuit de actuele routine, ook na een ouder event. |
 | Schedules met `@Parent` | `RunRoutine.routineId` koppelt een uitvoering aan de levensduur van haar Routine. Directe en cascaderende verwijdering annuleren opgeslagen uitvoeringen zonder applicatiecleanup. |
 | Relatiebewust zoeken | `FindDevices` selecteert via `whereAncestor(homeId)` en de gevraagde mogelijkheid. |
@@ -64,7 +64,11 @@ Een scène blijft uit gewone apparaatcommands bestaan. Dat geeft herkenbare gebe
 
 Dubbele `CreateHome`, `AddSpace`, `AddDevice` en `AddResident` worden door de SDK functioneel afgewezen. Daarvoor staan geen extra `requireNew`-assertions meer in de app. Commands die herdefinitie bedoelen, zoals `DefineScene` en `PlanRoutine`, hebben expliciet een nullable huidige Modelparameter. De app bewaakt nog steeds haar eigen businessregels. De vernieuwde apparaat- en scèneroute gebruikt declaratieve invoerconstraints en `IllegalCommandException`; andere domeinregels gebruiken nog `HomeRuleViolation`, eveneens een `FunctionalException`.
 
-`AddSpace` onderscheidt een bewust ontbrekende bovenliggende ruimte van een opgegeven maar onbekende ruimte. Nullable injectie maakt beide technisch mogelijk; de domeinassertion weigert een onbekende identiteit of een ruimte uit een ander huis.
+`Home` en `Space` implementeren het zuivere `Place`-contract met alleen `id()`. `HomeId` en `SpaceId` vormen de gesloten `PlaceId`-familie. `Space.parentId` declareert beide concrete Models als `@Parent(types = {Home.class, Space.class}, pathInParent = "spaces")`; het bijbehorende huis wordt niet dubbel opgeslagen. `MoveSpace` leest de Graph van de bestaande ruimte en zoekt de bestemming binnen haar oorspronkelijke huis, inclusief de huisroot zelf.
+
+Op deze SDK-pin is `Place` geen zelfstandig `@Model`: injectie van het gedeelde interfacetype botst met de concrete types in de Modelcache. Daarom controleert `AddSpace` de verplichte ouder in een kleine `@AssertLegal` via `Fluxzero.loadModel(parentId)`, dat het concrete ID-type gebruikt. De apply maakt alleen de ruimte. Er is geen eigen resolver of uitvoeringslaag.
+
+Een polymorfe `parentId` gebruikt JSON `["home", "example-home"]` of `["space", "example-floor"]`. Gewone `HomeId`- en `SpaceId`-velden blijven scalars. `PlaceId` laat Jackson de concrete subtypeconstructor kiezen met type-info en `@JsonCreator`; de standaard ID-deserializer van de gepinde SDK probeert anders de abstracte ID-basis zelf te construeren.
 
 `ReactToHome` en `RunRoutine` gebruiken `Fluxzero.assertLegal(new ActivateScene(...))` om een onuitvoerbare scène functioneel te laten pauzeren. Dat gebruikt dezelfde commandcontroles als de activatie; het voert geen `@Apply` of after-handlercontroles uit. Daarna committen de echte apparaatcommands en de voortgang samen. De huidige scènecommands hebben geen aanvullende afwijzingsregels in die latere fasen. Deze voorcontrole is geen volledige proefuitvoering.
 

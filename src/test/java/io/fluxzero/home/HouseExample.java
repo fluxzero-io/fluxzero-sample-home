@@ -44,9 +44,9 @@ final class HouseExample {
     static TestFixture populate(TestFixture fixture) {
         return fixture.atFixedTime(NOW).withProperty("fluxzero.defaults.version", "2026.09.10")
             .givenCommands(new CreateHome(HOME, new HomeDetails("Canal house"), AMSTERDAM),
-                new AddSpace(FLOOR, HOME, null, new SpaceDetails("Ground floor", SpaceKind.FLOOR)),
-                new AddSpace(LIVING, HOME, FLOOR, new SpaceDetails("Living room", SpaceKind.ROOM)),
-                new AddSpace(GARDEN, HOME, null, new SpaceDetails("Garden", SpaceKind.OUTDOOR)),
+                new AddSpace(FLOOR, HOME, new SpaceDetails("Ground floor", SpaceKind.FLOOR)),
+                new AddSpace(LIVING, FLOOR, new SpaceDetails("Living room", SpaceKind.ROOM)),
+                new AddSpace(GARDEN, HOME, new SpaceDetails("Garden", SpaceKind.OUTDOOR)),
                 new AddDevice(LIGHT, LIVING, new DeviceDetails("Reading light"), "reading-light", Set.of(Capability.POWER, Capability.LIGHT_LEVEL), Set.of()),
                 new AddDevice(HEAT, LIVING, new DeviceDetails("Heating"), null, Set.of(Capability.TEMPERATURE), Set.of()),
                 new AddDevice(SENSOR, LIVING, new DeviceDetails("Room sensor"), null, Set.of(), Set.of(Measurement.TEMPERATURE, Measurement.MOTION)));

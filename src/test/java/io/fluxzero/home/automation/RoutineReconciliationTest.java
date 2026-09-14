@@ -36,7 +36,7 @@ class RoutineReconciliationTest {
                 .atFixedTime(now).withProperty("fluxzero.defaults.version", "2026.09.10");
         Object[] homeCommands = {
                 new CreateHome(home, new HomeDetails("Home"), ZoneId.of("Europe/Amsterdam")),
-                new AddSpace(space, home, null, new SpaceDetails("Room", SpaceKind.ROOM)),
+                new AddSpace(space, home, new SpaceDetails("Room", SpaceKind.ROOM)),
                 new AddDevice(light, space, new DeviceDetails("Light"), null, Set.of(Capability.POWER), Set.of()),
                 new DefineScene(scene, home, new SceneDetails("Evening"), List.of(new SwitchPower(new OneDevice(light), new Power(false))))
         };

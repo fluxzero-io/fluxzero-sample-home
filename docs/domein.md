@@ -26,7 +26,9 @@ Identiteit en relaties staan op het Model. Het apparaatlabel blijft een alternat
 
 ## Indeling en grenzen
 
-Een ruimte heeft een `homeId` en eventueel een `enclosingSpaceId`. De daadwerkelijke ouder is óf het huis óf die andere ruimte. Daardoor verschijnt iedere ruimte op precies één plek in de huis-Graph. De SDK weigert concrete cycli; de app weigert verplaatsen tussen verschillende huizen.
+`Home` en `Space` zijn allebei een `Place`, met een getypeerde `id`. Een ruimte bewaart één verplichte `parentId`: een `HomeId` of `SpaceId`. `AddSpace` vraagt alleen deze bestemming en de beschrijving. Het bijbehorende huis volgt uit de ouders in de Graph; een los opgegeven huis kan de indeling niet tegenspreken. Iedere ruimte verschijnt op precies één plek in de huis-Graph.
+
+`MoveSpace` gebruikt dezelfde bestemming: een andere ruimte of expliciet het eigen huis. Inhoud verhuist mee. De SDK weigert concrete cycli; de app weigert een bestemming buiten het oorspronkelijke huis. Een zone is geen Place-ouder: zij groepeert ruimtes die hun eigen plaats behouden.
 
 Apparaten behoren aan hun ruimte. Een verplaatsing ruimt ook de voorkeur voor het primaire licht in de oude kamer op. `RemoveDevice` kan dezelfde voorkeur via de bestaande ouderrelatie opruimen, zonder een ruimte-ID in het command. Een expliciete apparaatverwijzing uit een scène of sensortrigger voorkomt verwijdering tot die verwijzing is opgeruimd.
 
