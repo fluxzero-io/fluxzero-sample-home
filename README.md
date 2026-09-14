@@ -54,6 +54,8 @@ Onder dezelfde scène zitten gewone handelingen zoals `DimLight` en `SetRoomTemp
 
 Automatiseringen kiezen een concrete aanleiding zoals `new HomeBecomes(HomeMode.AWAY)` of een `MeasurementCrosses` voor een sensor. Elke trigger beschrijft zelf welke verandering telt en bewaakt haar eigen voorwaarden. `DefineAutomation` koppelt die aanleiding aan een scène en een rustperiode.
 
+Routines kiezen `new Once(moment)` of bijvoorbeeld `new Weekly(Set.of(DayOfWeek.MONDAY), LocalTime.of(20, 0))`. De concrete tijdpatronen dragen hun eigen kalenderregels; `RoutineTiming` beschrijft alleen hun contract.
+
 ## Lokaal gebruiken
 
 Vereist: Git, de Fluxzero CLI en Java 25. De Maven Wrapper zit in de repository.

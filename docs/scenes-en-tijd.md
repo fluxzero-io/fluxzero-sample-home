@@ -18,6 +18,16 @@ Dat is een garantie over de kern. Latere fysieke apparaten kunnen afzonderlijk b
 
 `PlanRoutine` legt zowel het patroon als de concrete volgende uitvoering vast. Een post-commit consumer brengt de scheduler in overeenstemming met de actuele routine. Een opnieuw afgeleverd oud event kan daardoor geen gepauzeerde routine opnieuw plannen.
 
+```java
+new PlanRoutine(appointment, home, new RoutineDetails("Eenmalig comfort"),
+        evening, new Once(moment));
+
+new PlanRoutine(weekRhythm, home, new RoutineDetails("Vaste avonden"),
+        evening, new Weekly(Set.of(DayOfWeek.MONDAY, DayOfWeek.WEDNESDAY), LocalTime.of(20, 0)));
+```
+
+`RoutineTiming` bevat uitsluitend het contract voor de volgende uitvoering. `Once` bewaart één absoluut tijdstip en is daarna klaar. `Weekly` kiest zelf de eerstvolgende gekozen weekdag en lokale tijd in de tijdzone van het huis. Die kalenderregel staat bij het concrete patroon. Beide patronen zoeken strikt ná het opgegeven moment; een eenmalige afspraak voor precies nu wordt bij het plannen afgewezen. Invoerconstraints staan op de concrete waarden.
+
 Elke routine heeft één stabiele schedule-identiteit en een oplopende generatie. Een uitvoering controleert generatie, deadline en pauzestand. Vroege, dubbele of verouderde afleveringen veranderen niets. De scène en het afronden of doorschuiven van de routine worden samen gecommit.
 
 - Een eenmalige routine eindigt na uitvoering.
@@ -29,6 +39,8 @@ Elke routine heeft één stabiele schedule-identiteit en een oplopende generatie
 - Herplannen vervangt het actieve tijdstip en maakt de vorige generatie ongeldig.
 - Pauzeren annuleert de volgende uitvoering via de routineconsumer.
 - `RunRoutine` verwijst met `@Parent` naar haar routine. De SDK annuleert opgeslagen uitvoeringen bij verwijdering van die routine, ook wanneer haar huis cascaderend wordt verwijderd en de routineconsumer niet actief is.
+
+Ook een nieuwe planning nadat de eerste gelegenheid van een dubbel lokaal tijdstip voorbij is, slaat de tweede over en kiest de volgende passende datum. De opgeslagen JSON-patronen behouden de namen `once` en `weekly`.
 
 Deze automatische annulering is asynchroon en trekt reeds afgeleverde opdrachten niet terug. Daarom blijven de controles op actuele toestand, generatie en deadline nodig. Een nieuwe routine met hetzelfde ID krijgt een nieuwe levensduur: een eerder opgeslagen uitvoering kan niet opnieuw aan die nieuwe routine worden gekoppeld.
 

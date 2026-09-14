@@ -61,7 +61,7 @@ final class HouseExample {
                 DeviceSettings.empty(), Map.of(Measurement.TEMPERATURE, new BigDecimal(value)));
     }
     static PlanRoutine once(Instant due) {
-        return new PlanRoutine(BEDTIME, HOME, new RoutineDetails("Evening comfort"), EVENING, new RoutineTiming.Once(due));
+        return new PlanRoutine(BEDTIME, HOME, new RoutineDetails("Evening comfort"), EVENING, new Once(due));
     }
     static Predicate<Schedule> scheduled(long generation, Instant due) {
         return s -> s.getScheduleId().equals(RoutineSchedules.scheduleId(BEDTIME).toString()) && s.getDeadline().equals(due)

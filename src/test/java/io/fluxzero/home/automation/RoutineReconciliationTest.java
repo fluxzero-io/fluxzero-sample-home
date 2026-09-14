@@ -41,11 +41,11 @@ class RoutineReconciliationTest {
                 new DefineScene(scene, home, new SceneDetails("Evening"), List.of(new SwitchPower(new OneDevice(light), new Power(false))))
         };
         fixture.givenCommands(homeCommands)
-                .givenCommands(new PlanRoutine(routine, home, new RoutineDetails("Old"), scene, new RoutineTiming.Once(now.plusSeconds(60))))
+                .givenCommands(new PlanRoutine(routine, home, new RoutineDetails("Old"), scene, new Once(now.plusSeconds(60))))
                 .whenCommand(new RemoveHome(home)).expectNoErrors().expectNoSchedules().andThen();
         var newDue = now.plus(Duration.ofHours(2));
         fixture.givenCommands(homeCommands)
-                .givenCommands(new PlanRoutine(routine, home, new RoutineDetails("New"), scene, new RoutineTiming.Once(newDue)))
+                .givenCommands(new PlanRoutine(routine, home, new RoutineDetails("New"), scene, new Once(newDue)))
                 // Supplemental consumer-replay probe with the actual historical graph captured above.
                 .whenExecuting(f -> {
                     assertNotNull(oldDeletion.get());

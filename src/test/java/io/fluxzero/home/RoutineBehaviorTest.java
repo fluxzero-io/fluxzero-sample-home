@@ -1,23 +1,27 @@
 package io.fluxzero.home;
 
 import io.fluxzero.common.api.scheduling.ScheduleAutoCancelled;
-import io.fluxzero.home.automation.*;
-import io.fluxzero.home.command.*;
-import io.fluxzero.home.model.*;
-import io.fluxzero.home.query.*;
+import io.fluxzero.home.automation.RoutineSchedules;
+import io.fluxzero.home.automation.RunRoutine;
+import io.fluxzero.home.command.PauseRoutine;
+import io.fluxzero.home.command.PlanRoutine;
+import io.fluxzero.home.command.RemoveDevice;
+import io.fluxzero.home.command.RemoveHome;
+import io.fluxzero.home.command.RemoveRoutine;
+import io.fluxzero.home.command.ResumeRoutine;
+import io.fluxzero.home.model.HomeRuleViolation;
+import io.fluxzero.home.model.RoutineDetails;
+import io.fluxzero.home.model.Weekly;
 import io.fluxzero.sdk.Fluxzero;
-import io.fluxzero.sdk.modeling.*;
-import io.fluxzero.sdk.scheduling.Schedule;
-import io.fluxzero.sdk.test.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.*;
+import org.junit.jupiter.params.provider.ValueSource;
 
-import java.math.BigDecimal;
-import java.time.*;
-import java.util.*;
-import java.util.function.Predicate;
-import java.util.stream.Stream;
+import java.time.DayOfWeek;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalTime;
+import java.util.Set;
 
 import static io.fluxzero.home.HouseExample.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -63,7 +67,7 @@ class RoutineBehaviorTest {
                 .whenCommand(new RunRoutine(BEDTIME, 1, due)).expectNoEvents().expectOnlyActiveScheduledCommands(scheduled(1, due));
     }
     @Test void weeklyRoutineResumesAtNextMoment() {
-        var timing = new RoutineTiming.Weekly(Set.of(DayOfWeek.MONDAY), LocalTime.of(20, 0));
+        var timing = new Weekly(Set.of(DayOfWeek.MONDAY), LocalTime.of(20, 0));
         var due = Instant.parse("2026-09-14T18:00:00Z");
         house(new RoutineSchedules()).givenCommands(evening(), new PlanRoutine(BEDTIME, HOME, new RoutineDetails("Monday"), EVENING, timing), new PauseRoutine(BEDTIME))
                 .whenCommand(new ResumeRoutine(BEDTIME)).expectOnlyActiveScheduledCommands(scheduled(3, due))
@@ -73,18 +77,32 @@ class RoutineBehaviorTest {
                 .<ScheduleAutoCancelled>expectMetric(metric -> metric.deadline() == due.plus(Duration.ofDays(7)).toEpochMilli()
                         && metric.scheduleId().equals(RoutineSchedules.scheduleId(BEDTIME).toString()));
     }
-    @Test void invalidPastRoutineCreatesNoWork() {
-        house(new RoutineSchedules()).givenCommands(evening()).whenCommand(once(NOW.minusSeconds(1)))
+    @ParameterizedTest
+    @ValueSource(longs = {-1, 0})
+    void oneOffMustBeStrictlyInTheFuture(long secondsFromNow) {
+        house(new RoutineSchedules()).givenCommands(evening()).whenCommand(once(NOW.plusSeconds(secondsFromNow)))
                 .expectExceptionalResult(HomeRuleViolation.class).expectNoEvents().expectNoSchedules();
     }
+
+    @Test
+    void weeklySelectsTheNextChosenDayStrictlyAfterNow() {
+        var timing = new Weekly(Set.of(DayOfWeek.WEDNESDAY, DayOfWeek.MONDAY), LocalTime.NOON);
+        var wednesday = Instant.parse("2026-09-16T10:00:00Z");
+        var monday = Instant.parse("2026-09-21T10:00:00Z");
+        house(new RoutineSchedules()).givenCommands(evening())
+                .whenCommand(new PlanRoutine(BEDTIME, HOME, new RoutineDetails("Twice a week"), EVENING, timing))
+                .expectOnlyActiveScheduledCommands(scheduled(1, wednesday))
+                .andThen().whenTimeAdvancesTo(wednesday).expectNoErrors()
+                .expectOnlyActiveScheduledCommands(scheduled(2, monday));
+    }
     @Test void springClockGapIsSkipped() {
-        var timing = new RoutineTiming.Weekly(Set.of(DayOfWeek.SUNDAY), LocalTime.of(2, 30));
+        var timing = new Weekly(Set.of(DayOfWeek.SUNDAY), LocalTime.of(2, 30));
         house(new RoutineSchedules()).givenCommands(evening()).atFixedTime(Instant.parse("2026-03-28T12:00:00Z"))
                 .whenCommand(new PlanRoutine(BEDTIME, HOME, new RoutineDetails("Sunday"), EVENING, timing))
                 .expectOnlyActiveScheduledCommands(scheduled(1, Instant.parse("2026-04-05T00:30:00Z")));
     }
     @Test void autumnClockOverlapRunsOnlyOnce() {
-        var timing = new RoutineTiming.Weekly(Set.of(DayOfWeek.SUNDAY), LocalTime.of(2, 30));
+        var timing = new Weekly(Set.of(DayOfWeek.SUNDAY), LocalTime.of(2, 30));
         var due = Instant.parse("2026-10-25T00:30:00Z");
         house(new RoutineSchedules()).givenCommands(evening()).atFixedTime(Instant.parse("2026-10-24T12:00:00Z"))
                 .whenCommand(new PlanRoutine(BEDTIME, HOME, new RoutineDetails("Sunday"), EVENING, timing)).expectOnlyActiveScheduledCommands(scheduled(1, due))
@@ -92,6 +110,32 @@ class RoutineBehaviorTest {
                 .expectOnlyActiveScheduledCommands(scheduled(2, Instant.parse("2026-11-01T01:30:00Z")))
                 .andThen().whenTimeAdvancesTo(due.plusSeconds(3600)).expectNoEvents()
                 .expectThat(f -> assertEquals(1, Fluxzero.loadModel(BEDTIME).get().executionCount()));
+    }
+
+    @Test
+    void planningDuringTheAutumnOverlapSkipsItsSecondOccurrence() {
+        var timing = new Weekly(Set.of(DayOfWeek.SUNDAY), LocalTime.of(2, 30));
+        house(new RoutineSchedules()).givenCommands(evening())
+                .atFixedTime(Instant.parse("2026-10-25T00:45:00Z"))
+                .whenCommand(new PlanRoutine(BEDTIME, HOME, new RoutineDetails("Sunday"), EVENING, timing))
+                .expectOnlyActiveScheduledCommands(scheduled(1, Instant.parse("2026-11-01T01:30:00Z")));
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void lateWeeklyExecutionSkipsMissedOccurrences(boolean async) {
+        var timing = new Weekly(Set.of(DayOfWeek.MONDAY), LocalTime.of(20, 0));
+        var originalDue = Instant.parse("2026-09-14T18:00:00Z");
+        (async ? asyncHouse() : house()).givenCommands(evening(),
+                        new PlanRoutine(BEDTIME, HOME, new RoutineDetails("Monday"), EVENING, timing))
+                .atFixedTime(Instant.parse("2026-09-30T08:00:00Z"))
+                .whenCommand(new RunRoutine(BEDTIME, 1, originalDue)).expectNoErrors()
+                .expectThat(f -> {
+                    assertEvening();
+                    var routine = Fluxzero.loadModel(BEDTIME).get();
+                    assertEquals(1, routine.executionCount());
+                    assertEquals(Instant.parse("2026-10-05T18:00:00Z"), routine.nextRun());
+                });
     }
 
     @Test void failedScenePausesRoutineWithAReasonAndNoPartialChanges() {

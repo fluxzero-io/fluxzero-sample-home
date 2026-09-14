@@ -25,6 +25,8 @@ De build importeert `io.fluxzero:fluxzero-bom:2.0.0-rc.11-local.9ae3f349a2a`, ee
 | Versioned defaults | `2026.09.10` kiest de 2.0-defaults voor conflictherhaling en automatische routing. |
 | Deterministische scheduling en TestFixture | Deadlines, generaties, pauzeren, herhaling, klokovergangen en stale delivery zijn gedragstests. |
 
+De routinepatronen `Once` en `Weekly` zijn concrete waarden achter het `RoutineTiming`-contract. Zij krijgen een expliciet referentietijdstip en de huistijdzone; de app gebruikt hiervoor geen systeemklok. `@Valid` op `PlanRoutine.timing` neemt de veldconstraints van het gekozen patroon mee. `Weekly` bezit de lokale kalenderberekening, terwijl de bestaande routineconsumer de berekende deadline met de SDK-scheduler synchroniseert. De polymorfe JSON-namen blijven `once` en `weekly`.
+
 Een ongeldige invoerwaarde of leeg tijdpatroon wordt als `ValidationException` met een veldpad afgewezen, ook wanneer het opgegeven huis nog niet bestaat. `AddDevice` laadt geen ruimte voor de vraag of de invoer mogelijkheden of metingen bevat. Zijn `@Apply(Space)` bewaakt via de SDK nog steeds dat het apparaat in een bestaande ruimte wordt aangemaakt. Bij gedeserialiseerde invoer verzorgt Fluxzero de standaardwaarden voor collecties; de commands voegen daarvoor geen constructors toe.
 
 Veldconstraints gaan vóór methodconstraints. Daarom controleert bijvoorbeeld `hasNonNegativeCooldown()` alleen `!cooldown.isNegative()`: `@NotNull` op het veld heeft ontbrekende invoer al afgevangen. Hetzelfde geldt voor verplichte collectie-elementen. Checks op bewust optionele gegevens, zoals een apparaatlabel of media bij gestopte weergave, beschrijven wel een eigen domeinregel.
