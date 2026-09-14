@@ -16,7 +16,7 @@ public record MeasurementCrosses(@NotNull DeviceId deviceId, @NotNull Measuremen
 
     @AssertTrue(message = "Choose a threshold within the measurement's range.")
     boolean hasValidThreshold() {
-        return measurement == null || threshold == null || measurement.accepts(threshold);
+        return measurement.accepts(threshold);
     }
 
     @AssertLegal

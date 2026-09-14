@@ -16,7 +16,7 @@ import static io.fluxzero.home.model.Rules.require;
 public record MoveSpace(@NotNull SpaceId spaceId, SpaceId enclosingSpaceId) {
     @AssertTrue(message = "A space cannot contain itself.")
     boolean hasDifferentParent() {
-        return spaceId == null || !spaceId.equals(enclosingSpaceId);
+        return !spaceId.equals(enclosingSpaceId);
     }
 
     @AssertLegal void validate(@Association("spaceId") Space space, Graph<Home> home) {

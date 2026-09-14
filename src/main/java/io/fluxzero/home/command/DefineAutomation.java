@@ -26,7 +26,7 @@ public record DefineAutomation(AutomationId automationId, HomeId homeId, @NotNul
                                @NotNull @Valid @AssertLegal AutomationTrigger trigger, @NotNull Duration cooldown) {
     @AssertTrue(message = "Choose a non-negative cooldown.")
     boolean hasNonNegativeCooldown() {
-        return cooldown == null || !cooldown.isNegative();
+        return !cooldown.isNegative();
     }
 
     @AssertLegal

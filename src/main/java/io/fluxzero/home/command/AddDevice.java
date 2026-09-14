@@ -20,7 +20,7 @@ public record AddDevice(DeviceId deviceId, SpaceId spaceId, @NotNull @Valid Devi
                         @NotNull Set<@NotNull Capability> capabilities, @NotNull Set<@NotNull Measurement> measurements) {
     @AssertTrue(message = "A device must do or measure something.")
     boolean hasCapabilitiesOrMeasurements() {
-        return capabilities == null || measurements == null || !capabilities.isEmpty() || !measurements.isEmpty();
+        return !capabilities.isEmpty() || !measurements.isEmpty();
     }
 
     @AssertTrue(message = "A device label cannot be blank.")

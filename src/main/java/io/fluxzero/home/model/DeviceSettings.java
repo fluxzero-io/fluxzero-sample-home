@@ -9,7 +9,6 @@ import jakarta.validation.constraints.NotNull;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Objects;
 
 /** At most one value per capability, in a stable order independent of how it was assembled. */
 public record DeviceSettings(@NotNull @Valid List<@NotNull DeviceSetting> values) {
@@ -32,9 +31,7 @@ public record DeviceSettings(@NotNull @Valid List<@NotNull DeviceSetting> values
 
     @AssertTrue(message = "Report at most one setting for each capability.")
     boolean hasDistinctCapabilities() {
-        return values == null || values.stream().filter(Objects::nonNull)
-                .map(DeviceSetting::capability).distinct().count()
-                == values.stream().filter(Objects::nonNull).count();
+        return values.stream().map(DeviceSetting::capability).distinct().count() == values.size();
     }
 
     public DeviceSettings with(DeviceSetting setting) {

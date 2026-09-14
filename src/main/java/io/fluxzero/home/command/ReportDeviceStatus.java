@@ -29,14 +29,12 @@ public record ReportDeviceStatus(@NotNull DeviceStatusId deviceStatusId, @NotNul
                                  @NotNull Map<@NotNull Measurement, @NotNull BigDecimal> readings) {
     @AssertTrue(message = "Use this device’s status identity.")
     boolean hasMatchingIdentity() {
-        return deviceStatusId == null || deviceId == null
-                || deviceStatusId.equals(new DeviceStatusId(deviceId.getFunctionalId()));
+        return deviceStatusId.equals(new DeviceStatusId(deviceId.getFunctionalId()));
     }
 
     @AssertTrue(message = "Report values within each measurement's range.")
     boolean hasValidReadings() {
-        return readings == null || readings.entrySet().stream().allMatch(entry -> entry.getKey() == null
-                || entry.getValue() == null || entry.getKey().accepts(entry.getValue()));
+        return readings.entrySet().stream().allMatch(entry -> entry.getKey().accepts(entry.getValue()));
     }
 
     @AssertLegal
