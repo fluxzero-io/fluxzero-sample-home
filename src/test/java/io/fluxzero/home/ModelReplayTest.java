@@ -38,8 +38,8 @@ class ModelReplayTest {
                     assertEvening();
                     var routine = Fluxzero.loadModel(BEDTIME).get();
                     assertFalse(routine.enabled());
-                    assertEquals(1, routine.executionCount());
-                    assertEquals(due, routine.lastExecutedAt());
+                    assertNull(routine.nextRun());
+                    assertEquals(2, routine.generation());
                 }).expectNoErrors();
     }
 }

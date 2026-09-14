@@ -7,7 +7,7 @@ De build importeert `io.fluxzero:fluxzero-bom:2.0.0-rc.11-local.9ae3f349a2a`, ee
 | Zelfstandige `@Model`-grenzen | Huis, ruimte, apparaat, bewoner, zone, scène, routine en automatisering hebben hun eigen levenscyclus. |
 | Cohesieve details | Acht details-value-objects met gevalideerde commandinvoer en gerichte wijzigingen die andere gegevens behouden. |
 | Getypeerde `Id<T>` | De naamruimte van iedere soort ID voorkomt botsingen tussen bijvoorbeeld een kamer en lamp met dezelfde naam. |
-| Automatische commandafhandeling | Commands dragen hun eigen `@Apply`; er zijn geen doorgeefhandlers met handmatig laden en opslaan. |
+| Automatische commandafhandeling | Commands dragen hun eigen `@Apply`. Alleen de twee uitvoeringscommands hebben een expliciete handler om functionele afwijzing als pauze af te handelen. |
 | `@Parent` en recursieve relaties | `Space.parentId` kiest één Home of Space via `PlaceId<?>`; de gedeclareerde parenttypes en het pad `spaces` behouden de vrije boom. |
 | Luie, consistente `Graph<T>` | Huisgrenzen, zoneselectie, scènedoelen en verwijdervoorwaarden lezen alleen de benodigde relaties. |
 | Interceptie en atomaire meerdere Models | `ActivateScene` breidt de bedoeling uit tot gewone apparaatcommands en de activatie zelf binnen één commit. |
@@ -20,6 +20,7 @@ De build importeert `io.fluxzero:fluxzero-bom:2.0.0-rc.11-local.9ae3f349a2a`, ee
 | Complete Graph-change-handlers | `RoutineSchedules` reconcilieert status en deadlines vanuit de actuele routine, ook na een ouder event. |
 | Schedules met `@Parent` | `RunRoutine.routineId` koppelt een uitvoering aan de levensduur van haar Routine. Directe en cascaderende verwijdering annuleren opgeslagen uitvoeringen zonder applicatiecleanup. |
 | Relatiebewust zoeken | `FindDevices` selecteert via `whereAncestor(homeId)` en de gevraagde mogelijkheid. |
+| Eén identiteit en parent | `DeviceStatus.deviceId` draagt `@EntityId(prefix = "devicestatus:")` én `@Parent`; rapporteren vereist alleen de apparaat-ID. |
 | Alternatieve identiteit | Een optioneel apparaatlabel is een `@Alias`; de echte apparaat-ID blijft stabiel. |
 | Actuele en eventgebonden Graphs | Consumers kunnen de toestand bij een verandering lezen; schedule-reconciliatie kiest juist expliciet de actuele routine. |
 | Versioned defaults | `2026.09.10` kiest de 2.0-defaults voor conflictherhaling en automatische routing. |
@@ -33,7 +34,7 @@ Veldconstraints gaan vóór methodconstraints. Daarom controleert bijvoorbeeld `
 
 Bij automatiseringen cascadeert `@Valid` de invoerconstraints van de concrete trigger; `@AssertLegal` delegeert daarna de Modelcontroles. `DefineAutomation` bewaakt de huisgrens van de definitie en de scène, zonder de triggerimplementaties te kennen. `HomeBecomes` en `MeasurementCrosses` bezitten hun eigen overgangsdetectie. `HomeChange` onderscheidt een moduswijziging van een apparaatwaarneming met concrete waarden; beide interfaces bevatten alleen contracten. De zoekselectie gebruikt dezelfde overgangsregel als de uiteindelijke commandafhandeling, die altijd de geladen automatiseringsdefinitie controleert.
 
-`ReportDeviceStatus` vergelijkt de waarnemingstijd met de oorspronkelijke publicatietijd van het bericht. Deze contextafhankelijke controle blijft op de vastgelegde kandidaat een `@AssertLegal(Message)` zonder Modelparameter. `@PastOrPresent` ten opzichte van de verwerkingsklok zou een andere tijdgrens kiezen. De ontbrekende waarnemingstijd, statusidentiteit, bereikbaarheid en meetwaarden worden wel vooraf declaratief gevalideerd.
+`ReportDeviceStatus` vergelijkt de waarnemingstijd met de oorspronkelijke publicatietijd van het bericht. Deze contextafhankelijke controle blijft op de vastgelegde kandidaat een `@AssertLegal(Message)` zonder Modelparameter. `@PastOrPresent` ten opzichte van de verwerkingsklok zou een andere tijdgrens kiezen. De ontbrekende waarnemingstijd, apparaatidentiteit, bereikbaarheid en meetwaarden worden wel vooraf declaratief gevalideerd.
 
 De applicatie gebruikt geen legacy Aggregates voor nieuwe toestand. Scènestappen zijn waardes zonder zelfstandige levenscyclus; daarom wordt `@Member` niet alleen voor een featuredemonstratie toegevoegd. Een volledige huisprojectie wordt niet bij iedere sensorwaarde gematerialiseerd: dat zou onnodig werk opleveren.
 
@@ -48,7 +49,7 @@ De applicatie gebruikt geen legacy Aggregates voor nieuwe toestand. Scènestappe
 | Hoe is dit bekende huis ingedeeld? | `GetHome` laadt `Graph<Home>` via HomeId. | Laden via identiteit en navigeren door relaties vereisen geen directe documentprojectie op `Home`. |
 | Welke apparaten in dit huis kunnen dimmen? | `FindDevices` zoekt `Device` via `whereAncestor(homeId)` en filtert op `capabilities`. | Het bestaande `devices`-compositiepad onderhoudt geïndexeerde interne apparaatdocumenten. Het bekende huis heeft hiervoor geen eigen document nodig. |
 | Welke automatiseringen horen bij deze verandering? | `HomeReactions` zoekt via `whereParent(homeId)`. | Het bestaande `automations`-compositiepad onderhoudt de interne documenten voor deze begrensde selectie. |
-| Wat heeft het apparaat werkelijk gemeld? | `GetDeviceStatus` laadt via DeviceStatusId. | De eigen waarnemingsgeschiedenis reconstrueert het actuele rapport; de relatie naar het apparaat blijft gelijk. |
+| Wat heeft het apparaat werkelijk gemeld? | `GetDeviceStatus` laadt met `loadModel(deviceId, DeviceStatus.class)`. | De eigen waarnemingsgeschiedenis reconstrueert het actuele rapport; de relatie naar het apparaat blijft gelijk. |
 
 `Fluxzero.search(Device.class)` zonder huisselectie geeft met deze configuratie geen apparaten terug. Een globale apparatenlijst is geen huidige applicatiequery. Daarvoor zou een expliciete directe documentprojectie een nieuwe, te onderbouwen keuze zijn. Zoekzichtbaarheid is geen toegangscontrole.
 
@@ -62,7 +63,7 @@ De querycontracten van rc.11 blijven behouden. De lokale kandidaat voegt lifecyc
 
 Een scène blijft uit gewone apparaatcommands bestaan. Dat geeft herkenbare gebeurtenissen en laat ieder command zijn eigen regels toepassen. `SceneAction` en `SceneTarget` zijn contracten zonder implementaties. Concrete acties maken de commands en concrete selecties lezen hun deel van de huis-Graph. De app bevat geen eigen Model-simulator of alternatieve route met dynamische Models om het SDK-contract opnieuw te testen.
 
-Dubbele `CreateHome`, `AddSpace`, `AddDevice` en `AddResident` worden door de SDK functioneel afgewezen. Daarvoor staan geen extra `requireNew`-assertions meer in de app. Commands die herdefinitie bedoelen, zoals `DefineScene` en `PlanRoutine`, hebben expliciet een nullable huidige Modelparameter. De app bewaakt nog steeds haar eigen businessregels. De vernieuwde apparaat- en scèneroute gebruikt declaratieve invoerconstraints en `IllegalCommandException`; andere domeinregels gebruiken nog `HomeRuleViolation`, eveneens een `FunctionalException`.
+Dubbele `CreateHome`, `AddSpace`, `AddDevice` en `AddResident` worden door de SDK functioneel afgewezen. Daarvoor staan geen extra `requireNew`-assertions meer in de app. Commands die herdefinitie bedoelen, zoals `DefineScene` en `PlanRoutine`, hebben expliciet een nullable huidige Modelparameter. De app bewaakt nog steeds haar eigen businessregels. Invoer gebruikt declaratieve constraints; relationele domeinafwijzingen gebruiken rechtstreeks `IllegalCommandException`. Er is geen algemene Rules-helper of eigen exception-wrapper. `PlanRoutine` benoemt huisgrens, scènekeuze en toekomstige uitvoering in afzonderlijke assertions.
 
 `Home` en `Space` implementeren het zuivere `Place`-contract met alleen `id()`. `HomeId` en `SpaceId` vormen de gesloten `PlaceId`-familie. `Space.parentId` declareert beide concrete Models als `@Parent(types = {Home.class, Space.class}, pathInParent = "spaces")`; het bijbehorende huis wordt niet dubbel opgeslagen. `MoveSpace` leest de Graph van de bestaande ruimte en zoekt de bestemming binnen haar oorspronkelijke huis, inclusief de huisroot zelf.
 
@@ -70,7 +71,11 @@ Op deze SDK-pin is `Place` geen zelfstandig `@Model`: injectie van het gedeelde 
 
 Een polymorfe `parentId` gebruikt JSON `["home", "example-home"]` of `["space", "example-floor"]`. Gewone `HomeId`- en `SpaceId`-velden blijven scalars. `PlaceId` laat Jackson de concrete subtypeconstructor kiezen met type-info en `@JsonCreator`; de standaard ID-deserializer van de gepinde SDK probeert anders de abstracte ID-basis zelf te construeren.
 
-`ReactToHome` en `RunRoutine` gebruiken `Fluxzero.assertLegal(new ActivateScene(...))` om een onuitvoerbare scène functioneel te laten pauzeren. Dat gebruikt dezelfde commandcontroles als de activatie; het voert geen `@Apply` of after-handlercontroles uit. Daarna committen de echte apparaatcommands en de voortgang samen. De huidige scènecommands hebben geen aanvullende afwijzingsregels in die latere fasen. Deze voorcontrole is geen volledige proefuitvoering.
+`ReactToHome` en `RunRoutine` hebben een kleine `@HandleCommand` die `Fluxzero.assertAndApply(this)` uitvoert. Dat doorloopt de volledige Modelcommit zonder het command opnieuw te versturen. Hun `@InterceptApply` retourneert de scène-activatie en de voortgang als één samengestelde bedoeling. Er is geen voorafgaande scèneproef: controles en applies horen bij dezelfde commitpoging.
+
+Bij een `FunctionalException` is die poging teruggedraaid en volgt een apart `PauseFailedRoutine`- of `PauseFailedAutomation`-command. Technische fouten worden doorgelaten. Succesvolle apparaatinstellingen en workflowvoortgang blijven één commit; afwijzing en het daaropvolgende pauzeren zijn twee transacties. De app claimt daarvoor geen crashbestendige workflowgarantie. Het pauzecommand controleert opnieuw de routinegeneratie/deadline of de toepasselijkheid van de automatiseringsdefinitie.
+
+Routine en Automation hebben geen uitvoertellers of gekopieerde laatste uitvoerdatum. `ReactToHome` publiceert succesvolle reacties expliciet met `eventPublication = ALWAYS`, ook als nul cooldown en hetzelfde tijdstip geen nieuwe waarde opleveren. `Automation.cooldownEndsAt` bewaart de actuele eindgrens van de rustperiode. `effectiveFrom` is het begin van de huidige definitie. De rustregel heeft daarmee constante kosten en loopt niet bij iedere sensorwaarde door de historie.
 
 De routineconsumer reconcilieert de actuele toestand met één tracker, ook na een historisch event. Zijn sole-Graph-handler ontvangt zowel directe wijzigingen als cascadeverwijdering. Voor een afwezige routine doet de consumer niets: `@Parent` op `RunRoutine.routineId` laat de SDK de opgeslagen uitvoering annuleren. Pauzeren, afronden en herplannen blijven expliciete schedule-effecten van de actuele routine. Deadlines en generaties beschermen nog steeds tegen oude of al afgeleverde opdrachten.
 

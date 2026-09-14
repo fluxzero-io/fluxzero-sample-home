@@ -83,12 +83,12 @@ class InputValidationTest {
                 arguments("weekly cannot contain a null day", "timing.days",
                         routine(new Weekly(Collections.singleton(null), LocalTime.NOON))),
                 arguments("weekly needs a local time", "timing.time", routine(new Weekly(Set.of(DayOfWeek.MONDAY), null))),
-                arguments("status identity must match device", "matchingIdentity",
-                        new ReportDeviceStatus(new DeviceStatusId("another"), SENSOR, NOW, Availability.ONLINE, DeviceSettings.empty(), Map.of())),
+                arguments("device identity is required", "deviceId",
+                        new ReportDeviceStatus(null, NOW, Availability.ONLINE, DeviceSettings.empty(), Map.of())),
                 arguments("status needs availability", "availability",
-                        new ReportDeviceStatus(new DeviceStatusId(SENSOR.getFunctionalId()), SENSOR, NOW, null, DeviceSettings.empty(), Map.of())),
+                        new ReportDeviceStatus(SENSOR, NOW, null, DeviceSettings.empty(), Map.of())),
                 arguments("status needs observation time", "observedAt",
-                        new ReportDeviceStatus(new DeviceStatusId(SENSOR.getFunctionalId()), SENSOR, null, Availability.ONLINE, DeviceSettings.empty(), Map.of())),
+                        new ReportDeviceStatus(SENSOR, null, Availability.ONLINE, DeviceSettings.empty(), Map.of())),
                 arguments("readings must be present", "readings", report(null)),
                 arguments("reading kind must be present", "readings", report(Collections.singletonMap(null, BigDecimal.ONE))),
                 arguments("reading value must be present", "readings", report(Collections.singletonMap(Measurement.TEMPERATURE, null))),
@@ -116,7 +116,7 @@ class InputValidationTest {
     }
 
     private static ReportDeviceStatus report(Map<Measurement, BigDecimal> readings) {
-        return new ReportDeviceStatus(new DeviceStatusId(SENSOR.getFunctionalId()), SENSOR, NOW,
+        return new ReportDeviceStatus(SENSOR, NOW,
                 Availability.ONLINE, DeviceSettings.empty(), readings);
     }
 }

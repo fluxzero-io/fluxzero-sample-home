@@ -39,6 +39,8 @@ Beschrijvende gegevens zitten in eigen waarden zoals `HomeDetails`, `SpaceDetail
 
 `Home` en `Space` delen het `Place`-contract. Een ruimte heeft één ouder: `new AddSpace(livingRoom, groundFloor, details)` of rechtstreeks `new AddSpace(garden, home, details)`. `new MoveSpace(livingRoom, home)` plaatst haar met inhoud terug onder het huis. De huisrelatie volgt uit de indeling; er is geen tweede opgeslagen huis-ID op de ruimte.
 
+`ReportDeviceStatus` ontvangt één `deviceId`. Die verwijst naar het apparaat en bepaalt met een aparte prefix de zelfstandige identiteit van zijn waarnemingen.
+
 Alle modellen gebruiken gewone `@Model`. Ook apparaatwaarnemingen bewaren historie, zodat automatiseringen vorige en nieuwe metingen kunnen vergelijken. Apparaatzoeken en automatiseringen gebruiken de relaties binnen een bekend huis; daarvoor onderhouden de bestaande compositiepaden de benodigde interne documenten. De [uitleg over opslag en zoeken](docs/sdk-2.md#opslag-en-zoeken-in-dit-huis) maakt de keuzes concreet.
 
 Een comfortabele avond is bijvoorbeeld:
@@ -52,9 +54,9 @@ new DefineScene(evening, home, new SceneDetails("Een fijne avond"), List.of(
 new ActivateScene(evening);
 ```
 
-Onder dezelfde scène zitten gewone handelingen zoals `DimLight` en `SetRoomTemperature`. Iedere concrete handeling bevat haar eigen kleine `@Apply`; de interfaces beschrijven uitsluitend contracten. Instellingen zoals `LightLevel` dragen hun eigen invoergrenzen. Een scène-activatie blijft in de Model-historie staan, ook als de gewenste instellingen al overeenkomen. Er zijn geen merknamen, protocolvelden of technische kanaalnamen nodig.
+Onder dezelfde scène zitten gewone handelingen zoals `DimLight` en `SetRoomTemperature`. Iedere concrete handeling bevat haar eigen kleine `@Apply`; de interfaces beschrijven uitsluitend contracten. Routines en automatiseringen voeren de scène en hun voortgang samen uit. Een functionele afwijzing wordt daarna als pauze vastgelegd; een technische storing blijft een fout. Instellingen zoals `LightLevel` dragen hun eigen invoergrenzen. Een scène-activatie blijft in de Model-historie staan, ook als de gewenste instellingen al overeenkomen. Er zijn geen merknamen, protocolvelden of technische kanaalnamen nodig.
 
-Automatiseringen kiezen een concrete aanleiding zoals `new HomeBecomes(HomeMode.AWAY)` of een `MeasurementCrosses` voor een sensor. Elke trigger beschrijft zelf welke verandering telt en bewaakt haar eigen voorwaarden. `DefineAutomation` koppelt die aanleiding aan een scène en een rustperiode.
+Automatiseringen kiezen een concrete aanleiding zoals `new HomeBecomes(HomeMode.AWAY)` of een `MeasurementCrosses` voor een sensor. Elke trigger beschrijft zelf welke verandering telt en bewaakt haar eigen voorwaarden. `DefineAutomation` koppelt die aanleiding aan een scène en een rustperiode. Het model bewaart de eindgrens van die rustperiode; uitvoeringen staan in de historie zonder aparte tellers of auditdatums.
 
 Routines kiezen `new Once(moment)` of bijvoorbeeld `new Weekly(Set.of(DayOfWeek.MONDAY), LocalTime.of(20, 0))`. De concrete tijdpatronen dragen hun eigen kalenderregels; `RoutineTiming` beschrijft alleen hun contract.
 

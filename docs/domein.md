@@ -20,7 +20,7 @@ Alle bovenstaande begrippen zijn zelfstandige Models. De relaties die bezit uitd
 
 Ieder benoembaar begrip heeft zijn eigen immutable details-value-object: `HomeDetails`, `SpaceDetails`, `DeviceDetails`, `ResidentDetails`, `ZoneDetails`, `SceneDetails`, `RoutineDetails` en `AutomationDetails`. De naam hoort daarin, met dezelfde grens van 1–120 tekens. `SpaceDetails` bevat ook de soort ruimte: samen beschrijven die wat de plek is.
 
-Identiteit en relaties staan op het Model. Het apparaatlabel blijft een alternatieve identiteit; mogelijkheden, gewenste instellingen, huishoudrol en tijdzone behouden hun eigen betekenis. Actuele status, volgende uitvoering, generaties en tellers behoren evenmin tot de beschrijving. Nieuwe beschrijvende velden kunnen later binnen het passende details-object worden toegevoegd.
+Identiteit en relaties staan op het Model. Het apparaatlabel blijft een alternatieve identiteit; mogelijkheden, gewenste instellingen, huishoudrol en tijdzone behouden hun eigen betekenis. Actuele status, volgende uitvoering, generaties en rustperiodes behoren evenmin tot de beschrijving. Nieuwe beschrijvende velden kunnen later binnen het passende details-object worden toegevoegd.
 
 `CreateHome` en `AddSpace` ontvangen de volledige beschrijving. `RenameSpace` ontvangt alleen de nieuwe naam en behoudt onder meer de soort ruimte, ouder en het primaire licht. De invoer valideert ook geneste details en weigert ontbrekende waarden.
 
@@ -44,7 +44,7 @@ Herkenbare commands zijn onder meer `TurnOn`, `TurnOff`, `DimLight`, `SetLightCo
 
 Percentages lopen van 0 tot 100. De kleurtoon loopt van 0 tot 359. De huidige comfortinstelling voor een ruimte loopt van 5 tot 35 °C. Dit is een expliciete grens van de comfortfunctie; bijzondere installaties zoals een sauna krijgen een eigen herkenbare instelling met een passend bereik, in plaats van deze grens stilzwijgend te verruimen.
 
-Metingen hebben een vaste eenheid: bijvoorbeeld °C, %, lx, W, kWh of ppm. Aan/uitwaarnemingen zoals beweging en waterlekkage gebruiken 0 en 1. Een oudere of gelijke waarneming overschrijft nooit een nieuwere. Een rapport is een volledige actuele waarneming; niet meegeleverde metingen zijn onbekend in dat rapport.
+Metingen hebben een vaste eenheid: bijvoorbeeld °C, %, lx, W, kWh of ppm. Aan/uitwaarnemingen zoals beweging en waterlekkage gebruiken 0 en 1. `ReportDeviceStatus` vraagt uitsluitend de apparaat-ID. De waarneming heeft een eigen Modelgeschiedenis onder die identiteit, met een aparte opslagprefix; een tweede status-ID wordt niet aangeleverd. Verwijdering van het apparaat verwijdert ook de actuele waarneming. Een oudere of gelijke waarneming overschrijft nooit een nieuwere. Een rapport is een volledige actuele waarneming; niet meegeleverde metingen zijn onbekend in dat rapport.
 
 ## Wens, waarneming en toegang
 

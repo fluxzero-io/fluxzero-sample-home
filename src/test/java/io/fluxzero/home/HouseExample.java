@@ -57,7 +57,7 @@ final class HouseExample {
             new SetHeating(new InSpace(LIVING), new RoomTemperature(new BigDecimal("21")))));
     }
     static ReportDeviceStatus temperature(Instant at, String value) {
-        return new ReportDeviceStatus(new DeviceStatusId(SENSOR.getFunctionalId()), SENSOR, at, Availability.ONLINE,
+        return new ReportDeviceStatus(SENSOR, at, Availability.ONLINE,
                 DeviceSettings.empty(), Map.of(Measurement.TEMPERATURE, new BigDecimal(value)));
     }
     static PlanRoutine once(Instant due) {

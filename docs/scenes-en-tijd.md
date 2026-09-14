@@ -28,7 +28,7 @@ new PlanRoutine(weekRhythm, home, new RoutineDetails("Vaste avonden"),
 
 `RoutineTiming` bevat uitsluitend het contract voor de volgende uitvoering. `Once` bewaart één absoluut tijdstip en is daarna klaar. `Weekly` kiest zelf de eerstvolgende gekozen weekdag en lokale tijd in de tijdzone van het huis. Die kalenderregel staat bij het concrete patroon. Beide patronen zoeken strikt ná het opgegeven moment; een eenmalige afspraak voor precies nu wordt bij het plannen afgewezen. Invoerconstraints staan op de concrete waarden.
 
-Elke routine heeft één stabiele schedule-identiteit en een oplopende generatie. Een uitvoering controleert generatie, deadline en pauzestand. Vroege, dubbele of verouderde afleveringen veranderen niets. De scène en het afronden of doorschuiven van de routine worden samen gecommit.
+Elke routine heeft één stabiele schedule-identiteit en een oplopende generatie. Een uitvoering controleert generatie, deadline en pauzestand. Vroege afleveringen, afgeronde intenties en verouderde planningen veranderen niets. De scène en het afronden of doorschuiven van de routine worden samen gecommit. Uitvoeringen staan in de Modelgeschiedenis; Routine bewaart geen extra uitvoerteller of laatste uitvoerdatum.
 
 - Een eenmalige routine eindigt na uitvoering.
 - Een wekelijkse routine kiest de eerstvolgende toekomstige lokale datum en tijd.
@@ -66,11 +66,13 @@ De concrete triggers bevatten hun eigen regels. `AutomationTrigger` is uitsluite
 
 Waarnemingen bewaren hun eigen eventgeschiedenis. De reactie vergelijkt de toestand vóór en na het betreffende rapport, ook na cachewissen of wanneer inmiddels nieuwere rapporten bestaan. Vorige meetwaarden worden niet als extra velden in het huidige rapport gekopieerd.
 
-De rustperiode beperkt herhaald activeren. Een latere bronwijziging maakt een eerdere overgang niet uitsluitend vanwege een nieuwe revisie ongeldig: een huis hernoemen wist bijvoorbeeld geen vertrek, en een volgende meting boven de grens wist de eerdere grensoverschrijding niet. Alleen veranderingen aan thuismodus en gemelde sensortoestand starten de reactie; de gewenste instellingen die uit de scène volgen voeden geen lus terug.
+`effectiveFrom` bepaalt vanaf wanneer de huidige automatiseringsdefinitie geldt; eerdere veranderingen activeren haar niet. Iedere geslaagde reactie staat in de Modelgeschiedenis, zonder aparte uitvoerteller.
+
+De rustperiode beperkt herhaald activeren. `cooldownEndsAt` bewaart wanneer opnieuw geactiveerd mag worden; precies op die grens is activeren toegestaan. Pauzeren en hervatten bewaren die grens. Bij een gewijzigde duur wordt de grens opnieuw berekend vanaf de laatste geslaagde uitvoering. Alleen een geslaagde scène start een nieuwe rustperiode; nul betekent dat een volgende passende verandering direct mag reageren. Een latere bronwijziging maakt een eerdere overgang niet uitsluitend vanwege een nieuwe revisie ongeldig: een huis hernoemen wist bijvoorbeeld geen vertrek, en een volgende meting boven de grens wist de eerdere grensoverschrijding niet. Alleen veranderingen aan thuismodus en gemelde sensortoestand starten de reactie; de gewenste instellingen die uit de scène volgen voeden geen lus terug.
 
 Een gepauzeerde automatisering reageert niet. Hervatten activeert de bestaande situatie niet op zichzelf; een volgende passende verandering kan weer een scène activeren. De app houdt geen verwerkte bronrevisies of andere technische deduplicatieadministratie bij. Uitvoeringszekerheid bij herstel is een verantwoordelijkheid van SDK en Runtime. Volledige durable execution is voorzien, maar zit nog niet in de vastgelegde SDK-kandidaat; deze versie claimt daarom geen eenmaal-uitvoeringsgarantie bij opnieuw aangeboden events.
 
-Een onuitvoerbare reactie pauzeert de automatisering met een reden. Tijdelijke technische storingen worden niet als domeinfout vermomd: de Fluxzero-consumer kan die opnieuw proberen.
+De app probeert de scène werkelijk uit te voeren, samen met de voortgang. Een functionele afwijzing draait deze poging volledig terug; daarna legt een afzonderlijk command de pauze en reden vast. Dit geldt voor zowel routines als automatiseringen. Er is geen dubbele scènevoorcontrole. Tijdelijke technische storingen worden niet als domeinfout vermomd: de Fluxzero-consumer kan die opnieuw proberen.
 
 De routineconsumer verwerkt planning en statuswijzigingen op één tracker en leest steeds de actuele bedoeling. Voor een afwezige routine doet hij niets: opruimen bij verwijdering hoort bij de SDK. Bij een inmiddels opnieuw aangemaakte routine reconcilieert ook een oude verwijdermelding uitsluitend de nieuwe actuele bedoeling.
 

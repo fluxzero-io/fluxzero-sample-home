@@ -13,13 +13,13 @@ import io.fluxzero.home.command.RemoveDevice;
 import io.fluxzero.home.model.Automation;
 import io.fluxzero.home.model.AutomationDetails;
 import io.fluxzero.home.model.AutomationId;
-import io.fluxzero.home.model.HomeBecomes;
 import io.fluxzero.home.model.Capability;
 import io.fluxzero.home.model.Device;
 import io.fluxzero.home.model.DeviceDetails;
 import io.fluxzero.home.model.DeviceId;
 import io.fluxzero.home.model.DimLights;
 import io.fluxzero.home.model.Home;
+import io.fluxzero.home.model.HomeBecomes;
 import io.fluxzero.home.model.HomeDetails;
 import io.fluxzero.home.model.HomeId;
 import io.fluxzero.home.model.HomeMode;
@@ -42,6 +42,8 @@ import java.util.stream.Collectors;
 
 import static io.fluxzero.home.HouseExample.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class HomeQueryTest {
@@ -110,14 +112,14 @@ class HomeQueryTest {
                 .expectThat(f -> {
                     assertTrue(Fluxzero.search(Automation.class).fetchAll().isEmpty());
                     assertEvening();
-                    assertEquals(1, Fluxzero.loadModel(REACTION).get().executionCount());
-                    assertEquals(0, Fluxzero.loadModel(otherAutomation).get().executionCount());
+                    assertNotNull(Fluxzero.loadModel(REACTION).get().cooldownEndsAt());
+                    assertNull(Fluxzero.loadModel(otherAutomation).get().cooldownEndsAt());
                     assertTrue(Fluxzero.loadModel(otherLight).get().desiredSettings().isEmpty());
                 })
                 .andThen().whenCommand(new ChangeHomeMode(otherHome, HomeMode.AWAY)).expectNoErrors()
                 .expectThat(f -> {
-                    assertEquals(1, Fluxzero.loadModel(REACTION).get().executionCount());
-                    assertEquals(1, Fluxzero.loadModel(otherAutomation).get().executionCount());
+                    assertNotNull(Fluxzero.loadModel(REACTION).get().cooldownEndsAt());
+                    assertNotNull(Fluxzero.loadModel(otherAutomation).get().cooldownEndsAt());
                     assertEquals(new LightLevel(10),
                                  Fluxzero.loadModel(otherLight).get().desiredSettings().get(Capability.LIGHT_LEVEL));
                 });

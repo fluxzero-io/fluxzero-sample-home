@@ -45,7 +45,9 @@ public record DefineAutomation(AutomationId automationId, HomeId homeId, @NotNul
 
     @Apply
     Automation apply(@Nullable Automation automation, Message message) {
+        var cooldownEndsAt = automation == null || automation.cooldownEndsAt() == null ? null
+                : automation.cooldownEndsAt().minus(automation.cooldown()).plus(cooldown);
         return new Automation(automationId, homeId, details, sceneId, trigger, cooldown, true, message.getTimestamp(),
-                automation == null ? 0 : automation.executionCount(), automation == null ? null : automation.lastExecutedAt(), null);
+                cooldownEndsAt, null);
     }
 }

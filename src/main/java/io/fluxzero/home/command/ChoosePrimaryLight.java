@@ -7,14 +7,17 @@ import io.fluxzero.home.model.Space;
 import io.fluxzero.home.model.SpaceId;
 import io.fluxzero.sdk.modeling.AssertLegal;
 import io.fluxzero.sdk.persisting.eventsourcing.Apply;
-
-import static io.fluxzero.home.model.Rules.require;
+import io.fluxzero.sdk.tracking.handling.IllegalCommandException;
 
 /** Select the light that represents a room’s everyday lighting. */
 public record ChoosePrimaryLight(SpaceId spaceId, DeviceId deviceId) {
     @AssertLegal void validate(Space space, Device device) {
-        require(device.spaceId().equals(spaceId), "Choose a light in this space.");
-        require(device.capabilities().contains(Capability.LIGHT_LEVEL), "Choose a dimmable light.");
+        if (!device.spaceId().equals(spaceId)) {
+            throw new IllegalCommandException("Choose a light in this space.");
+        }
+        if (!device.capabilities().contains(Capability.LIGHT_LEVEL)) {
+            throw new IllegalCommandException("Choose a dimmable light.");
+        }
     }
     @Apply Space apply(Space space) { return space.withPrimaryLightId(deviceId); }
 }

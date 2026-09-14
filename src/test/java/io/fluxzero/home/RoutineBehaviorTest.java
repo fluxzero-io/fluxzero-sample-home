@@ -9,10 +9,10 @@ import io.fluxzero.home.command.RemoveDevice;
 import io.fluxzero.home.command.RemoveHome;
 import io.fluxzero.home.command.RemoveRoutine;
 import io.fluxzero.home.command.ResumeRoutine;
-import io.fluxzero.home.model.HomeRuleViolation;
 import io.fluxzero.home.model.RoutineDetails;
 import io.fluxzero.home.model.Weekly;
 import io.fluxzero.sdk.Fluxzero;
+import io.fluxzero.sdk.tracking.handling.IllegalCommandException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -28,15 +28,15 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class RoutineBehaviorTest {
     @ParameterizedTest @ValueSource(booleans = {false, true})
-    void executesExactlyAtItsDeadlineAndIgnoresDuplicateDelivery(boolean async) {
+    void executesAtItsDeadlineAndCompletedIntentCannotExecuteAgain(boolean async) {
         var due = NOW.plusSeconds(60);
         (async ? asyncHouse(new RoutineSchedules()) : house(new RoutineSchedules())).givenCommands(evening())
                 .whenCommand(once(due)).expectOnlyActiveScheduledCommands(scheduled(1, due))
                 .andThen().whenTimeAdvancesTo(due.minusMillis(1)).expectNoEvents().expectOnlyActiveScheduledCommands(scheduled(1, due))
                 .andThen().whenTimeAdvancesTo(due).expectNoErrors().expectNoSchedules()
-                .expectThat(f -> { assertEvening(); assertEquals(1, Fluxzero.loadModel(BEDTIME).get().executionCount()); })
+                .expectThat(f -> { assertEvening(); assertNull(Fluxzero.loadModel(BEDTIME).get().nextRun()); })
                 .andThen().whenCommand(new RunRoutine(BEDTIME, 1, due)).expectNoEvents().expectNoSchedules()
-                .expectThat(f -> assertEquals(1, Fluxzero.loadModel(BEDTIME).get().executionCount()));
+                .expectThat(f -> assertEvening());
     }
     @Test void pausedRoutineCannotExecuteEvenIfDeliveryWasAlreadyQueued() {
         var due = NOW.plusSeconds(60);
@@ -81,7 +81,7 @@ class RoutineBehaviorTest {
     @ValueSource(longs = {-1, 0})
     void oneOffMustBeStrictlyInTheFuture(long secondsFromNow) {
         house(new RoutineSchedules()).givenCommands(evening()).whenCommand(once(NOW.plusSeconds(secondsFromNow)))
-                .expectExceptionalResult(HomeRuleViolation.class).expectNoEvents().expectNoSchedules();
+                .expectExceptionalResult(IllegalCommandException.class).expectNoEvents().expectNoSchedules();
     }
 
     @Test
@@ -109,7 +109,7 @@ class RoutineBehaviorTest {
                 .andThen().whenTimeAdvancesTo(due).expectNoErrors()
                 .expectOnlyActiveScheduledCommands(scheduled(2, Instant.parse("2026-11-01T01:30:00Z")))
                 .andThen().whenTimeAdvancesTo(due.plusSeconds(3600)).expectNoEvents()
-                .expectThat(f -> assertEquals(1, Fluxzero.loadModel(BEDTIME).get().executionCount()));
+                .expectThat(f -> assertEvening());
     }
 
     @Test
@@ -133,7 +133,6 @@ class RoutineBehaviorTest {
                 .expectThat(f -> {
                     assertEvening();
                     var routine = Fluxzero.loadModel(BEDTIME).get();
-                    assertEquals(1, routine.executionCount());
                     assertEquals(Instant.parse("2026-10-05T18:00:00Z"), routine.nextRun());
                 });
     }
@@ -143,7 +142,7 @@ class RoutineBehaviorTest {
         house(new RoutineSchedules()).givenCommands(evening(), once(due), new RemoveDevice(HEAT))
                 .whenTimeAdvancesTo(due).expectNoErrors().expectNoSchedules().expectThat(f -> {
                     var routine = Fluxzero.loadModel(BEDTIME).get();
-                    assertFalse(routine.enabled()); assertNotNull(routine.problem()); assertEquals(0, routine.executionCount());
+                    assertFalse(routine.enabled()); assertNotNull(routine.problem());
                     assertTrue(Fluxzero.loadModel(LIGHT).get().desiredSettings().isEmpty());
                 });
     }

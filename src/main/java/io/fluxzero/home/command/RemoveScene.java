@@ -8,14 +8,17 @@ import io.fluxzero.home.model.SceneId;
 import io.fluxzero.sdk.modeling.AssertLegal;
 import io.fluxzero.sdk.modeling.Graph;
 import io.fluxzero.sdk.persisting.eventsourcing.Apply;
-
-import static io.fluxzero.home.model.Rules.require;
+import io.fluxzero.sdk.tracking.handling.IllegalCommandException;
 
 /** Remove a scene once routines and automations no longer refer to it. */
 public record RemoveScene(SceneId sceneId) {
     @AssertLegal void validate(Scene scene, Graph<Home> home) {
-        require(home.childModels(Routine.class).stream().noneMatch(r -> r.sceneId().equals(sceneId)), "Remove this scene from its routines first.");
-        require(home.childModels(Automation.class).stream().noneMatch(a -> a.sceneId().equals(sceneId)), "Remove this scene from its automations first.");
+        if (home.childModels(Routine.class).stream().anyMatch(r -> r.sceneId().equals(sceneId))) {
+            throw new IllegalCommandException("Remove this scene from its routines first.");
+        }
+        if (home.childModels(Automation.class).stream().anyMatch(a -> a.sceneId().equals(sceneId))) {
+            throw new IllegalCommandException("Remove this scene from its automations first.");
+        }
     }
     @Apply Scene apply(Scene scene) { return null; }
 }

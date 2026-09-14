@@ -38,7 +38,7 @@ class DeviceBehaviorTest {
                 new AddDevice(LIGHT, LIVING, new DeviceDetails("Multifunction device"), null, EnumSet.allOf(Capability.class), Set.of()))
                 .whenCommand(command).expectOnlyEvents(command).expectThat(f -> {
                     assertEquals(command.setting(), Fluxzero.loadModel(LIGHT).get().desiredSettings().get(command.setting().capability()));
-                    assertNull(Fluxzero.loadModel(new DeviceStatusId(LIGHT.getFunctionalId())).get());
+                    assertNull(Fluxzero.loadModel(LIGHT, DeviceStatus.class).get());
                 });
     }
     @ParameterizedTest @ValueSource(ints = {-1, 101})
@@ -55,33 +55,33 @@ class DeviceBehaviorTest {
                 .whenCommand(temperature(NOW, "20")).expectNoErrors()
                 .andThen().whenCommand(temperature(NOW.minusSeconds(5), "18"))
                 .expectNoEvents().expectThat(f -> {
-                    assertEquals(new BigDecimal("20"), Fluxzero.loadModel(new DeviceStatusId(SENSOR.getFunctionalId())).get().readings().get(Measurement.TEMPERATURE));
+                    assertEquals(new BigDecimal("20"), Fluxzero.loadModel(SENSOR, DeviceStatus.class).get().readings().get(Measurement.TEMPERATURE));
                     assertTrue(Fluxzero.loadModel(SENSOR).get().desiredSettings().isEmpty());
                 });
     }
     @Test void aDuplicateObservationIsSuppressed() {
         house().givenCommands(temperature(NOW, "20")).whenCommand(temperature(NOW, "19"))
                 .expectNoEvents().expectThat(f -> assertEquals(new BigDecimal("20"),
-                        Fluxzero.loadModel(new DeviceStatusId(SENSOR.getFunctionalId())).get().readings().get(Measurement.TEMPERATURE)));
+                        Fluxzero.loadModel(SENSOR, DeviceStatus.class).get().readings().get(Measurement.TEMPERATURE)));
     }
     @Test void futureObservationsAreRejected() {
-        house().whenCommand(temperature(NOW.plusSeconds(1), "20")).expectExceptionalResult(HomeRuleViolation.class).expectNoEvents();
+        house().whenCommand(temperature(NOW.plusSeconds(1), "20")).expectExceptionalResult(IllegalCommandException.class).expectNoEvents();
     }
     @Test void observationTimeIsComparedWithPublicationTime() {
         house().whenCommand(new Message(temperature(NOW, "20")).withTimestamp(NOW.minusSeconds(1)))
-                .expectExceptionalResult(HomeRuleViolation.class).expectNoEvents();
+                .expectExceptionalResult(IllegalCommandException.class).expectNoEvents();
     }
     @Test void zeroAndOneAreValidMotionReadings() {
-        house().givenCommands(new ReportDeviceStatus(new DeviceStatusId(SENSOR.getFunctionalId()), SENSOR, NOW.minusSeconds(1),
+        house().givenCommands(new ReportDeviceStatus(SENSOR, NOW.minusSeconds(1),
                         Availability.ONLINE, DeviceSettings.empty(), Map.of(Measurement.MOTION, BigDecimal.ZERO)))
-                .whenCommand(new ReportDeviceStatus(new DeviceStatusId(SENSOR.getFunctionalId()), SENSOR, NOW,
+                .whenCommand(new ReportDeviceStatus(SENSOR, NOW,
                         Availability.ONLINE, DeviceSettings.empty(), Map.of(Measurement.MOTION, BigDecimal.ONE)))
                 .expectNoErrors();
     }
     @Test void unsupportedMeasurementsAreRejected() {
-        house().whenCommand(new ReportDeviceStatus(new DeviceStatusId(SENSOR.getFunctionalId()), SENSOR, NOW, Availability.ONLINE,
+        house().whenCommand(new ReportDeviceStatus(SENSOR, NOW, Availability.ONLINE,
                 DeviceSettings.empty(), Map.of(Measurement.HUMIDITY, new BigDecimal("50"))))
-                .expectExceptionalResult(HomeRuleViolation.class).expectNoEvents();
+                .expectExceptionalResult(IllegalCommandException.class).expectNoEvents();
     }
 
     @Test void unchangedBrightnessDoesNotRepublishAfterAnotherSettingChanges() {
@@ -102,13 +102,13 @@ class DeviceBehaviorTest {
 
     @ParameterizedTest @MethodSource("invalidReports")
     void invalidReportedSettingsCreateNoObservation(DeviceSettings settings) {
-        house().whenCommand(new ReportDeviceStatus(new DeviceStatusId(LIGHT.getFunctionalId()), LIGHT, NOW,
+        house().whenCommand(new ReportDeviceStatus(LIGHT, NOW,
                         Availability.ONLINE, settings, Map.of()))
                 .expectExceptionalResult(ValidationException.class).expectNoEvents();
     }
 
     @Test void aDeviceCannotReportAnUnsupportedSetting() {
-        house().whenCommand(new ReportDeviceStatus(new DeviceStatusId(LIGHT.getFunctionalId()), LIGHT, NOW,
+        house().whenCommand(new ReportDeviceStatus(LIGHT, NOW,
                         Availability.ONLINE, new DeviceSettings(List.of(new RoomTemperature(new BigDecimal("21")))), Map.of()))
                 .expectExceptionalResult(IllegalCommandException.class).expectNoEvents();
     }
@@ -116,10 +116,10 @@ class DeviceBehaviorTest {
     @Test void reportedSettingsSurviveReloadAndStaySeparateFromIntent() {
         var report = new DeviceSettings(List.of(new LightLevel(20), new Power(true)));
         house().givenCommands(new DimLight(LIGHT, new LightLevel(42)),
-                        new ReportDeviceStatus(new DeviceStatusId(LIGHT.getFunctionalId()), LIGHT, NOW,
+                        new ReportDeviceStatus(LIGHT, NOW,
                                 Availability.ONLINE, report, Map.of()))
                 .whenExecuting(f -> f.cache().clear()).expectNoErrors().expectThat(f -> {
-                    assertEquals(report, Fluxzero.loadModel(new DeviceStatusId(LIGHT.getFunctionalId())).get().reportedSettings());
+                    assertEquals(report, Fluxzero.loadModel(LIGHT, DeviceStatus.class).get().reportedSettings());
                     assertEquals(new LightLevel(42), Fluxzero.loadModel(LIGHT).get().desiredSettings().get(Capability.LIGHT_LEVEL));
                 });
     }
@@ -129,4 +129,19 @@ class DeviceBehaviorTest {
         house().whenCommand(new SetRoomTemperature(HEAT, new RoomTemperature(new BigDecimal(celsius))))
                 .expectExceptionalResult(ValidationException.class).expectNoEvents();
     }
+    @ParameterizedTest @ValueSource(booleans = {false, true})
+    void observationUsesItsDeviceIdentityAndFollowsDeviceRemoval(boolean async) {
+        (async ? asyncHouse() : house()).givenCommands(temperature(NOW, "20"))
+                .whenQuery(new GetDeviceStatus(SENSOR))
+                .expectResult((DeviceStatus status) -> status.deviceId().equals(SENSOR)
+                        && status.readings().get(Measurement.TEMPERATURE).equals(new BigDecimal("20")))
+                .andThen().whenCommand(new RemoveDevice(SENSOR)).expectNoErrors()
+                .andThen().whenExecuting(f -> f.cache().clear()).expectNoErrors()
+                .andThen().whenQuery(new GetDeviceStatus(SENSOR)).expectResult((DeviceStatus) null)
+                .expectThat(f -> {
+                    assertNull(Fluxzero.loadModel(SENSOR).get());
+                    assertNotNull(Fluxzero.loadModel(LIGHT).get());
+                });
+    }
+
 }

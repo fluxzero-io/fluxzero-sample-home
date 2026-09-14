@@ -1,5 +1,6 @@
 package io.fluxzero.home.model;
 
+import io.fluxzero.sdk.tracking.handling.IllegalCommandException;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 
@@ -31,6 +32,6 @@ public record Weekly(@NotEmpty(message = "Choose at least one day of the week.")
                 return candidate;
             }
         }
-        throw new HomeRuleViolation("No upcoming moment exists for this weekly routine.");
+        throw new IllegalCommandException("No upcoming moment exists for this weekly routine.");
     }
 }

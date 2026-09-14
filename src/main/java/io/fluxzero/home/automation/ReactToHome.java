@@ -3,36 +3,41 @@ package io.fluxzero.home.automation;
 import io.fluxzero.home.command.ActivateScene;
 import io.fluxzero.home.model.Automation;
 import io.fluxzero.home.model.AutomationId;
-import io.fluxzero.home.model.Home;
 import io.fluxzero.home.model.HomeChange;
 import io.fluxzero.sdk.Fluxzero;
 import io.fluxzero.sdk.common.Message;
 import io.fluxzero.sdk.common.exception.FunctionalException;
-import io.fluxzero.sdk.modeling.Graph;
 import io.fluxzero.sdk.persisting.eventsourcing.Apply;
 import io.fluxzero.sdk.persisting.eventsourcing.InterceptApply;
+import io.fluxzero.sdk.tracking.handling.HandleCommand;
 import jakarta.annotation.Nullable;
 
-import java.time.Instant;
 import java.util.List;
 
-/** React to a household change and commit the scene together with its execution history. */
+import static io.fluxzero.sdk.modeling.EventPublication.ALWAYS;
+
+/** React to a household change and commit the scene together with its quiet interval. */
 public record ReactToHome(AutomationId automationId, HomeChange change) {
-    @InterceptApply Object prepare(@Nullable Automation automation, Graph<Home> home, Message message) {
-        if (automation == null || !automation.enabled() || change.at().isBefore(automation.createdAt())
-                || !shouldActivate(automation, message.getTimestamp())) return null;
+    @HandleCommand
+    void execute() {
         try {
-            Fluxzero.assertLegal(new ActivateScene(automation.sceneId()));
-            return List.of(new ActivateScene(automation.sceneId()), this);
+            Fluxzero.assertAndApply(this);
         } catch (FunctionalException failure) {
-            return new PauseFailedAutomation(automationId, failure.getMessage());
+            Fluxzero.assertAndApply(new PauseFailedAutomation(automationId, change, failure.getMessage()));
         }
     }
-    @Apply Automation apply(Automation automation, Message message) {
-        return automation.withExecutionCount(automation.executionCount() + 1).withLastExecutedAt(message.getTimestamp());
+
+    @InterceptApply Object prepare(@Nullable Automation automation, Message message) {
+        if (automation == null || !automation.enabled() || change.at().isBefore(automation.effectiveFrom())
+                || !automation.trigger().matches(change)
+                || automation.cooldownEndsAt() != null && message.getTimestamp().isBefore(automation.cooldownEndsAt())) {
+            return null;
+        }
+        return List.of(new ActivateScene(automation.sceneId()), this);
     }
-    private boolean shouldActivate(Automation automation, Instant at) {
-        return automation.trigger().matches(change) && (automation.lastExecutedAt() == null
-                || !at.isBefore(automation.lastExecutedAt().plus(automation.cooldown())));
+
+    @Apply(eventPublication = ALWAYS)
+    Automation apply(Automation automation, Message message) {
+        return automation.withCooldownEndsAt(message.getTimestamp().plus(automation.cooldown()));
     }
 }

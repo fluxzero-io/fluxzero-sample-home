@@ -67,7 +67,7 @@ class RoutineOwnershipTest {
                 .andThen().whenTimeAdvancesTo(newDue).expectNoErrors().expectOnlyActiveScheduledCommands()
                 .expectThat(fc -> {
                     assertEvening();
-                    assertEquals(1, Fluxzero.loadModel(BEDTIME).get().executionCount());
+                    assertNull(Fluxzero.loadModel(BEDTIME).get().nextRun());
                 });
     }
 }

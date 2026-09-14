@@ -16,7 +16,6 @@ import io.fluxzero.home.model.HomeBecomes;
 import io.fluxzero.home.model.HomeDetails;
 import io.fluxzero.home.model.HomeId;
 import io.fluxzero.home.model.HomeMode;
-import io.fluxzero.home.model.HomeRuleViolation;
 import io.fluxzero.home.model.LightLevel;
 import io.fluxzero.home.model.Measurement;
 import io.fluxzero.home.model.MeasurementCrosses;
@@ -97,7 +96,7 @@ class AutomationDefinitionTest {
     void referencedSensorCannotBeRemoved() {
         house().givenCommands(evening(), define(crossing(SENSOR, Measurement.TEMPERATURE)))
                 .whenCommand(new RemoveDevice(SENSOR))
-                .expectExceptionalResult(HomeRuleViolation.class).expectNoEvents()
+                .expectExceptionalResult(IllegalCommandException.class).expectNoEvents()
                 .expectThat(f -> assertNotNull(Fluxzero.loadModel(SENSOR).get()));
     }
 

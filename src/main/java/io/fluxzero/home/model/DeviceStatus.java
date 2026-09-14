@@ -12,7 +12,7 @@ import java.util.Map;
 /** Device observations retain their own history for event-bound comparisons, separate from intentions. */
 @Model
 @With
-public record DeviceStatus(@EntityId DeviceStatusId deviceStatusId,
+public record DeviceStatus(@EntityId(prefix = "devicestatus:")
                            @Parent(pathInParent = "status") DeviceId deviceId,
                            Instant observedAt, Availability availability,
                            DeviceSettings reportedSettings,

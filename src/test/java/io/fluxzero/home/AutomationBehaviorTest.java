@@ -2,6 +2,7 @@ package io.fluxzero.home;
 
 import io.fluxzero.home.automation.HomeReactions;
 import io.fluxzero.home.automation.ReactToHome;
+import io.fluxzero.home.command.ActivateScene;
 import io.fluxzero.home.command.AddDevice;
 import io.fluxzero.home.command.ChangeHomeMode;
 import io.fluxzero.home.command.CreateHome;
@@ -18,7 +19,6 @@ import io.fluxzero.home.model.DeviceId;
 import io.fluxzero.home.model.DeviceObservationChanged;
 import io.fluxzero.home.model.DeviceSettings;
 import io.fluxzero.home.model.DeviceStatus;
-import io.fluxzero.home.model.DeviceStatusId;
 import io.fluxzero.home.model.HomeBecomes;
 import io.fluxzero.home.model.HomeDetails;
 import io.fluxzero.home.model.HomeId;
@@ -55,37 +55,43 @@ class AutomationBehaviorTest {
     void modeChangeActivatesSceneAndRepeatedModeDoesNot(boolean async) {
         (async ? asyncHouse(new HomeReactions()) : house(new HomeReactions())).givenCommands(evening(), onAway())
                 .whenCommand(new ChangeHomeMode(HOME, HomeMode.AWAY)).expectNoErrors()
-                .expectThat(f -> { assertEvening(); assertEquals(1, Fluxzero.loadModel(REACTION).get().executionCount()); })
+                .expectEvents(new ActivateScene(EVENING))
+                .expectThat(f -> assertEvening())
                 .andThen().whenCommand(new ChangeHomeMode(HOME, HomeMode.AWAY)).expectNoErrors()
-                .expectThat(f -> assertEquals(1, Fluxzero.loadModel(REACTION).get().executionCount()));
+                .expectNoEventsLike(ActivateScene.class);
     }
     @ParameterizedTest @ValueSource(booleans = {false, true})
     void crossingNeedsPreviousEvidenceAndHonorsCooldown(boolean async) {
         (async ? asyncHouse(new HomeReactions()) : house(new HomeReactions())).givenCommands(evening(), onHeat())
                 .whenCommand(temperature(NOW, "25")).expectNoErrors()
-                .expectThat(f -> assertEquals(0, Fluxzero.loadModel(REACTION).get().executionCount()))
+                .expectNoEventsLike(ActivateScene.class)
+                .expectThat(f -> assertNull(Fluxzero.loadModel(REACTION).get().cooldownEndsAt()))
                 .andThen().whenTimeElapses(Duration.ofSeconds(1)).expectNoErrors()
                 .andThen().whenCommand(temperature(NOW.plusSeconds(1), "23")).expectNoErrors()
-                .expectThat(f -> assertEquals(new BigDecimal("23"), Fluxzero.loadModel(new DeviceStatusId(SENSOR.getFunctionalId())).get().readings().get(Measurement.TEMPERATURE)))
+                .expectThat(f -> assertEquals(new BigDecimal("23"), Fluxzero.loadModel(SENSOR, DeviceStatus.class).get().readings().get(Measurement.TEMPERATURE)))
                 .andThen().whenTimeElapses(Duration.ofSeconds(1)).expectNoErrors()
                 .andThen().whenCommand(temperature(NOW.plusSeconds(2), "25")).expectNoErrors()
-                .expectThat(f -> assertEquals(1, Fluxzero.loadModel(REACTION).get().executionCount()))
+                .expectEvents(new ActivateScene(EVENING))
+                .expectThat(f -> assertEquals(NOW.plusSeconds(302), Fluxzero.loadModel(REACTION).get().cooldownEndsAt()))
                 .andThen().whenTimeElapses(Duration.ofSeconds(1)).expectNoErrors()
                 .andThen().whenCommand(temperature(NOW.plusSeconds(3), "23")).expectNoErrors()
                 .andThen().whenTimeElapses(Duration.ofSeconds(1)).expectNoErrors()
                 .andThen().whenCommand(temperature(NOW.plusSeconds(4), "25")).expectNoErrors()
-                .expectThat(f -> assertEquals(1, Fluxzero.loadModel(REACTION).get().executionCount()));
+                .expectNoEventsLike(ActivateScene.class)
+                .expectThat(f -> assertEquals(NOW.plusSeconds(302), Fluxzero.loadModel(REACTION).get().cooldownEndsAt()));
     }
     @Test void pausedAutomationDoesNotReact() {
         house(new HomeReactions()).givenCommands(evening(), onAway(), new PauseAutomation(REACTION))
                 .whenCommand(new ChangeHomeMode(HOME, HomeMode.AWAY)).expectNoErrors()
-                .expectThat(f -> assertEquals(0, Fluxzero.loadModel(REACTION).get().executionCount()));
+                .expectNoEventsLike(ActivateScene.class)
+                .expectThat(f -> assertNull(Fluxzero.loadModel(REACTION).get().cooldownEndsAt()));
     }
     @Test void otherHomesDoNotTriggerThisHousehold() {
         var other = new HomeId("other");
         house(new HomeReactions()).givenCommands(evening(), onAway(), new CreateHome(other, new HomeDetails("Other"), AMSTERDAM))
                 .whenCommand(new ChangeHomeMode(other, HomeMode.AWAY)).expectNoErrors()
-                .expectThat(f -> assertEquals(0, Fluxzero.loadModel(REACTION).get().executionCount()));
+                .expectNoEventsLike(ActivateScene.class)
+                .expectThat(f -> assertNull(Fluxzero.loadModel(REACTION).get().cooldownEndsAt()));
     }
 
     @Test void unavailableScenePausesAutomationWithoutPartlyChangingDevices() {
@@ -101,7 +107,7 @@ class AutomationBehaviorTest {
         (async ? asyncHouse() : house()).givenCommands(temperature(NOW.minusSeconds(1), "23"))
                 .whenCommand(temperature(NOW, "25")).expectNoErrors().expectThat(f -> {
                     f.cache().clear();
-                    var status = Fluxzero.loadGraph(new DeviceStatusId(SENSOR.getFunctionalId()));
+                    var status = Fluxzero.loadGraph(SENSOR, DeviceStatus.class);
                     assertEquals(new BigDecimal("23"), status.previous().get().readings().get(Measurement.TEMPERATURE));
                     assertEquals(new BigDecimal("25"), status.get().readings().get(Measurement.TEMPERATURE));
                 });
@@ -121,17 +127,18 @@ class AutomationBehaviorTest {
                     f.cache().clear();
                     assertEquals(new BigDecimal("23"), crossing.get().previous().get().readings().get(Measurement.TEMPERATURE));
                     assertEquals(new BigDecimal("25"), crossing.get().get().readings().get(Measurement.TEMPERATURE));
-                    assertEquals(new BigDecimal("22"), Fluxzero.loadModel(new DeviceStatusId(SENSOR.getFunctionalId())).get().readings().get(Measurement.TEMPERATURE));
+                    assertEquals(new BigDecimal("22"), Fluxzero.loadModel(SENSOR, DeviceStatus.class).get().readings().get(Measurement.TEMPERATURE));
                 });
     }
     @Test void resumingWaitsForTheNextModeChange() {
         house(new HomeReactions()).givenCommands(evening(), onAway(), new PauseAutomation(REACTION),
                 new ChangeHomeMode(HOME, HomeMode.AWAY))
                 .whenCommand(new ResumeAutomation(REACTION)).expectNoErrors()
-                .expectThat(f -> assertEquals(0, Fluxzero.loadModel(REACTION).get().executionCount()))
+                .expectNoEventsLike(ActivateScene.class)
+                .expectThat(f -> assertNull(Fluxzero.loadModel(REACTION).get().cooldownEndsAt()))
                 .andThen().whenCommand(new ChangeHomeMode(HOME, HomeMode.HOME)).expectNoErrors()
                 .andThen().whenCommand(new ChangeHomeMode(HOME, HomeMode.AWAY)).expectNoErrors()
-                .expectThat(f -> assertEquals(1, Fluxzero.loadModel(REACTION).get().executionCount()));
+                .expectEvents(new ActivateScene(EVENING));
     }
 
     @ParameterizedTest @ValueSource(booleans = {false, true})
@@ -140,7 +147,8 @@ class AutomationBehaviorTest {
         (async ? asyncHouse() : house()).givenCommands(evening(), onAway(), new ChangeHomeMode(HOME, HomeMode.AWAY),
                         new RenameHome(HOME, "Canal home"))
                 .whenCommand(new ReactToHome(REACTION, departure)).expectNoErrors()
-                .expectThat(f -> { assertEvening(); assertEquals(1, Fluxzero.loadModel(REACTION).get().executionCount()); });
+                .expectEvents(new ActivateScene(EVENING))
+                .expectThat(f -> assertEvening());
     }
 
     @ParameterizedTest @ValueSource(booleans = {false, true})
@@ -151,7 +159,8 @@ class AutomationBehaviorTest {
         (async ? asyncHouse() : house()).givenCommands(evening(), onHeat(),
                         temperature(NOW.minusSeconds(2), "23"), temperature(NOW.minusSeconds(1), "25"), temperature(NOW, "26"))
                 .whenCommand(new ReactToHome(REACTION, crossing)).expectNoErrors()
-                .expectThat(f -> { assertEvening(); assertEquals(1, Fluxzero.loadModel(REACTION).get().executionCount()); });
+                .expectEvents(new ActivateScene(EVENING))
+                .expectThat(f -> assertEvening());
     }
 
     @Test void downwardCrossingCanActivateAScene() {
@@ -160,7 +169,7 @@ class AutomationBehaviorTest {
         house(new HomeReactions()).givenCommands(evening(), new DefineAutomation(REACTION, HOME, new AutomationDetails("Cold"), EVENING, trigger, Duration.ZERO),
                 temperature(NOW.minusSeconds(1), "19"))
                 .whenCommand(temperature(NOW, "17")).expectNoErrors()
-                .expectThat(f -> assertEquals(1, Fluxzero.loadModel(REACTION).get().executionCount()));
+                .expectEvents(new ActivateScene(EVENING));
     }
 
     @ParameterizedTest
@@ -181,7 +190,7 @@ class AutomationBehaviorTest {
                         new DefineAutomation(REACTION, HOME, new AutomationDetails("Threshold"), EVENING, trigger, Duration.ZERO),
                         temperature(NOW.minusSeconds(1), before))
                 .whenCommand(temperature(NOW, after)).expectNoErrors()
-                .expectThat(f -> assertEquals(activations, Fluxzero.loadModel(REACTION).get().executionCount()));
+                .expectThat(f -> assertEquals(activations > 0, Fluxzero.loadModel(REACTION).get().cooldownEndsAt() != null));
     }
 
     @ParameterizedTest
@@ -189,12 +198,14 @@ class AutomationBehaviorTest {
     void aMissingReadingBreaksTheEvidenceForACrossing(boolean async) {
         (async ? asyncHouse(new HomeReactions()) : house(new HomeReactions()))
                 .givenCommands(evening(), onHeat(), temperature(NOW.minusSeconds(2), "23"))
-                .whenCommand(new ReportDeviceStatus(new DeviceStatusId(SENSOR.getFunctionalId()), SENSOR,
+                .whenCommand(new ReportDeviceStatus(SENSOR,
                         NOW.minusSeconds(1), Availability.ONLINE, DeviceSettings.empty(), Map.of()))
                 .expectNoErrors()
-                .expectThat(f -> assertEquals(0, Fluxzero.loadModel(REACTION).get().executionCount()))
+                .expectNoEventsLike(ActivateScene.class)
+                .expectThat(f -> assertNull(Fluxzero.loadModel(REACTION).get().cooldownEndsAt()))
                 .andThen().whenCommand(temperature(NOW, "25")).expectNoErrors()
-                .expectThat(f -> assertEquals(0, Fluxzero.loadModel(REACTION).get().executionCount()));
+                .expectNoEventsLike(ActivateScene.class)
+                .expectThat(f -> assertNull(Fluxzero.loadModel(REACTION).get().cooldownEndsAt()));
     }
 
     @ParameterizedTest
@@ -205,14 +216,15 @@ class AutomationBehaviorTest {
                 .givenCommands(evening(), onHeat(),
                         new AddDevice(otherSensor, GARDEN, new DeviceDetails("Garden sensor"), null,
                                 Set.of(), Set.of(Measurement.TEMPERATURE)),
-                        new ReportDeviceStatus(new DeviceStatusId(otherSensor.getFunctionalId()), otherSensor,
+                        new ReportDeviceStatus(otherSensor,
                                 NOW.minusSeconds(1), Availability.ONLINE, DeviceSettings.empty(),
                                 Map.of(Measurement.TEMPERATURE, new BigDecimal("23"))))
-                .whenCommand(new ReportDeviceStatus(new DeviceStatusId(otherSensor.getFunctionalId()), otherSensor,
+                .whenCommand(new ReportDeviceStatus(otherSensor,
                         NOW, Availability.ONLINE, DeviceSettings.empty(),
                         Map.of(Measurement.TEMPERATURE, new BigDecimal("25"))))
                 .expectNoErrors()
-                .expectThat(f -> assertEquals(0, Fluxzero.loadModel(REACTION).get().executionCount()));
+                .expectNoEventsLike(ActivateScene.class)
+                .expectThat(f -> assertNull(Fluxzero.loadModel(REACTION).get().cooldownEndsAt()));
     }
 
     @Test
@@ -222,6 +234,53 @@ class AutomationBehaviorTest {
                         new DefineAutomation(REACTION, HOME, new AutomationDetails("On return"), EVENING,
                                 new HomeBecomes(HomeMode.HOME), Duration.ZERO))
                 .whenCommand(new ReactToHome(REACTION, departure)).expectNoErrors()
-                .expectThat(f -> assertEquals(0, Fluxzero.loadModel(REACTION).get().executionCount()));
+                .expectNoEventsLike(ActivateScene.class)
+                .expectThat(f -> assertNull(Fluxzero.loadModel(REACTION).get().cooldownEndsAt()));
     }
+    @ParameterizedTest @ValueSource(booleans = {false, true})
+    void cooldownEndsExactlyAtItsDeadlineAndSurvivesPauseAndResume(boolean async) {
+        var definition = new DefineAutomation(REACTION, HOME, new AutomationDetails("Leaving home"),
+                EVENING, new HomeBecomes(HomeMode.AWAY), Duration.ofMinutes(5));
+        (async ? asyncHouse(new HomeReactions()) : house(new HomeReactions()))
+                .givenCommands(evening(), definition, new ChangeHomeMode(HOME, HomeMode.AWAY))
+                .whenCommand(new PauseAutomation(REACTION)).expectNoErrors()
+                .andThen().whenCommand(new ResumeAutomation(REACTION)).expectNoEventsLike(ActivateScene.class)
+                .andThen().givenCommands(new ChangeHomeMode(HOME, HomeMode.HOME))
+                .whenTimeAdvancesTo(NOW.plusSeconds(300).minusNanos(1)).expectNoErrors()
+                .andThen().whenCommand(new ChangeHomeMode(HOME, HomeMode.AWAY))
+                .expectNoEventsLike(ActivateScene.class)
+                .andThen().givenCommands(new ChangeHomeMode(HOME, HomeMode.HOME))
+                .whenTimeAdvancesTo(NOW.plusSeconds(300)).expectNoErrors()
+                .andThen().whenCommand(new ChangeHomeMode(HOME, HomeMode.AWAY))
+                .expectEvents(new ActivateScene(EVENING)).expectNoErrors()
+                .expectThat(f -> assertEquals(NOW.plusSeconds(600), Fluxzero.loadModel(REACTION).get().cooldownEndsAt()));
+    }
+
+    @Test
+    void zeroCooldownAllowsAnotherDistinctDepartureAtTheSameTime() {
+        house(new HomeReactions()).givenCommands(evening(), onAway(),
+                        new ChangeHomeMode(HOME, HomeMode.AWAY), new ChangeHomeMode(HOME, HomeMode.HOME))
+                .whenCommand(new ChangeHomeMode(HOME, HomeMode.AWAY)).expectNoErrors()
+                .expectOnlyEvents(new ChangeHomeMode(HOME, HomeMode.AWAY), new ActivateScene(EVENING),
+                        new ReactToHome(REACTION, new HomeModeChanged(NOW, HomeMode.HOME, HomeMode.AWAY)));
+    }
+
+    @ParameterizedTest @ValueSource(longs = {0, 60, 600})
+    void changingCooldownKeepsItsOriginAtTheLastSuccessfulExecution(long seconds) {
+        house(new HomeReactions()).givenCommands(evening(), onAway(), new ChangeHomeMode(HOME, HomeMode.AWAY))
+                .atFixedTime(NOW.plusSeconds(30))
+                .whenCommand(new DefineAutomation(REACTION, HOME, new AutomationDetails("Leaving home"), EVENING,
+                        new HomeBecomes(HomeMode.AWAY), Duration.ofSeconds(seconds))).expectNoErrors()
+                .expectNoEventsLike(ActivateScene.class)
+                .expectThat(f -> assertEquals(NOW.plusSeconds(seconds), Fluxzero.loadModel(REACTION).get().cooldownEndsAt()));
+    }
+
+    @Test
+    void aNewDefinitionDoesNotReactToAnEarlierChange() {
+        house().givenCommands(evening(), onAway()).atFixedTime(NOW.plusSeconds(1))
+                .givenCommands(onAway())
+                .whenCommand(new ReactToHome(REACTION, new HomeModeChanged(NOW, HomeMode.HOME, HomeMode.AWAY)))
+                .expectNoErrors().expectNoEvents();
+    }
+
 }

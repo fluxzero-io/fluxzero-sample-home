@@ -60,7 +60,7 @@ class SceneBehaviorTest {
     }
     @Test void aSceneUsedByARoutineCannotBeRemoved() {
         house(new RoutineSchedules()).givenCommands(evening(), once(NOW.plusSeconds(60)))
-                .whenCommand(new RemoveScene(EVENING)).expectExceptionalResult(HomeRuleViolation.class).expectNoEvents()
+                .whenCommand(new RemoveScene(EVENING)).expectExceptionalResult(IllegalCommandException.class).expectNoEvents()
                 .expectOnlyActiveScheduledCommands(scheduled(1, NOW.plusSeconds(60)));
     }
 
