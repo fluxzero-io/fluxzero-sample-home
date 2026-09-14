@@ -18,8 +18,6 @@ import jakarta.validation.constraints.NotNull;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.Map;
 
 import static io.fluxzero.home.model.Rules.require;
@@ -29,10 +27,6 @@ public record ReportDeviceStatus(@NotNull DeviceStatusId deviceStatusId, @NotNul
                                  @NotNull Instant observedAt,
                                  @NotNull Availability availability, @NotNull @Valid DeviceSettings reportedSettings,
                                  @NotNull Map<@NotNull Measurement, @NotNull BigDecimal> readings) {
-    public ReportDeviceStatus {
-        readings = readings == null ? null : Collections.unmodifiableMap(new LinkedHashMap<>(readings));
-    }
-
     @AssertTrue(message = "Use this device’s status identity.")
     boolean hasMatchingIdentity() {
         return deviceStatusId == null || deviceId == null

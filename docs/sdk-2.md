@@ -24,7 +24,7 @@ De build importeert `io.fluxzero:fluxzero-bom:2.0.0-rc.11-local.9ae3f349a2a`, ee
 | Versioned defaults | `2026.09.10` kiest de 2.0-defaults voor conflictherhaling en automatische routing. |
 | Deterministische scheduling en TestFixture | Deadlines, generaties, pauzeren, herhaling, klokovergangen en stale delivery zijn gedragstests. |
 
-Een ontbrekende invoerwaarde of leeg tijdpatroon wordt als `ValidationException` met een veldpad afgewezen, ook wanneer het opgegeven huis nog niet bestaat. `AddDevice` laadt geen ruimte voor de vraag of de invoer mogelijkheden of metingen bevat. Zijn `@Apply(Space)` bewaakt via de SDK nog steeds dat het apparaat in een bestaande ruimte wordt aangemaakt. Constructors kopiëren verzamelingen immutable, maar wijzen ontbrekende waarden of null-elementen niet vóór de validator af.
+Een ongeldige invoerwaarde of leeg tijdpatroon wordt als `ValidationException` met een veldpad afgewezen, ook wanneer het opgegeven huis nog niet bestaat. `AddDevice` laadt geen ruimte voor de vraag of de invoer mogelijkheden of metingen bevat. Zijn `@Apply(Space)` bewaakt via de SDK nog steeds dat het apparaat in een bestaande ruimte wordt aangemaakt. Bij gedeserialiseerde invoer verzorgt Fluxzero de standaardwaarden voor collecties; de commands voegen daarvoor geen constructors toe.
 
 `ReportDeviceStatus` vergelijkt de waarnemingstijd met de oorspronkelijke publicatietijd van het bericht. Deze contextafhankelijke controle blijft op de vastgelegde kandidaat een `@AssertLegal(Message)` zonder Modelparameter. `@PastOrPresent` ten opzichte van de verwerkingsklok zou een andere tijdgrens kiezen. De ontbrekende waarnemingstijd, statusidentiteit, bereikbaarheid en meetwaarden worden wel vooraf declaratief gevalideerd.
 

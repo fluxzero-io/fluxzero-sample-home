@@ -15,8 +15,6 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 
-import java.util.Collections;
-import java.util.LinkedHashSet;
 import java.util.Set;
 
 import static io.fluxzero.home.model.Rules.require;
@@ -24,10 +22,6 @@ import static io.fluxzero.home.model.Rules.require;
 /** Group spaces without changing their place in the home. */
 public record DefineZone(ZoneId zoneId, HomeId homeId, @NotNull @Valid ZoneDetails details,
                          @NotEmpty(message = "A zone needs at least one space.") Set<@NotNull SpaceId> spaces) {
-    public DefineZone {
-        spaces = spaces == null ? null : Collections.unmodifiableSet(new LinkedHashSet<>(spaces));
-    }
-
     @AssertLegal void validate(Graph<Home> home, @Nullable Zone zone) {
         require(zone == null || zone.homeId().equals(homeId), "A zone cannot move between homes.");
         spaces.forEach(id -> require(home.find(id, Space.class).isPresent(),

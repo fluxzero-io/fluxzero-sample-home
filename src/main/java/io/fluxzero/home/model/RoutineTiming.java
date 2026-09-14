@@ -8,8 +8,6 @@ import jakarta.validation.constraints.NotNull;
 import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalTime;
-import java.util.Collections;
-import java.util.LinkedHashSet;
 import java.util.Set;
 
 /** A one-off moment or a weekly local-time rhythm, independent of machine time. */
@@ -26,9 +24,6 @@ public sealed interface RoutineTiming {
     /** Missing spring-clock times are skipped; an autumn overlap executes at its first occurrence only. */
     record Weekly(@NotEmpty(message = "Choose at least one day of the week.") Set<@NotNull DayOfWeek> days,
                   @NotNull LocalTime time) implements RoutineTiming {
-        public Weekly {
-            days = days == null ? null : Collections.unmodifiableSet(new LinkedHashSet<>(days));
-        }
         public Instant nextAfter(Instant after, java.time.ZoneId zone) {
             var start = after.atZone(zone).toLocalDate();
             // Fourteen days also cover a chosen weekday whose clock time does not exist this week.

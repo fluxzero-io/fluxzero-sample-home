@@ -20,10 +20,6 @@ import java.util.List;
 /** Define the ordered household intentions after checking their inputs and selection. */
 public record DefineScene(SceneId sceneId, HomeId homeId, @NotNull @Valid SceneDetails details,
                           @NotEmpty @Valid List<@NotNull SceneAction> actions) {
-    public DefineScene {
-        actions = actions == null ? null : actions.stream().toList();
-    }
-
     @AssertLegal
     void remainsInHome(@Nullable Scene scene) {
         if (scene != null && !scene.homeId().equals(homeId)) {

@@ -13,18 +13,11 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotNull;
 
-import java.util.Collections;
-import java.util.LinkedHashSet;
 import java.util.Set;
 
 /** Give a device a home and describe the things it can do and measure. */
 public record AddDevice(DeviceId deviceId, SpaceId spaceId, @NotNull @Valid DeviceDetails details, String label,
                         @NotNull Set<@NotNull Capability> capabilities, @NotNull Set<@NotNull Measurement> measurements) {
-    public AddDevice {
-        capabilities = capabilities == null ? null : Collections.unmodifiableSet(new LinkedHashSet<>(capabilities));
-        measurements = measurements == null ? null : Collections.unmodifiableSet(new LinkedHashSet<>(measurements));
-    }
-
     @AssertTrue(message = "A device must do or measure something.")
     boolean hasCapabilitiesOrMeasurements() {
         return capabilities == null || measurements == null || !capabilities.isEmpty() || !measurements.isEmpty();
