@@ -8,22 +8,32 @@ import io.fluxzero.home.model.DeviceSettings;
 import io.fluxzero.home.model.Measurement;
 import io.fluxzero.home.model.Space;
 import io.fluxzero.home.model.SpaceId;
-import io.fluxzero.sdk.modeling.AssertLegal;
 import io.fluxzero.sdk.persisting.eventsourcing.Apply;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotNull;
 
+import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.Set;
-
-import static io.fluxzero.home.model.Rules.require;
 
 /** Give a device a home and describe the things it can do and measure. */
 public record AddDevice(DeviceId deviceId, SpaceId spaceId, @NotNull @Valid DeviceDetails details, String label,
-                        Set<Capability> capabilities, Set<Measurement> measurements) {
-    public AddDevice { capabilities = Set.copyOf(capabilities); measurements = Set.copyOf(measurements); }
-    @AssertLegal void validate(Space space) {
-        require(!capabilities.isEmpty() || !measurements.isEmpty(), "A device must do or measure something.");
-        require(label == null || !label.isBlank(), "A device label cannot be blank.");
+                        @NotNull Set<@NotNull Capability> capabilities, @NotNull Set<@NotNull Measurement> measurements) {
+    public AddDevice {
+        capabilities = capabilities == null ? null : Collections.unmodifiableSet(new LinkedHashSet<>(capabilities));
+        measurements = measurements == null ? null : Collections.unmodifiableSet(new LinkedHashSet<>(measurements));
     }
+
+    @AssertTrue(message = "A device must do or measure something.")
+    boolean hasCapabilitiesOrMeasurements() {
+        return capabilities == null || measurements == null || !capabilities.isEmpty() || !measurements.isEmpty();
+    }
+
+    @AssertTrue(message = "A device label cannot be blank.")
+    boolean hasValidLabel() {
+        return label == null || !label.isBlank();
+    }
+
     @Apply Device apply(Space space) { return new Device(deviceId, spaceId, details, label, capabilities, measurements, DeviceSettings.empty()); }
 }

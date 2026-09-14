@@ -19,11 +19,11 @@ import jakarta.validation.constraints.NotNull;
 import static io.fluxzero.home.model.Rules.require;
 
 /** Plan a scene once or on selected days; revising a routine replaces its next scheduled execution. */
-public record PlanRoutine(RoutineId routineId, HomeId homeId, @NotNull @Valid RoutineDetails details, SceneId sceneId, RoutineTiming timing) {
+public record PlanRoutine(RoutineId routineId, HomeId homeId, @NotNull @Valid RoutineDetails details,
+                          @NotNull SceneId sceneId, @NotNull @Valid RoutineTiming timing) {
     @AssertLegal void validate(Graph<Home> home, @Nullable Routine routine, Message message) {
-        require(timing != null, "Choose when the routine should run.");
         require(routine == null || routine.homeId().equals(homeId), "A routine cannot move between homes.");
-        require(sceneId != null && home.find(sceneId, Scene.class).isPresent(),
+        require(home.find(sceneId, Scene.class).isPresent(),
                 "Choose an existing scene from this home.");
         require(timing.nextAfter(message.getTimestamp(), home.get().timeZone()) != null, "Choose a future moment.");
     }

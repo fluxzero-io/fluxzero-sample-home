@@ -5,6 +5,7 @@ import io.fluxzero.home.command.*;
 import io.fluxzero.home.model.*;
 import io.fluxzero.home.query.*;
 import io.fluxzero.sdk.Fluxzero;
+import io.fluxzero.sdk.common.Message;
 import io.fluxzero.sdk.modeling.*;
 import io.fluxzero.sdk.scheduling.Schedule;
 import io.fluxzero.sdk.test.*;
@@ -65,6 +66,17 @@ class DeviceBehaviorTest {
     }
     @Test void futureObservationsAreRejected() {
         house().whenCommand(temperature(NOW.plusSeconds(1), "20")).expectExceptionalResult(HomeRuleViolation.class).expectNoEvents();
+    }
+    @Test void observationTimeIsComparedWithPublicationTime() {
+        house().whenCommand(new Message(temperature(NOW, "20")).withTimestamp(NOW.minusSeconds(1)))
+                .expectExceptionalResult(HomeRuleViolation.class).expectNoEvents();
+    }
+    @Test void zeroAndOneAreValidMotionReadings() {
+        house().givenCommands(new ReportDeviceStatus(new DeviceStatusId(SENSOR.getFunctionalId()), SENSOR, NOW.minusSeconds(1),
+                        Availability.ONLINE, DeviceSettings.empty(), Map.of(Measurement.MOTION, BigDecimal.ZERO)))
+                .whenCommand(new ReportDeviceStatus(new DeviceStatusId(SENSOR.getFunctionalId()), SENSOR, NOW,
+                        Availability.ONLINE, DeviceSettings.empty(), Map.of(Measurement.MOTION, BigDecimal.ONE)))
+                .expectNoErrors();
     }
     @Test void unsupportedMeasurementsAreRejected() {
         house().whenCommand(new ReportDeviceStatus(new DeviceStatusId(SENSOR.getFunctionalId()), SENSOR, NOW, Availability.ONLINE,

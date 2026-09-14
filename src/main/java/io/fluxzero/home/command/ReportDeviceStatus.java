@@ -13,27 +13,49 @@ import io.fluxzero.sdk.persisting.eventsourcing.Apply;
 import io.fluxzero.sdk.persisting.eventsourcing.InterceptApply;
 import jakarta.annotation.Nullable;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotNull;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import static io.fluxzero.home.model.Rules.require;
 
 /** Record a complete observation; delayed or duplicate observations do not overwrite newer evidence. */
-public record ReportDeviceStatus(DeviceStatusId deviceStatusId, DeviceId deviceId, Instant observedAt,
-                                 Availability availability, @NotNull @Valid DeviceSettings reportedSettings,
-                                 Map<Measurement, BigDecimal> readings) {
-    public ReportDeviceStatus { readings = Map.copyOf(readings); }
+public record ReportDeviceStatus(@NotNull DeviceStatusId deviceStatusId, @NotNull DeviceId deviceId,
+                                 @NotNull Instant observedAt,
+                                 @NotNull Availability availability, @NotNull @Valid DeviceSettings reportedSettings,
+                                 @NotNull Map<@NotNull Measurement, @NotNull BigDecimal> readings) {
+    public ReportDeviceStatus {
+        readings = readings == null ? null : Collections.unmodifiableMap(new LinkedHashMap<>(readings));
+    }
+
+    @AssertTrue(message = "Use this device’s status identity.")
+    boolean hasMatchingIdentity() {
+        return deviceStatusId == null || deviceId == null
+                || deviceStatusId.equals(new DeviceStatusId(deviceId.getFunctionalId()));
+    }
+
+    @AssertTrue(message = "Report values within each measurement's range.")
+    boolean hasValidReadings() {
+        return readings == null || readings.entrySet().stream().allMatch(entry -> entry.getKey() == null
+                || entry.getValue() == null || entry.getKey().accepts(entry.getValue()));
+    }
+
+    @AssertLegal
+    void wasObservedByPublication(Message message) {
+        require(!observedAt.isAfter(message.getTimestamp()), "An observation cannot come from the future.");
+    }
+
     @InterceptApply Object ignoreOld(@Nullable DeviceStatus status) {
         return status != null && observedAt != null && !observedAt.isAfter(status.observedAt()) ? null : this;
     }
-    @AssertLegal void validate(Device device, Message message) {
-        require(deviceStatusId.equals(new DeviceStatusId(deviceId.getFunctionalId())), "Use this device’s status identity.");
-        require(observedAt != null && !observedAt.isAfter(message.getTimestamp()), "An observation cannot come from the future.");
-        require(availability != null, "Report whether the device is reachable.");
-        readings.forEach((kind,value) -> { require(device.measurements().contains(kind), "This device does not measure " + kind + "."); kind.validate(value); });
+    @AssertLegal void supportsReadings(Device device) {
+        readings.keySet().forEach(kind -> require(device.measurements().contains(kind),
+                "This device does not measure " + kind + "."));
     }
     @Apply DeviceStatus apply(@Nullable DeviceStatus status, Device device) {
         return new DeviceStatus(deviceStatusId, deviceId, observedAt, availability, reportedSettings, readings);

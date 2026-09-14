@@ -8,16 +8,17 @@ import io.fluxzero.home.model.SpaceId;
 import io.fluxzero.sdk.modeling.Graph;
 import io.fluxzero.sdk.persisting.eventsourcing.Apply;
 import io.fluxzero.sdk.persisting.eventsourcing.InterceptApply;
+import jakarta.validation.constraints.NotNull;
 
 import java.util.List;
 
 import static io.fluxzero.home.model.Rules.require;
 
 /** Move a device inside its home and clear its former room’s primary-light choice atomically. */
-public record MoveDevice(DeviceId deviceId, SpaceId destinationId) {
+public record MoveDevice(DeviceId deviceId, @NotNull SpaceId destinationId) {
     @InterceptApply Object prepare(Graph<Device> device, Graph<Home> home) {
         if (device.get().spaceId().equals(destinationId)) return null;
-        require(destinationId != null && home.find(destinationId, Space.class).isPresent(),
+        require(home.find(destinationId, Space.class).isPresent(),
                 "Choose an existing space from this home.");
         return List.of(new ClearPrimaryLight(device.get().spaceId(), deviceId), this);
     }
