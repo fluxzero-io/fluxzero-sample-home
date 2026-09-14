@@ -13,6 +13,7 @@ De build importeert `io.fluxzero:fluxzero-bom:2.0.0-rc.11-local.9ae3f349a2a`, ee
 | Interceptie en atomaire meerdere Models | `ActivateScene` breidt de bedoeling uit tot gewone apparaatcommands en de activatie zelf binnen één commit. |
 | RC10: schrijven naar bestaande ouders | `RemoveDevice` wist een apparaat én corrigeert het primaire licht van de bestaande kamer, zonder haar ID in het command. `@Association("devices")` onderscheidt de kamer van bovenliggende ruimtes. |
 | Invoer vóór Modelcontroles | Jakarta-constraints en pure `@AssertTrue`-methoden controleren namen, rollen, capabilities, cooldowns, triggers, tijdpatronen en meetwaarden. `@Valid` neemt de concrete geneste waarden mee. `@AssertLegal` bewaakt daarna model- en relatieafhankelijke regels. |
+| Gedelegeerde Modelassertions | `@AssertLegal` op `DefineAutomation.trigger` laat de concrete `MeasurementCrosses` zelf haar sensor en meetmogelijkheid controleren via de gepinde huis-Graph. |
 | Expliciete eventpublicatie | `ActivateScene` gebruikt `@Apply(eventPublication = ALWAYS)` en retourneert de bestaande scène: activatiehistorie zonder gekopieerde auditvelden. |
 | Doelgerichte opslag en historie | Alle negen Models gebruiken gewone `@Model`. Ook apparaatwaarnemingen hebben historie nodig voor het herkennen van grensoverschrijdingen. |
 | Creationcompatibiliteit en optionele relaties | De SDK weigert dubbele creatie; `AddSpace` injecteert zijn optionele bovenliggende ruimte en bewaakt zelf de huisgrens. |
@@ -25,6 +26,8 @@ De build importeert `io.fluxzero:fluxzero-bom:2.0.0-rc.11-local.9ae3f349a2a`, ee
 | Deterministische scheduling en TestFixture | Deadlines, generaties, pauzeren, herhaling, klokovergangen en stale delivery zijn gedragstests. |
 
 Een ongeldige invoerwaarde of leeg tijdpatroon wordt als `ValidationException` met een veldpad afgewezen, ook wanneer het opgegeven huis nog niet bestaat. `AddDevice` laadt geen ruimte voor de vraag of de invoer mogelijkheden of metingen bevat. Zijn `@Apply(Space)` bewaakt via de SDK nog steeds dat het apparaat in een bestaande ruimte wordt aangemaakt. Bij gedeserialiseerde invoer verzorgt Fluxzero de standaardwaarden voor collecties; de commands voegen daarvoor geen constructors toe.
+
+Bij automatiseringen cascadeert `@Valid` de invoerconstraints van de concrete trigger; `@AssertLegal` delegeert daarna de Modelcontroles. `DefineAutomation` bewaakt de huisgrens van de definitie en de scène, zonder de triggerimplementaties te kennen. `HomeBecomes` en `MeasurementCrosses` bezitten hun eigen overgangsdetectie. `HomeChange` onderscheidt een moduswijziging van een apparaatwaarneming met concrete waarden; beide interfaces bevatten alleen contracten. De zoekselectie gebruikt dezelfde overgangsregel als de uiteindelijke commandafhandeling, die altijd de geladen automatiseringsdefinitie controleert.
 
 `ReportDeviceStatus` vergelijkt de waarnemingstijd met de oorspronkelijke publicatietijd van het bericht. Deze contextafhankelijke controle blijft op de vastgelegde kandidaat een `@AssertLegal(Message)` zonder Modelparameter. `@PastOrPresent` ten opzichte van de verwerkingsklok zou een andere tijdgrens kiezen. De ontbrekende waarnemingstijd, statusidentiteit, bereikbaarheid en meetwaarden worden wel vooraf declaratief gevalideerd.
 

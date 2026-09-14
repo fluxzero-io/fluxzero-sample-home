@@ -13,7 +13,7 @@ import io.fluxzero.home.command.RemoveDevice;
 import io.fluxzero.home.model.Automation;
 import io.fluxzero.home.model.AutomationDetails;
 import io.fluxzero.home.model.AutomationId;
-import io.fluxzero.home.model.AutomationTrigger;
+import io.fluxzero.home.model.HomeBecomes;
 import io.fluxzero.home.model.Capability;
 import io.fluxzero.home.model.Device;
 import io.fluxzero.home.model.DeviceDetails;
@@ -97,7 +97,7 @@ class HomeQueryTest {
         var otherLight = new DeviceId("other-light");
         var otherScene = new SceneId("other-evening");
         var otherAutomation = new AutomationId("other-reaction");
-        var trigger = new AutomationTrigger.HomeBecomes(HomeMode.AWAY);
+        var trigger = new HomeBecomes(HomeMode.AWAY);
         (asynchronous ? asyncHouse(new HomeReactions()) : house(new HomeReactions())).givenCommands(
                 evening(), new DefineAutomation(REACTION, HOME, new AutomationDetails("Leaving home"), EVENING, trigger, Duration.ZERO),
                 new CreateHome(otherHome, new HomeDetails("Other home"), AMSTERDAM),

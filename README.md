@@ -52,6 +52,8 @@ new ActivateScene(evening);
 
 Onder dezelfde scène zitten gewone handelingen zoals `DimLight` en `SetRoomTemperature`. Iedere concrete handeling bevat haar eigen kleine `@Apply`; de interfaces beschrijven uitsluitend contracten. Instellingen zoals `LightLevel` dragen hun eigen invoergrenzen. Een scène-activatie blijft in de Model-historie staan, ook als de gewenste instellingen al overeenkomen. Er zijn geen merknamen, protocolvelden of technische kanaalnamen nodig.
 
+Automatiseringen kiezen een concrete aanleiding zoals `new HomeBecomes(HomeMode.AWAY)` of een `MeasurementCrosses` voor een sensor. Elke trigger beschrijft zelf welke verandering telt en bewaakt haar eigen voorwaarden. `DefineAutomation` koppelt die aanleiding aan een scène en een rustperiode.
+
 ## Lokaal gebruiken
 
 Vereist: Git, de Fluxzero CLI en Java 25. De Maven Wrapper zit in de repository.

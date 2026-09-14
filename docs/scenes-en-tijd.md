@@ -38,6 +38,20 @@ Als een scène door een gewijzigde huisinrichting niet meer uitgevoerd kan worde
 
 Een automatisering kan reageren wanneer het huis een bepaalde modus krijgt, of wanneer een sensorwaarde een grens omhoog of omlaag passeert. Een eerste sensorwaarde bewijst nog geen grensovergang. Waarden die aan dezelfde kant van de grens blijven, activeren de scène niet opnieuw.
 
+```java
+new DefineAutomation(leaving, home, new AutomationDetails("Bij vertrek"),
+        everythingOff, new HomeBecomes(HomeMode.AWAY), Duration.ZERO);
+
+new DefineAutomation(tooWarm, home, new AutomationDetails("Te warm"),
+        cooling, new MeasurementCrosses(sensor, Measurement.TEMPERATURE,
+                MeasurementCrosses.Direction.RISES_ABOVE, new BigDecimal("24")),
+        Duration.ofMinutes(5));
+```
+
+`HomeBecomes` herkent het binnengaan van de gekozen modus. `MeasurementCrosses` herkent een strikte grenspassage door de gekozen sensor: van 24 naar 25 telt bij *boven 24*, van 23 naar 24 nog niet. Als een meting in een van beide rapporten ontbreekt, is er geen bewezen overgang. De sensor moet in hetzelfde huis staan en de gekozen meting leveren; de sensortrigger bewaakt die voorwaarden bij het definiëren van de automatisering.
+
+De concrete triggers bevatten hun eigen regels. `AutomationTrigger` is uitsluitend het contract. De reactieconsumer maakt een `HomeModeChanged` of `DeviceObservationChanged` en selecteert met diezelfde triggerregel de passende automatiseringen. `ReactToHome` toetst de verandering opnieuw tegen de dan geldende definitie en rustperiode voordat de scène wordt uitgevoerd.
+
 Waarnemingen bewaren hun eigen eventgeschiedenis. De reactie vergelijkt de toestand vóór en na het betreffende rapport, ook na cachewissen of wanneer inmiddels nieuwere rapporten bestaan. Vorige meetwaarden worden niet als extra velden in het huidige rapport gekopieerd.
 
 De rustperiode beperkt herhaald activeren. Een latere bronwijziging maakt een eerdere overgang niet uitsluitend vanwege een nieuwe revisie ongeldig: een huis hernoemen wist bijvoorbeeld geen vertrek, en een volgende meting boven de grens wist de eerdere grensoverschrijding niet. Alleen veranderingen aan thuismodus en gemelde sensortoestand starten de reactie; de gewenste instellingen die uit de scène volgen voeden geen lus terug.

@@ -24,7 +24,7 @@ class InputValidationTest {
     static Stream<Arguments> invalidInputs() {
         var device = new DeviceDetails("Lamp");
         var zone = new ZoneId("downstairs");
-        var trigger = new AutomationTrigger.HomeBecomes(HomeMode.AWAY);
+        var trigger = new HomeBecomes(HomeMode.AWAY);
         return Stream.of(
                 arguments("device must do or measure something", "capabilitiesOrMeasurements",
                         new AddDevice(LIGHT, LIVING, device, null, Set.of(), Set.of())),
@@ -58,21 +58,21 @@ class InputValidationTest {
                 arguments("automation needs a trigger", "trigger", automation(null, Duration.ZERO)),
                 arguments("automation needs a cooldown", "cooldown", automation(trigger, null)),
                 arguments("cooldown cannot be negative", "nonNegativeCooldown", automation(trigger, Duration.ofSeconds(-1))),
-                arguments("home trigger needs a mode", "trigger.mode", automation(new AutomationTrigger.HomeBecomes(null), Duration.ZERO)),
+                arguments("home trigger needs a mode", "trigger.mode", automation(new HomeBecomes(null), Duration.ZERO)),
                 arguments("sensor trigger needs a device", "trigger.deviceId",
-                        automation(new AutomationTrigger.MeasurementCrosses(null, Measurement.TEMPERATURE,
-                                AutomationTrigger.Direction.RISES_ABOVE, BigDecimal.TEN), Duration.ZERO)),
+                        automation(new MeasurementCrosses(null, Measurement.TEMPERATURE,
+                                MeasurementCrosses.Direction.RISES_ABOVE, BigDecimal.TEN), Duration.ZERO)),
                 arguments("sensor trigger needs a measurement", "trigger.measurement",
-                        automation(new AutomationTrigger.MeasurementCrosses(SENSOR, null,
-                                AutomationTrigger.Direction.RISES_ABOVE, BigDecimal.TEN), Duration.ZERO)),
+                        automation(new MeasurementCrosses(SENSOR, null,
+                                MeasurementCrosses.Direction.RISES_ABOVE, BigDecimal.TEN), Duration.ZERO)),
                 arguments("sensor trigger needs a direction", "trigger.direction",
-                        automation(new AutomationTrigger.MeasurementCrosses(SENSOR, Measurement.TEMPERATURE, null, BigDecimal.TEN), Duration.ZERO)),
+                        automation(new MeasurementCrosses(SENSOR, Measurement.TEMPERATURE, null, BigDecimal.TEN), Duration.ZERO)),
                 arguments("sensor trigger needs a threshold", "trigger.threshold",
-                        automation(new AutomationTrigger.MeasurementCrosses(SENSOR, Measurement.TEMPERATURE,
-                                AutomationTrigger.Direction.RISES_ABOVE, null), Duration.ZERO)),
+                        automation(new MeasurementCrosses(SENSOR, Measurement.TEMPERATURE,
+                                MeasurementCrosses.Direction.RISES_ABOVE, null), Duration.ZERO)),
                 arguments("threshold must fit its measurement", "trigger.validThreshold",
-                        automation(new AutomationTrigger.MeasurementCrosses(SENSOR, Measurement.HUMIDITY,
-                                AutomationTrigger.Direction.RISES_ABOVE, new BigDecimal("101")), Duration.ZERO)),
+                        automation(new MeasurementCrosses(SENSOR, Measurement.HUMIDITY,
+                                MeasurementCrosses.Direction.RISES_ABOVE, new BigDecimal("101")), Duration.ZERO)),
                 arguments("routine needs timing", "timing", routine(null)),
                 arguments("once needs a moment", "timing.at", routine(new RoutineTiming.Once(null))),
                 arguments("weekly needs days", "timing.days", routine(new RoutineTiming.Weekly(Set.of(), LocalTime.NOON))),

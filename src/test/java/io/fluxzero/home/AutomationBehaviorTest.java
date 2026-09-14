@@ -1,31 +1,55 @@
 package io.fluxzero.home;
 
-import io.fluxzero.home.model.*;
-import io.fluxzero.home.command.*;
-import io.fluxzero.home.query.*;
-import io.fluxzero.home.automation.*;
+import io.fluxzero.home.automation.HomeReactions;
+import io.fluxzero.home.automation.ReactToHome;
+import io.fluxzero.home.command.AddDevice;
+import io.fluxzero.home.command.ChangeHomeMode;
+import io.fluxzero.home.command.CreateHome;
+import io.fluxzero.home.command.DefineAutomation;
+import io.fluxzero.home.command.PauseAutomation;
+import io.fluxzero.home.command.RemoveDevice;
+import io.fluxzero.home.command.RenameHome;
+import io.fluxzero.home.command.ReportDeviceStatus;
+import io.fluxzero.home.command.ResumeAutomation;
+import io.fluxzero.home.model.AutomationDetails;
+import io.fluxzero.home.model.Availability;
+import io.fluxzero.home.model.DeviceDetails;
+import io.fluxzero.home.model.DeviceId;
+import io.fluxzero.home.model.DeviceObservationChanged;
+import io.fluxzero.home.model.DeviceSettings;
+import io.fluxzero.home.model.DeviceStatus;
+import io.fluxzero.home.model.DeviceStatusId;
+import io.fluxzero.home.model.HomeBecomes;
+import io.fluxzero.home.model.HomeDetails;
+import io.fluxzero.home.model.HomeId;
+import io.fluxzero.home.model.HomeMode;
+import io.fluxzero.home.model.HomeModeChanged;
+import io.fluxzero.home.model.Measurement;
+import io.fluxzero.home.model.MeasurementCrosses;
 import io.fluxzero.sdk.Fluxzero;
-import io.fluxzero.sdk.modeling.*;
-import io.fluxzero.sdk.test.*;
-import io.fluxzero.sdk.scheduling.Schedule;
+import io.fluxzero.sdk.modeling.Graph;
+import io.fluxzero.sdk.tracking.handling.HandleEvent;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.*;
-import java.time.*;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
+
 import java.math.BigDecimal;
-import java.util.*;
-import java.util.function.Predicate;
-import java.util.stream.Stream;
+import java.time.Duration;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
+
 import static io.fluxzero.home.HouseExample.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 class AutomationBehaviorTest {
     DefineAutomation onAway() {
-        return new DefineAutomation(REACTION, HOME, new AutomationDetails("Leaving home"), EVENING, new AutomationTrigger.HomeBecomes(HomeMode.AWAY), Duration.ZERO);
+        return new DefineAutomation(REACTION, HOME, new AutomationDetails("Leaving home"), EVENING, new HomeBecomes(HomeMode.AWAY), Duration.ZERO);
     }
     DefineAutomation onHeat() {
-        return new DefineAutomation(REACTION, HOME, new AutomationDetails("Too warm"), EVENING, new AutomationTrigger.MeasurementCrosses(SENSOR, Measurement.TEMPERATURE,
-                        AutomationTrigger.Direction.RISES_ABOVE, new BigDecimal("24")), Duration.ofMinutes(5));
+        return new DefineAutomation(REACTION, HOME, new AutomationDetails("Too warm"), EVENING, new MeasurementCrosses(SENSOR, Measurement.TEMPERATURE,
+                        MeasurementCrosses.Direction.RISES_ABOVE, new BigDecimal("24")), Duration.ofMinutes(5));
     }
     @ParameterizedTest @ValueSource(booleans = {false, true})
     void modeChangeActivatesSceneAndRepeatedModeDoesNot(boolean async) {
@@ -84,9 +108,9 @@ class AutomationBehaviorTest {
     }
     @ParameterizedTest @ValueSource(booleans = {false, true})
     void olderObservationKeepsItsOwnBeforeAndAfter(boolean async) {
-        var crossing = new java.util.concurrent.atomic.AtomicReference<Graph<DeviceStatus>>();
+        var crossing = new AtomicReference<Graph<DeviceStatus>>();
         var observer = new Object() {
-            @io.fluxzero.sdk.tracking.handling.HandleEvent
+            @HandleEvent
             void observed(ReportDeviceStatus event, Graph<DeviceStatus> graph) {
                 if (event.observedAt().equals(NOW.minusSeconds(1))) crossing.set(graph);
             }
@@ -112,7 +136,7 @@ class AutomationBehaviorTest {
 
     @ParameterizedTest @ValueSource(booleans = {false, true})
     void renamingTheHomeDoesNotDiscardItsDeparture(boolean async) {
-        var departure = new HomeSignal(null, NOW, HomeMode.HOME, HomeMode.AWAY, Map.of(), Map.of());
+        var departure = new HomeModeChanged(NOW, HomeMode.HOME, HomeMode.AWAY);
         (async ? asyncHouse() : house()).givenCommands(evening(), onAway(), new ChangeHomeMode(HOME, HomeMode.AWAY),
                         new RenameHome(HOME, "Canal home"))
                 .whenCommand(new ReactToHome(REACTION, departure)).expectNoErrors()
@@ -121,7 +145,7 @@ class AutomationBehaviorTest {
 
     @ParameterizedTest @ValueSource(booleans = {false, true})
     void aLaterReadingAboveTheThresholdDoesNotDiscardTheCrossing(boolean async) {
-        var crossing = new HomeSignal(new DeviceStatusId(SENSOR.getFunctionalId()), NOW, null, null,
+        var crossing = new DeviceObservationChanged(SENSOR, NOW,
                 Map.of(Measurement.TEMPERATURE, new BigDecimal("23")),
                 Map.of(Measurement.TEMPERATURE, new BigDecimal("25")));
         (async ? asyncHouse() : house()).givenCommands(evening(), onHeat(),
@@ -131,11 +155,73 @@ class AutomationBehaviorTest {
     }
 
     @Test void downwardCrossingCanActivateAScene() {
-        var trigger = new AutomationTrigger.MeasurementCrosses(SENSOR, Measurement.TEMPERATURE,
-                AutomationTrigger.Direction.FALLS_BELOW, new BigDecimal("18"));
+        var trigger = new MeasurementCrosses(SENSOR, Measurement.TEMPERATURE,
+                MeasurementCrosses.Direction.FALLS_BELOW, new BigDecimal("18"));
         house(new HomeReactions()).givenCommands(evening(), new DefineAutomation(REACTION, HOME, new AutomationDetails("Cold"), EVENING, trigger, Duration.ZERO),
                 temperature(NOW.minusSeconds(1), "19"))
                 .whenCommand(temperature(NOW, "17")).expectNoErrors()
                 .expectThat(f -> assertEquals(1, Fluxzero.loadModel(REACTION).get().executionCount()));
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "RISES_ABOVE, 24, 25, 1",
+            "RISES_ABOVE, 23, 24, 0",
+            "RISES_ABOVE, 25, 26, 0",
+            "RISES_ABOVE, 25, 23, 0",
+            "FALLS_BELOW, 24, 23, 1",
+            "FALLS_BELOW, 25, 24, 0",
+            "FALLS_BELOW, 23, 22, 0",
+            "FALLS_BELOW, 23, 25, 0"
+    })
+    void aReadingMustPassTheThresholdInTheChosenDirection(MeasurementCrosses.Direction direction,
+                                                         String before, String after, long activations) {
+        var trigger = new MeasurementCrosses(SENSOR, Measurement.TEMPERATURE, direction, new BigDecimal("24"));
+        house(new HomeReactions()).givenCommands(evening(),
+                        new DefineAutomation(REACTION, HOME, new AutomationDetails("Threshold"), EVENING, trigger, Duration.ZERO),
+                        temperature(NOW.minusSeconds(1), before))
+                .whenCommand(temperature(NOW, after)).expectNoErrors()
+                .expectThat(f -> assertEquals(activations, Fluxzero.loadModel(REACTION).get().executionCount()));
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void aMissingReadingBreaksTheEvidenceForACrossing(boolean async) {
+        (async ? asyncHouse(new HomeReactions()) : house(new HomeReactions()))
+                .givenCommands(evening(), onHeat(), temperature(NOW.minusSeconds(2), "23"))
+                .whenCommand(new ReportDeviceStatus(new DeviceStatusId(SENSOR.getFunctionalId()), SENSOR,
+                        NOW.minusSeconds(1), Availability.ONLINE, DeviceSettings.empty(), Map.of()))
+                .expectNoErrors()
+                .expectThat(f -> assertEquals(0, Fluxzero.loadModel(REACTION).get().executionCount()))
+                .andThen().whenCommand(temperature(NOW, "25")).expectNoErrors()
+                .expectThat(f -> assertEquals(0, Fluxzero.loadModel(REACTION).get().executionCount()));
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void onlyTheChosenSensorCanTriggerTheAutomation(boolean async) {
+        var otherSensor = new DeviceId("garden-sensor");
+        (async ? asyncHouse(new HomeReactions()) : house(new HomeReactions()))
+                .givenCommands(evening(), onHeat(),
+                        new AddDevice(otherSensor, GARDEN, new DeviceDetails("Garden sensor"), null,
+                                Set.of(), Set.of(Measurement.TEMPERATURE)),
+                        new ReportDeviceStatus(new DeviceStatusId(otherSensor.getFunctionalId()), otherSensor,
+                                NOW.minusSeconds(1), Availability.ONLINE, DeviceSettings.empty(),
+                                Map.of(Measurement.TEMPERATURE, new BigDecimal("23"))))
+                .whenCommand(new ReportDeviceStatus(new DeviceStatusId(otherSensor.getFunctionalId()), otherSensor,
+                        NOW, Availability.ONLINE, DeviceSettings.empty(),
+                        Map.of(Measurement.TEMPERATURE, new BigDecimal("25"))))
+                .expectNoErrors()
+                .expectThat(f -> assertEquals(0, Fluxzero.loadModel(REACTION).get().executionCount()));
+    }
+
+    @Test
+    void changingTheTriggerBeforeAReactionUsesTheNewDefinition() {
+        var departure = new HomeModeChanged(NOW, HomeMode.HOME, HomeMode.AWAY);
+        house().givenCommands(evening(), onAway(),
+                        new DefineAutomation(REACTION, HOME, new AutomationDetails("On return"), EVENING,
+                                new HomeBecomes(HomeMode.HOME), Duration.ZERO))
+                .whenCommand(new ReactToHome(REACTION, departure)).expectNoErrors()
+                .expectThat(f -> assertEquals(0, Fluxzero.loadModel(REACTION).get().executionCount()));
     }
 }

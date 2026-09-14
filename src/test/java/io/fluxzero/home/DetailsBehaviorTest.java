@@ -49,7 +49,7 @@ class DetailsBehaviorTest {
                     new DefineScene(EVENING, HOME, new SceneDetails(name), evening().actions()),
                     new PlanRoutine(BEDTIME, HOME, new RoutineDetails(name), EVENING, new RoutineTiming.Once(NOW.plusSeconds(10))),
                     new DefineAutomation(REACTION, HOME, new AutomationDetails(name), EVENING,
-                            new AutomationTrigger.HomeBecomes(HomeMode.AWAY), Duration.ZERO)
+                            new HomeBecomes(HomeMode.AWAY), Duration.ZERO)
             };
             for (Object command : commands) {
                 fixture.whenCommand(command).expectExceptionalResult(ValidationException.class).expectNoEvents().andThen();
@@ -65,7 +65,7 @@ class DetailsBehaviorTest {
                 new DefineZone(new io.fluxzero.home.model.ZoneId("invalid"), HOME, null, Set.of(LIVING)),
                 new DefineScene(EVENING, HOME, null, evening().actions()),
                 new PlanRoutine(BEDTIME, HOME, null, EVENING, new RoutineTiming.Once(NOW.plusSeconds(10))),
-                new DefineAutomation(REACTION, HOME, null, EVENING, new AutomationTrigger.HomeBecomes(HomeMode.AWAY), Duration.ZERO)
+                new DefineAutomation(REACTION, HOME, null, EVENING, new HomeBecomes(HomeMode.AWAY), Duration.ZERO)
         };
         for (Object command : missing) {
             fixture.whenCommand(command).expectExceptionalResult(ValidationException.class).expectNoEvents().andThen();
