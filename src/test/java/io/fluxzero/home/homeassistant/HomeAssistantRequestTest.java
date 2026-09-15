@@ -132,6 +132,15 @@ class HomeAssistantRequestTest {
     }
 
     @Test
+    void refusedServiceReturnsAnActionableFailureToItsCaller() {
+        remote.serviceStatus = 401;
+        configured(true).whenCommand(dim()).expectExceptionalResult(HomeAssistantUnavailable.class)
+                .verifyExceptionalResult(failure -> assertEquals(
+                        "Home Assistant refused access. Check the configured token and permissions.", failure.getMessage()))
+                .expectOnlyWebRequests(dimLight());
+    }
+
+    @Test
     void persistentFailureStopsAfterTheConfiguredAttempts() {
         remote.readStatus = 503;
         configured(true).whenQuery(states())

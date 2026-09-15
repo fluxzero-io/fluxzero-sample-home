@@ -1,14 +1,9 @@
 package io.fluxzero.home.homeassistant;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 /** Service details carried by CallHomeAssistantService, with an explicit REST body. */
-public record HomeAssistantAction(String domain, String service,
-                                  @JsonTypeInfo(use = JsonTypeInfo.Id.NAME)
-                                  @JsonSubTypes({@JsonSubTypes.Type(value = SwitchEntity.class, name = "switch"),
-                                          @JsonSubTypes.Type(value = DimEntity.class, name = "dim")}) Body body) {
+public record HomeAssistantAction(String domain, String service, Body body) {
     public sealed interface Body permits SwitchEntity, DimEntity {}
 
     public record SwitchEntity(@JsonProperty("entity_id") String entityId) implements Body {}

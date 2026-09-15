@@ -4,8 +4,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.fluxzero.sdk.Fluxzero;
 import io.fluxzero.sdk.publishing.GatewayException;
 import io.fluxzero.sdk.publishing.TimeoutException;
-import io.fluxzero.sdk.tracking.Consumer;
-import io.fluxzero.sdk.tracking.TrackSelf;
 import io.fluxzero.sdk.tracking.handling.HandleQuery;
 import io.fluxzero.sdk.tracking.handling.Request;
 import io.fluxzero.sdk.web.WebResponse;
@@ -17,8 +15,6 @@ import static io.fluxzero.home.homeassistant.HomeAssistantEndpoint.REQUEST_SETTI
 import static io.fluxzero.home.homeassistant.HomeAssistantEndpoint.requireSuccess;
 
 /** Read one complete REST snapshot from an operator-configured Home Assistant installation. */
-@TrackSelf
-@Consumer(name = "home-assistant-api", singleTracker = true)
 public record GetHomeAssistantStates(@NotNull HomeAssistantId connectionId) implements Request<HomeAssistantSnapshot> {
     @HandleQuery
     HomeAssistantSnapshot handle() {

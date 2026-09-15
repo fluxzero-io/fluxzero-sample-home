@@ -65,7 +65,7 @@ void handle() {
 
 `HomeAssistantEndpoint` leest de vertrouwde configuratie, bouwt requests met de standaardheaders en controleert HTTP-statussen. Het verstuurt zelf geen HTTP-requests en wordt nergens geïnjecteerd. Een `HomeAssistantApi`-service of `withBean` in de tests is niet nodig.
 
-Beide interacties gebruiken `@TrackSelf` en de eigen `home-assistant-api`-consumer. Zo zijn de commands en queries ook over de runtime af te handelen. De apparaatconsumer wacht op hun resultaat; de externe HTTP-route blijft de gewone auditeerbare gateway. `HomeAssistantUnavailable` is een expliciete functionele foutuitkomst: de aanroeper kan een onbereikbare installatie tonen en later opnieuw proberen. Onverwachte programmeerfouten blijven technische fouten.
+Deze interne interacties en de ontdekquery gebruiken lokale self-handlers: alleen `@HandleCommand` of `@HandleQuery` is nodig. De aanroep wordt binnen de bestaande workflow afgehandeld, zonder aparte consumer of runtimeberichtgrens voor het command of de query. De externe webrequest blijft via de gewone auditeerbare gateway lopen. `HomeAssistantUnavailable` is een expliciete functionele foutuitkomst: de aanroeper kan een onbereikbare installatie tonen en later opnieuw proberen. Onverwachte programmeerfouten blijven technische fouten.
 
 De requestinstellingen kiezen een timeout van vijf seconden, geen redirects en maximaal twee extra pogingen met 250 ms ertussen voor HTTP 500, 502, 503 en 504. De ondersteunde schrijfoperaties zetten expliciet een toestand; een herhaalde poging voert geen toggle uit. De adapter bezit geen eigen HTTP-client, retryloop of JSON-mapper.
 

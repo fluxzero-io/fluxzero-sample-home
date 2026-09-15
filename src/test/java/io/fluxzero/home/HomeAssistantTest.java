@@ -48,9 +48,9 @@ class HomeAssistantTest {
                 .expectSchedules(new DeliverHomeAssistantSettings(LIGHT, CONNECTION)).andThen();
     }
 
-    @Test
-    void discoveringShowsSupportedCapabilitiesWithoutImportingAnything() {
-        connected(false).whenQuery(new DiscoverHomeAssistantDevices(CONNECTION))
+    @ParameterizedTest @ValueSource(booleans = {false, true})
+    void discoveringShowsSupportedCapabilitiesWithoutImportingAnything(boolean async) {
+        connected(async).whenQuery(new DiscoverHomeAssistantDevices(CONNECTION))
                 .expectResult(List.of(new HomeAssistantEntity("light.reading", "Reading lamp",
                                 Set.of(Capability.POWER, Capability.LIGHT_LEVEL), Set.of()),
                         new HomeAssistantEntity("sensor.temperature", "Temperature", Set.of(), Set.of(Measurement.TEMPERATURE)),
