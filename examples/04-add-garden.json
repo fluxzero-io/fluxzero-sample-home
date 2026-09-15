@@ -2,7 +2,7 @@
   "@class": "AddSpace",
   "spaceId": "example-garden",
   "details": {
-    "name": "Tuin",
+    "name": "Garden",
     "kind": "OUTDOOR"
   },
   "parentId": [

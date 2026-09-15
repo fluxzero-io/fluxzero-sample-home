@@ -1,52 +1,52 @@
 # Fluxzero Home
 
-Een huis beschreven zoals je erin leeft: ruimtes, bewoners, licht, comfort, muziek, tuin en dagelijkse gewoontes. Fluxzero Home is een merkonafhankelijke voorbeeldapp op **Fluxzero SDK 2.0.0-rc.13**, met een werkende domeinkern en uitvoerbare voorbeelden.
+A home described the way you live in it: spaces, residents, lighting, comfort, music, gardens and daily habits. Fluxzero Home is a brand-independent example application on **Fluxzero SDK 2.0.0-rc.13**, with a working domain core and executable examples.
 
-Je kunt er een appartement mee beschrijven, maar ook een landgoed met meerdere gebouwen, verdiepingen, tuinen en bijgebouwen. Ruimtes mogen vrij worden genest. Zones zoals *beneden*, *buiten* of *de slaapvertrekken* kunnen elkaar overlappen.
+It can describe an apartment or an estate with several buildings, floors, gardens and outbuildings. Spaces can be nested freely. Zones such as *downstairs*, *outdoors* or *bedrooms* can overlap.
 
 ```mermaid
 flowchart LR
-    Home[Huis] --> Space[Ruimte]
-    Space --> Nested[Andere ruimte]
-    Space --> Device[Apparaat]
-    Device --> Status[Gemelde toestand]
-    Home --> Resident[Bewoner]
+    Home[Home] --> Space[Space]
+    Space --> Nested[Nested space]
+    Space --> Device[Device]
+    Device --> Status[Reported state]
+    Home --> Resident[Resident]
     Home --> Zone[Zone]
-    Home --> Scene[Scène]
+    Home --> Scene[Scene]
     Home --> Routine[Routine]
-    Home --> Automation[Automatisering]
-    Zone -. groepeert .-> Space
-    Scene -. beschrijft wensen voor .-> Device
-    Routine -. activeert op tijd .-> Scene
-    Automation -. reageert met .-> Scene
+    Home --> Automation[Automation]
+    Zone -. groups .-> Space
+    Scene -. describes intentions for .-> Device
+    Routine -. activates on schedule .-> Scene
+    Automation -. responds with .-> Scene
 ```
 
-## Wat de kern doet
+## What the core does
 
-- **Huis en ruimtes:** namen, lokale tijdzone, thuismodus, vrije indeling en verplaatsen binnen hetzelfde huis.
-- **Bewoners:** huishoudrol en expliciete aanwezigheid. Het vertrek van één bewoner zet het huis niet ongemerkt op afwezig.
-- **Apparaten:** mogelijkheden voor licht, kleur, temperatuur, zonwering, sloten, media, volume, ventilatie, irrigatie en laden. Een apparaat kan meerdere mogelijkheden én metingen hebben.
-- **Scènes:** één apparaat, een hele ruimte met onderliggende ruimtes, een zone of het hele huis. Alle wijzigingen slagen samen of geen enkele wordt toegepast.
-- **Routines:** eenmalig of op gekozen weekdagen, volgens de tijdzone van het huis. Pauzeren, hervatten, herplannen, annuleren en foutmeldingen behoren tot het model. Geplande uitvoeringen horen bij hun routine en worden automatisch geannuleerd wanneer die routine of haar huis verdwijnt.
-- **Automatiseringen:** reageren op een thuismodus of het overschrijden van een meetgrens, met een instelbare rustperiode tussen activaties.
-- **Gemelde toestand:** bereikbaarheid, feitelijke instellingen en metingen blijven gescheiden van de gewenste instellingen. Een verzoek om een deur te vergrendelen betekent nog niet dat die deur vergrendeld is.
+- **Homes and spaces:** names, local time zones, home modes, flexible layouts and moves within the same home.
+- **Residents:** household roles and explicit presence. One resident leaving does not silently switch the entire home to away mode.
+- **Devices:** capabilities for power, brightness, color, temperature, coverings, locks, media, volume, ventilation, irrigation and charging. A device can have several capabilities and measurements.
+- **Scenes:** target one device, a space and its descendants, a zone or the entire home. All changes succeed together or none are applied.
+- **Routines:** run once or on selected weekdays in the home's time zone. Pausing, resuming, rescheduling, cancellation and failure reasons are part of the model. Scheduled executions belong to their routine and are automatically cancelled when that routine or its home is deleted.
+- **Automations:** react to a home mode or a measurement crossing a threshold, with a configurable cooldown between activations.
+- **Reported state:** availability, actual settings and measurements remain separate from desired settings. Asking a door to lock does not mean it is already locked.
 
-## Lees het model
+## Read the model
 
-Begin bij [Het huis als domein](docs/domein.md), daarna bij [Scènes en tijd](docs/scenes-en-tijd.md). [SDK 2.0 in dit voorbeeld](docs/sdk-2.md) koppelt de nieuwe SDK-mogelijkheden aan concrete code. De gedragstests onder `src/test/java/io/fluxzero/home` zijn uitvoerbare gebruiksvoorbeelden.
+Start with [The home as a domain](docs/domain.md), then [Scenes and time](docs/scenes-and-time.md). [SDK 2.0 in this example](docs/sdk-2.md) connects the SDK capabilities to concrete code. The behavior tests under `src/test/java/io/fluxzero/home` are executable usage examples.
 
-Beschrijvende gegevens zitten in eigen waarden zoals `HomeDetails`, `SpaceDetails` en `DeviceDetails`. Invoerconstraints worden vooraf gevalideerd; model- en relatiecontroles volgen pas daarna. Aanmaak- en definitiecommands ontvangen die waarden; een gerichte hernoeming verandert alleen de naam. Deze nog niet uitgerolde voorbeeldapp gebruikt het huidige schema zonder upcasters of expliciete schemarevisies. Begin met een nieuwe tijdelijke runtime als een schemawijziging oude lokale voorbeelddata onbruikbaar maakt.
+Descriptive data lives in dedicated values such as `HomeDetails`, `SpaceDetails` and `DeviceDetails`. Input constraints run before model and relationship checks. Creation and definition commands receive those values; a focused rename changes only the name. This example has not been deployed and uses the current schema without upcasters or explicit schema revisions. Start a fresh temporary runtime if a schema change makes old local example data incompatible.
 
-`Home` en `Space` delen het `Place`-contract. Een ruimte heeft één ouder: `new AddSpace(livingRoom, groundFloor, details)` of rechtstreeks `new AddSpace(garden, home, details)`. `new MoveSpace(livingRoom, home)` plaatst haar met inhoud terug onder het huis. De huisrelatie volgt uit de indeling; er is geen tweede opgeslagen huis-ID op de ruimte.
+`Home` and `Space` share the `Place` contract. A space has one parent: `new AddSpace(livingRoom, groundFloor, details)` or directly `new AddSpace(garden, home, details)`. `new MoveSpace(livingRoom, home)` moves it and its contents back under the home. The home relationship follows from the layout; a space does not store a second home ID.
 
-`ReportDeviceStatus` ontvangt één `deviceId`. Die verwijst naar het apparaat en bepaalt met een aparte prefix de zelfstandige identiteit van zijn waarnemingen.
+`ReportDeviceStatus` receives one `deviceId`. It identifies the device and, with a separate prefix, the independent identity of its observations.
 
-Alle modellen gebruiken gewone `@Model`. Ook apparaatwaarnemingen bewaren historie, zodat automatiseringen vorige en nieuwe metingen kunnen vergelijken. Apparaatzoeken en automatiseringen gebruiken de relaties binnen een bekend huis; daarvoor onderhouden de bestaande compositiepaden de benodigde interne documenten. De [uitleg over opslag en zoeken](docs/sdk-2.md#opslag-en-zoeken-in-dit-huis) maakt de keuzes concreet.
+All models use plain `@Model`. Device observations retain history too, allowing automations to compare previous and new readings. Device searches and automations use relationships within a known home; the existing composition paths maintain the necessary internal documents. The [storage and search guide](docs/sdk-2.md#storage-and-search-in-this-home) explains these choices.
 
-Een comfortabele avond is bijvoorbeeld:
+A comfortable evening looks like this:
 
 ```java
-new DefineScene(evening, home, new SceneDetails("Een fijne avond"), List.of(
+new DefineScene(evening, home, new SceneDetails("A pleasant evening"), List.of(
     new DimLights(new InSpace(livingRoom), new LightLevel(25)),
     new SetHeating(new InSpace(livingRoom), new RoomTemperature(new BigDecimal("21")))
 ));
@@ -54,36 +54,36 @@ new DefineScene(evening, home, new SceneDetails("Een fijne avond"), List.of(
 new ActivateScene(evening);
 ```
 
-Onder dezelfde scène zitten gewone handelingen zoals `DimLight` en `SetRoomTemperature`. Iedere concrete handeling bevat haar eigen kleine `@Apply`; de interfaces beschrijven uitsluitend contracten. Routines en automatiseringen voeren de scène en hun voortgang samen uit. Een functionele afwijzing wordt daarna als pauze vastgelegd; een technische storing blijft een fout. Instellingen zoals `LightLevel` dragen hun eigen invoergrenzen. Een scène-activatie blijft in de Model-historie staan, ook als de gewenste instellingen al overeenkomen. Er zijn geen merknamen, protocolvelden of technische kanaalnamen nodig.
+The scene uses ordinary actions such as `DimLight` and `SetRoomTemperature`. Each concrete action contains its own small `@Apply`; the interfaces define contracts only. Routines and automations execute the scene and their progress together. A functional rejection is then recorded as a pause; a technical failure remains an error. Settings such as `LightLevel` carry their own input constraints. Scene activations remain in Model history even when the desired settings already match. No brand names, protocol fields or technical channel names are required.
 
-Automatiseringen kiezen een concrete aanleiding zoals `new HomeBecomes(HomeMode.AWAY)` of een `MeasurementCrosses` voor een sensor. Elke trigger beschrijft zelf welke verandering telt en bewaakt haar eigen voorwaarden. `DefineAutomation` koppelt die aanleiding aan een scène en een rustperiode. Het model bewaart de eindgrens van die rustperiode; uitvoeringen staan in de historie zonder aparte tellers of auditdatums.
+Automations choose a concrete trigger such as `new HomeBecomes(HomeMode.AWAY)` or a sensor's `MeasurementCrosses`. Each trigger defines which change counts and checks its own conditions. `DefineAutomation` connects that trigger to a scene and a cooldown. The model stores the end of that cooldown; executions live in history without separate counters or audit timestamps.
 
-Routines kiezen `new Once(moment)` of bijvoorbeeld `new Weekly(Set.of(DayOfWeek.MONDAY), LocalTime.of(20, 0))`. De concrete tijdpatronen dragen hun eigen kalenderregels; `RoutineTiming` beschrijft alleen hun contract.
+Routines choose `new Once(moment)` or, for example, `new Weekly(Set.of(DayOfWeek.MONDAY), LocalTime.of(20, 0))`. Concrete timing patterns own their calendar rules; `RoutineTiming` defines only their contract.
 
-## Lokaal gebruiken
+## Run locally
 
-Vereist: Git, de Fluxzero CLI en Java 25. De Maven Wrapper zit in de repository.
+Requirements: Git, the Fluxzero CLI and Java 25. The repository includes the Maven Wrapper.
 
-Start de ontwikkelomgeving; Maven haalt de gepubliceerde SDK op uit Fluxzero Packages:
+Start the development environment; Maven resolves the published SDK from Fluxzero Packages:
 
 ```bash
 fz dev
 ```
 
-De ontwikkelomgeving start de bijpassende lokale SDK-runtime, de app en de gerichte tests. Dit is een backendproject; er is nog geen dashboard of openbare HTTP-bedieningslaag. De kern en tests hebben geen API-sleutels nodig. Een optionele Home Assistant-koppeling gebruikt de configuratie van de gebruiker. De [voorbeeldcommando’s](examples/README.md) beschrijven een klein huis dat de ontwikkelomgeving kan laden.
+The development environment starts the matching local SDK runtime, the application and focused tests. This is a backend project; it does not yet have a dashboard or public HTTP control layer. The core and tests require no API keys. The optional Home Assistant integration uses the operator's configuration. The [example commands](examples/README.md) describe a small home that the development environment can load.
 
-Voor CI of een expliciet volledige controle, buiten een actieve ontwikkelomgeving:
+For CI or an explicitly requested full verification, outside an active development environment:
 
 ```bash
 ./mvnw -B verify
 ```
 
-De SDK staat vast op `2.0.0-rc.13`. Lokaal en in CI wordt dezelfde gepubliceerde versie gebruikt; een aparte SDK-checkout is niet nodig. `fluxzero.defaults.version=2026.09.10` activeert de nieuwe defaults voor Model-conflicten en routing. De lokale tools-versie staat apart in het buildbestand.
+The SDK is pinned to `2.0.0-rc.13`. Local development and CI use the same published version; no separate SDK checkout is required. `fluxzero.defaults.version=2026.09.10` enables the new defaults for Model conflicts and routing. The local tools version is configured separately in the build file.
 
-## Fase 2
+## Phase 2
 
-De eerste adapter koppelt [Home Assistant](docs/home-assistant.md): entities ontdekken, bewust aan apparaten koppelen, licht en schakelaars bedienen en sensormetingen teruglezen. Lokale commands en queries bevatten hun eigen REST-interactie via Fluxzero-webrequests, met auditeerbaar HTTP-verkeer en SDK-retries. TestFixture-webstubs vervangen Home Assistant in de tests; echte hardware is niet nodig om het voorbeeld te draaien. De statusroute gebruikt Fluxzero-scheduling voor periodieke snapshots.
+The first adapter connects [Home Assistant](docs/home-assistant.md): discover entities, explicitly link them to devices, control lights and switches, and read sensor measurements. Local commands and queries contain their own REST interaction through Fluxzero web requests, with auditable HTTP traffic and SDK retries. TestFixture web stubs replace Home Assistant in tests; no physical hardware is needed to run the example. The observation path uses Fluxzero scheduling for periodic snapshots.
 
-[Matter en KNX](docs/standaarden.md) dienen als referentie voor apparaatfuncties en complete huisinstallaties. Home Assistant is de eerste praktische gateway. Directe merkadapters en een eigen Matter-controller zijn nog niet geïmplementeerd.
+[Matter and KNX](docs/standards.md) serve as references for device capabilities and complete home installations. Home Assistant is the first practical gateway. Direct brand adapters and a dedicated Matter controller have not been implemented.
 
-[De integratiegrens](docs/integratiegrens.md) beschrijft waar die adapters komen, inclusief bevestigingen, onbekende apparaatmogelijkheden en de identiteit van de gebruiker. De huidige commands en queries zijn voor vertrouwde applicatiecomponenten; de huishoudrol is domeininformatie en vormt nog geen toegangscontrole voor een openbare API.
+[The integration boundary](docs/integration-boundary.md) describes where adapters belong, including acknowledgements, unknown capabilities and user identity. The current commands and queries are for trusted application components; household roles are domain information and do not yet provide access control for a public API.

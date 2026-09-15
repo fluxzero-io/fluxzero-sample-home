@@ -2,7 +2,7 @@
   "@class": "AddSpace",
   "spaceId": "example-floor",
   "details": {
-    "name": "Begane grond",
+    "name": "Ground floor",
     "kind": "FLOOR"
   },
   "parentId": [

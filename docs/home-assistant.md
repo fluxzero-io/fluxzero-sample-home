@@ -1,25 +1,25 @@
-# Home Assistant als eerste integratie
+# Home Assistant as the first integration
 
-Dit voorbeeld volgt de openbare [Home Assistant REST API](https://developers.home-assistant.io/docs/api/rest/). Het ontdekt entities, koppelt ze bewust aan bestaande apparaten, vertaalt gecommitteerde wensen naar serviceacties en haalt gemelde toestanden periodiek op. De app start en haar tests draaien zonder Home Assistant of toegangstoken.
+This example follows the public [Home Assistant REST API](https://developers.home-assistant.io/docs/api/rest/). It discovers entities, explicitly links them to existing devices, maps committed intentions to service actions, and periodically reads reported state. The application starts and its tests run without Home Assistant or an access token.
 
-Lees voor de flow eerst `HomeAssistantTest`: de gewone huiscommands blijven het uitgangspunt. `HomeAssistantRequestTest` controleert requestmethode, URL, bearer-header, JSON, foutafhandeling en retrybeleid via `TestFixture`. Beide testklassen sturen echte commands en queries en vervangen alleen de externe HTTP-responses met `@HandleGet`- en `@HandlePost`-handlers. De requestinstellingen schakelen redirects expliciet uit. Dit zijn API-contracttests, geen kwalificatie met fysieke apparatuur.
+Start with `HomeAssistantTest` to understand the flow: ordinary home commands remain the entry point. `HomeAssistantRequestTest` checks request methods, URLs, bearer headers, JSON, error handling and retry policy through `TestFixture`. Both test classes dispatch real commands and queries, replacing only external HTTP responses with `@HandleGet` and `@HandlePost` handlers. Request settings explicitly disable redirects. These are API contract tests, not qualification against physical equipment.
 
-## Het kleinste complete voorbeeld
+## The smallest complete example
 
-De bestaande voorbeelddata bevat `example-home` en `example-light`. Om die leeslamp met een eigen installatie te verbinden, configureert de operator twee waarden op de machine waar de **Home-app** draait:
+The existing example data contains `example-home` and `example-light`. To connect that reading lamp to an installation, the operator configures two values on the machine running the **Home application**:
 
-| Property | Omgevingsvariabele | Voorbeeld |
+| Property | Environment variable | Example |
 | --- | --- | --- |
 | `home-assistant.demo.url` | `HOME_ASSISTANT_DEMO_URL` | `http://homeassistant.local:8123` |
-| `home-assistant.demo.token` | `HOME_ASSISTANT_DEMO_TOKEN` | Een eigen long-lived access token |
+| `home-assistant.demo.token` | `HOME_ASSISTANT_DEMO_TOKEN` | Your own long-lived access token |
 
-Maak het token in het gebruikersprofiel van Home Assistant zoals beschreven in de REST-handleiding. Lever het via de deploymentconfiguratie of de bestaande versleutelde Fluxzero-configuratie aan; zet het niet in Git of command-JSON. Gebruik HTTPS wanneer de verbinding buiten een vertrouwd lokaal netwerk loopt. De gewone `ApplicationProperties`-resolutie verzorgt configuratie en fixture-overrides.
+Create the token in the Home Assistant user profile as described in the REST guide. Supply it through deployment configuration or existing encrypted Fluxzero configuration; do not put it in Git or command JSON. Use HTTPS when the connection leaves a trusted local network. Standard `ApplicationProperties` resolution handles configuration and fixture overrides.
 
-Het huis kiest alleen de naam van een vooraf geconfigureerde groep. Een domeincommand kan geen token of willekeurige doel-URL aanleveren. De adapter verstuurt gewone Fluxzero-webrequests met een `Authorization: Bearer ...`-header. Requests en responses lopen via de forward proxy en zijn auditeerbaar; Auditlog maskeert standaardcredentialheaders in zichtbare records en downloads. De adapter kopieert remote foutinhoud niet naar domeinfouten.
+The home selects only the name of a preconfigured group. A domain command cannot supply a token or arbitrary destination URL. The adapter sends ordinary Fluxzero web requests with an `Authorization: Bearer ...` header. Requests and responses travel through the forward proxy and are auditable; Auditlog masks standard credential headers in visible records and downloads. The adapter does not copy remote error content into domain errors.
 
-De ingestelde URL moet bereikbaar zijn vanuit de **forward proxy**. Een adres zoals `homeassistant.local` werkt alleen wanneer die proxy het lokale netwerk en die naam kan bereiken. De URL en het token worden nog steeds door de Home-app uit haar configuratie gelezen.
+The configured URL must be reachable from the **forward proxy**. An address such as `homeassistant.local` works only when that proxy can reach the local network and resolve the name. The Home application still reads the URL and token from its own configuration.
 
-Vanuit een vertrouwde applicatiecomponent:
+From a trusted application component:
 
 ```java
 var connection = new HomeAssistantId("demo");
@@ -27,19 +27,19 @@ var home = new HomeId("example-home");
 var light = new DeviceId("example-light");
 
 Fluxzero.sendCommandAndWait(new ConnectHomeAssistant(connection, home,
-        new HomeAssistantDetails("Mijn Home Assistant", "demo"), Duration.ofSeconds(10)));
+        new HomeAssistantDetails("My Home Assistant", "demo"), Duration.ofSeconds(10)));
 
 var found = Fluxzero.queryAndWait(new DiscoverHomeAssistantDevices(connection));
-// Kies uit found een entity met POWER en LIGHT_LEVEL; gebruik haar echte entityId.
+// Choose an entity from found with POWER and LIGHT_LEVEL; use its actual entityId.
 Fluxzero.sendCommandAndWait(new LinkHomeAssistantDevice(light, connection, Set.of("light.reading")));
 
 Fluxzero.sendCommandAndWait(new DimLight(light, new LightLevel(25)));
 var observed = Fluxzero.queryAndWait(new GetDeviceStatus(light));
 ```
 
-`observed` kan direct na het command nog de vorige toestand bevatten. Eerst commit Home de wens, daarna voert de adapter de serviceactie uit. Een volgende refresh rapporteert de toestand die Home Assistant kent. De REST-route `POST /api/states/...` wordt nooit gebruikt voor fysieke aansturing; de adapter gebruikt `POST /api/services/light/turn_on` met `entity_id` en `brightness_pct`. Een HTTP-succes wordt niet zelf een statusrapport. Zie de [REST API](https://developers.home-assistant.io/docs/api/rest/) en [lichtacties](https://www.home-assistant.io/integrations/light/).
+Immediately after the command, `observed` may still contain the previous state. Home first commits the intention, then the adapter performs the service action. A subsequent refresh reports the state known to Home Assistant. The REST route `POST /api/states/...` is never used for physical control; the adapter uses `POST /api/services/light/turn_on` with `entity_id` and `brightness_pct`. An HTTP success does not itself become a status report. See the [REST API](https://developers.home-assistant.io/docs/api/rest/) and [light actions](https://www.home-assistant.io/integrations/light/).
 
-Iedere externe interactie heeft een eigen bericht. `GetHomeAssistantStates(connectionId)` leest de REST-snapshot; `CallHomeAssistantService(connectionId, action)` voert een serviceactie uit. Ontdekken, koppelen, afleveren en periodiek verversen gebruiken deze commands en queries:
+Each external interaction has its own message. `GetHomeAssistantStates(connectionId)` reads the REST snapshot; `CallHomeAssistantService(connectionId, action)` performs a service action. Discovery, linking, delivery and periodic refresh use these commands and queries:
 
 ```java
 var snapshot = Fluxzero.queryAndWait(new GetHomeAssistantStates(connection));
@@ -48,7 +48,7 @@ Fluxzero.sendCommandAndWait(new CallHomeAssistantService(connection,
                 new HomeAssistantAction.DimEntity("light.reading", 25))));
 ```
 
-De webrequest staat in de eigen `@HandleCommand` of `@HandleQuery`. Bijvoorbeeld in `CallHomeAssistantService`:
+The web request lives in the message's own `@HandleCommand` or `@HandleQuery`. For example, in `CallHomeAssistantService`:
 
 ```java
 @HandleCommand
@@ -63,17 +63,17 @@ void handle() {
 }
 ```
 
-`HomeAssistantEndpoint` leest de vertrouwde configuratie, bouwt requests met de standaardheaders en controleert HTTP-statussen. Het verstuurt zelf geen HTTP-requests en wordt nergens geïnjecteerd. Een `HomeAssistantApi`-service of `withBean` in de tests is niet nodig.
+`HomeAssistantEndpoint` reads trusted configuration, builds requests with standard headers and checks HTTP statuses. It sends no HTTP requests itself and is never injected. No `HomeAssistantApi` service or `withBean` in tests is needed.
 
-Deze interne interacties en de ontdekquery gebruiken lokale self-handlers: alleen `@HandleCommand` of `@HandleQuery` is nodig. De aanroep wordt binnen de bestaande workflow afgehandeld, zonder aparte consumer of runtimeberichtgrens voor het command of de query. De externe webrequest blijft via de gewone auditeerbare gateway lopen. `HomeAssistantUnavailable` is een expliciete functionele foutuitkomst: de aanroeper kan een onbereikbare installatie tonen en later opnieuw proberen. Onverwachte programmeerfouten blijven technische fouten.
+These internal interactions and the discovery query use local self-handlers: only `@HandleCommand` or `@HandleQuery` is required. The call runs within the existing workflow, without a separate consumer or Runtime message boundary for the command/query. The external web request still uses the normal auditable gateway. `HomeAssistantUnavailable` is an explicit functional failure outcome: callers can show an unreachable installation and retry later. Unexpected programming errors remain technical failures.
 
-De requestinstellingen kiezen een timeout van vijf seconden, geen redirects en maximaal twee extra pogingen met 250 ms ertussen voor HTTP 500, 502, 503 en 504. De ondersteunde schrijfoperaties zetten expliciet een toestand; een herhaalde poging voert geen toggle uit. De adapter bezit geen eigen HTTP-client, retryloop of JSON-mapper.
+Request settings use a five-second timeout, no redirects, and at most two additional attempts spaced 250 ms apart for HTTP 500, 502, 503 and 504. Supported write operations explicitly set state; repeated attempts do not perform a toggle. The adapter owns no separate HTTP client, retry loop or JSON mapper.
 
-Een ondersteunde entity mag méér kunnen dan het gekozen Home-apparaat. De koppeling moet wel alle gedeclareerde apparaatmogelijkheden en metingen afdekken. Voorbeeld: een RGB-lamp kan voorlopig worden gekoppeld als apparaat met uitsluitend `POWER` en `LIGHT_LEVEL`; een apparaat dat ook `LIGHT_COLOR` declareert wordt geweigerd totdat die vertaling is toegevoegd.
+A supported entity may offer more capabilities than the selected Home device. The link must still cover every declared device capability and measurement. For example, an RGB lamp can initially be linked as a device with only `POWER` and `LIGHT_LEVEL`; a device that also declares `LIGHT_COLOR` is rejected until that mapping is added.
 
-Dezelfde entities worden binnen één verbinding niet aan verschillende apparaten gekoppeld. Een apparaat heeft één Home Assistant-koppeling. Een ander systeem dat dezelfde fysieke lamp toont, is geen reden om nogmaals een Device te maken. Een latere tweede adapter moet die ene gekozen route behouden.
+The same entities cannot be linked to different devices within one connection. A device has one Home Assistant link. Another system exposing the same physical lamp is not a reason to create a second Device. A later second adapter must preserve that single selected route.
 
-Een Home Assistant-entity is niet altijd een heel fysiek apparaat. De kamersensor uit het voorbeeld kan bijvoorbeeld twee entities gebruiken:
+A Home Assistant entity does not always represent a complete physical device. The example room sensor can use two entities:
 
 ```java
 Fluxzero.sendCommandAndWait(new LinkHomeAssistantDevice(
@@ -81,51 +81,51 @@ Fluxzero.sendCommandAndWait(new LinkHomeAssistantDevice(
         Set.of("sensor.room_temperature", "binary_sensor.room_motion")));
 ```
 
-Eén snapshot bevat beide metingen. Twee bronnen voor dezelfde meting of twee controllers voor dezelfde mogelijkheid worden als ambigu afgewezen. Ontdekken maakt geen ruimtes of apparaten aan en verandert hun naam niet. Apparaat en verbinding moeten bij hetzelfde huis horen.
+One snapshot contains both measurements. Two sources for the same measurement or two controllers for the same capability are rejected as ambiguous. Discovery does not create spaces or devices or rename them. The device and connection must belong to the same home.
 
-## Ondersteunde vertalingen
+## Supported mappings
 
-| Home Assistant | Home | Gedrag |
+| Home Assistant | Home | Behavior |
 | --- | --- | --- |
-| `light` | `Power`, eventueel `LightLevel` | Aan/uit en dimpercentage; dimmen alleen met een passend `supported_color_modes`. |
-| `switch` | `Power` | Expliciet `turn_on` / `turn_off`; geen toggle. |
-| `sensor`, klasse temperature | `TEMPERATURE` | °C of °F naar °C. |
-| humidity / illuminance / battery / carbon_dioxide | Gelijknamige meting | Alleen %, lx, % en ppm. |
-| power / energy | `POWER` / `ENERGY` | W/kW naar W; Wh/kWh naar kWh. |
+| `light` | `Power`, optionally `LightLevel` | On/off and brightness percentage; dimming requires a suitable `supported_color_modes`. |
+| `switch` | `Power` | Explicit `turn_on` / `turn_off`; no toggle. |
+| `sensor`, temperature class | `TEMPERATURE` | °C or °F to °C. |
+| humidity / illuminance / battery / carbon_dioxide | Corresponding measurement | Only %, lx, % and ppm. |
+| power / energy | `POWER` / `ENERGY` | W/kW to W; Wh/kWh to kWh. |
 | `binary_sensor`, motion / occupancy / presence | `MOTION` | `on` = 1; `off` = 0. |
 | door / window / opening | `CONTACT_OPEN` | `on` = open. |
-| smoke / moisture | `SMOKE` / `WATER_LEAK` | `on` = gedetecteerd. |
+| smoke / moisture | `SMOKE` / `WATER_LEAK` | `on` = detected. |
 
-De bron voor de classificatie en attributen is de documentatie voor [licht](https://developers.home-assistant.io/docs/core/entity/light/), [sensoren](https://developers.home-assistant.io/docs/core/entity/sensor/) en [binaire sensoren](https://developers.home-assistant.io/docs/core/entity/binary-sensor/). Onbekende domeinen, eenheden en niet-ondersteunde mogelijkheden worden niet als werkende ondersteuning geadverteerd.
+Classification and attributes follow the documentation for [lights](https://developers.home-assistant.io/docs/core/entity/light/), [sensors](https://developers.home-assistant.io/docs/core/entity/sensor/) and [binary sensors](https://developers.home-assistant.io/docs/core/entity/binary-sensor/). Unknown domains, units and unsupported capabilities are not advertised as working support.
 
-Bij gecombineerde lichtwensen gaat expliciet uit vóór dimmen; nul helderheid betekent eveneens uit. De kern bewaart de gekozen dimensies onafhankelijk. Een API-refresh blijft uitsluitend waarnemen: handmatige bediening wordt niet iedere tien seconden teruggedraaid naar een oude, al afgeleverde wens.
+For combined lighting intentions, explicit off takes precedence over dimming; zero brightness also means off. The core stores the chosen dimensions independently. An API refresh only observes: manual control is not reversed every ten seconds to restore an old intention that has already been delivered.
 
-Kleur, klimaatbediening, zonwering, sloten, media, ventilatie, irrigatie en laden zijn nog niet naar Home Assistant vertaald. Zij blijven wel in het generieke core model beschikbaar. Uitbreiden betekent een concrete mapping en protocolvoorbeeld toevoegen, inclusief eenheden, geldige bereiken en betekenis van de terugmelding.
+Color, climate control, coverings, locks, media, ventilation, irrigation and charging have not yet been mapped to Home Assistant. They remain available in the generic core model. Extending support means adding a concrete mapping and protocol example, including units, valid ranges and the meaning of reported state.
 
-## Scheduling, storingen en verwijderen
+## Scheduling, failures and deletion
 
-Een `RefreshHomeAssistant`-schedule hoort via `@Parent` bij de verbinding. De refreshinterval is instelbaar tussen vijf seconden en één uur. De volgende refresh wordt ook bij een verbindingsfout gepland; `GetHomeAssistant` toont die huidige fout. Een onbereikbare gateway zegt niets met zekerheid over een lamp: de adapter vervangt haar laatste waarneming dan niet door verzonnen offline metingen.
+A `RefreshHomeAssistant` schedule belongs to its connection through `@Parent`. The refresh interval is configurable from five seconds to one hour. The next refresh is scheduled even after a connection failure; `GetHomeAssistant` shows that current problem. An unreachable gateway says nothing certain about a lamp, so the adapter does not replace its last observation with invented offline readings.
 
-Een ontbrekende of door Home Assistant als `unavailable` gemelde entity geeft wel een offline apparaatrapport. `unknown`, ontbrekende benodigde waarden en ongeldige meetwaarden geven onbekende toestand zonder verzonnen nulwaarden. De adapter vergelijkt complete rapporten en publiceert alleen gewijzigde inhoud. `observedAt` is het moment waarop de adapter de gecombineerde API-snapshot bemonstert, niet een nieuwe fysieke meettijd voor iedere afzonderlijke sensor. De verschillende HA-velden `last_updated` worden niet tot één fictieve oorspronkelijke sensortijd samengevoegd.
+A missing entity or one reported as `unavailable` by Home Assistant does produce an offline device report. `unknown`, missing required values and invalid measurements produce unknown state without invented zero values. The adapter compares complete reports and publishes only changed content. `observedAt` is when the adapter samples the combined API snapshot, not a new physical measurement time for each individual sensor. Different HA `last_updated` fields are not merged into one fictitious original sensor timestamp.
 
-Wanneer de korte SDK-pogingen geen succes opleveren, bewaart de koppeling een actuele afleverfout en plant de adapter `DeliverHomeAssistantSettings`. Die schedule bevat apparaat en verbinding, zonder gekopieerde instellingen. De herpoging leest de nieuwste apparaatwens. Na succes verdwijnt de afleverfout en stopt de herpoging; de fysieke terugmelding komt nog steeds uit een aparte refresh.
+When the short SDK retries do not succeed, the link records a current delivery problem and the adapter schedules `DeliverHomeAssistantSettings`. That schedule contains the device and connection, without copied settings. The retry reads the latest device intention. After success, the delivery problem is cleared and retries stop; physical observations still come from a separate refresh.
 
-Geplande pogingen en gewone apparaatwijzigingen komen voor fysieke uitvoering samen op één eventconsumer. Daardoor is er één uitvoeringsvolgorde, zonder een eigen threadpool of verbindingsmanager. Dat begrenst de doorvoer van dit voorbeeld: één traag HTTP-request kan andere Home Assistant-effecten enkele seconden ophouden. Een grotere toepassing kan dit gericht per installatie opdelen.
+Scheduled attempts and ordinary device changes converge on one event consumer for physical execution. This provides one execution order without a custom thread pool or connection manager. It limits this example's throughput: one slow HTTP request can hold up other Home Assistant effects for several seconds. A larger application can deliberately partition this work by installation.
 
 ```java
-// Alleen deze route verwijderen; het Device blijft bestaan.
+// Remove only this route; the Device remains.
 Fluxzero.sendCommandAndWait(new UnlinkHomeAssistantDevice(light));
 
-// Verbinding en haar routes verwijderen; de apparaten en huisindeling blijven bestaan.
+// Remove the connection and its routes; devices and the home layout remain.
 Fluxzero.sendCommandAndWait(new DisconnectHomeAssistant(connection));
 ```
 
-Verwijderen annuleert opgeslagen werk via parent-ownership. Een observatie controleert haar nog gekozen route voordat zij in het apparaatmodel terechtkomt. Een reeds verstuurd HTTP-request kan niet worden teruggeroepen. De adapter claimt geen transactie over fysieke apparaten: een scène commit al haar wensen atomair, maar hun fysieke aflevering kan gedeeltelijk slagen. Er is geen extra applicatieadministratie voor generieke dubbele eventaflevering; de huidige SDK-pin belooft nog geen volledige durable execution.
+Deletion cancels stored work through parent ownership. An observation checks its still-selected route before reaching the device model. An HTTP request already sent cannot be recalled. The adapter claims no transaction across physical devices: a scene commits all its intentions atomically, but physical delivery may succeed only partially. There is no extra application bookkeeping for generic duplicate event delivery; the current SDK pin does not promise full durable execution.
 
-## Waarom deze eerste variant pollt
+## Why this first version polls
 
-De [WebSocket API](https://developers.home-assistant.io/docs/api/websocket/) ondersteunt `state_changed`. Deze eerste variant gebruikt volledige REST-snapshots en de Fluxzero-scheduler. Dat houdt de eerste integratie klein en laat planning, onafhankelijke Modellevenscycli en gecommitteerde effecten zien zonder een eigen socketlifecycle.
+The [WebSocket API](https://developers.home-assistant.io/docs/api/websocket/) supports `state_changed`. This first version uses complete REST snapshots and the Fluxzero scheduler. That keeps the initial integration small and demonstrates scheduling, independent Model lifecycles and committed effects without a custom socket lifecycle.
 
-Een korte beweging of open/dicht-overgang tussen twee polls kan daardoor ontbreken. Dit voorbeeld is geschikt om de architectuur, bedieningen en meetgrensreacties te leren; het implementeert geen betrouwbare alarmcentrale. Voor alle overgangen wordt de inkomende route later vervangen door een WebSocket-subscriptie met snapshot bij herstel. Commands, scènes en `ReportDeviceStatus` hoeven daarvoor niet te veranderen.
+A brief motion or open/close transition between polls can therefore be missed. This example teaches the architecture, controls and measurement-threshold reactions; it does not implement a reliable alarm system. Capturing every transition will require replacing the incoming path with a WebSocket subscription and a recovery snapshot. Commands, scenes and `ReportDeviceStatus` need not change for that.
 
-Er zijn geen openbare bedieningseindpunten. De commands en queries zijn bedoeld voor vertrouwde componenten. Een gebruikersinterface of publieke API vereist eerst huishoudgebonden authenticatie en autorisatie.
+There are no public control endpoints. Commands and queries are intended for trusted components. A user interface or public API first requires household-scoped authentication and authorization.

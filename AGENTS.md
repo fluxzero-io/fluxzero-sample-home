@@ -8,6 +8,8 @@ Use the plugin as the single documentation source; do not add repository-local F
 
 ## Fluxzero Home
 
+Write repository content in English, including documentation, filenames, diagrams, code comments, user-facing messages and example display names. Preserve protocol identifiers, units and intentional invalid-input test data.
+
 Read `README.md` and the relevant product documents in `docs/` before changing the domain. Keep this application on published SDK `2.0.0-rc.13` unless the user requests an upgrade. Maven resolves it from Fluxzero Packages; no SDK checkout or local candidate build is required. Use the work backlog in `../work-backlog` for plans and qualification notes.
 
 Select the exact project version through `docs_start`. For rc.13 the documentation source commit is `d0909e09696c58cfb04cc1146dd7f864b3c54ca6`; the plugin resolves the published archive without a local archive override.

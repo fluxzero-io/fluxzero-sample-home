@@ -1,15 +1,15 @@
-# Voorbeeldhuis
+# Example home
 
-De JSON-commando's in deze map beschrijven een huis met een begane grond, woonkamer, tuin, leeslamp, verwarming en kamersensor. De scène *Een fijne avond* dimt de lamp en vraagt 21 °C. Een wekelijkse routine activeert die scène om 20:00 lokale tijd.
+The JSON commands in this directory describe a home with a ground floor, living room, garden, reading lamp, heating and a room sensor. The *A pleasant evening* scene dims the lamp and requests 21 °C. A weekly routine activates that scene at 20:00 local time.
 
-Aanmaak- en definitiecommands gebruiken `details`. Scèneacties hebben een eigen `kind`, zoals `dimLights` of `setHeating`, met een concrete waarde (`brightness` of `temperature`) en een doel zoals `{"kind":"space","spaceId":"example-living"}`. De voorbeelden gebruiken het huidige schema zonder expliciete schemarevisies of conversie van oude payloads.
+Creation and definition commands use `details`. Scene actions have their own `kind`, such as `dimLights` or `setHeating`, with a concrete value (`brightness` or `temperature`) and a target such as `{"kind":"space","spaceId":"example-living"}`. The examples use the current schema without explicit schema revisions or conversion of old payloads.
 
-`AddSpace` kiest één ouder met `"parentId": ["home", "example-home"]` of `"parentId": ["space", "example-floor"]`. Het command vraagt geen afzonderlijk huis naast een bovenliggende ruimte. De soort in deze verwijzing onderscheidt ook een huis en ruimte met dezelfde lokale ID.
+`AddSpace` selects one parent with `"parentId": ["home", "example-home"]` or `"parentId": ["space", "example-floor"]`. The command does not require a separate home alongside an enclosing space. The type in this reference also distinguishes a home and a space with the same local ID.
 
-De bestanden staan in uitvoeringsvolgorde. De lokale ontwikkelconfiguratie laadt ze eenmaal per tijdelijke runtime. Ze bevatten geen echte apparaten of productiegegevens. Iedere nieuwe runtime begint opnieuw; de domeincommands weigeren bestaande identiteiten ongemerkt te overschrijven.
+The files are numbered in execution order. The local development configuration loads them once per temporary runtime. They contain no real devices or production data. Every fresh runtime starts over; domain commands reject attempts to silently overwrite existing identities.
 
-Voor uitgebreidere voorbeelden, waaronder scènes voor zones, klokovergangen, aanwezigheid en sensorreacties, zie de Java-gedragstests. De app zelf biedt in deze fase nog geen bedieningsscherm.
+For more examples, including zone scenes, daylight-saving transitions, presence and sensor reactions, see the Java behavior tests. The application does not yet provide a control screen.
 
-Een gewijzigd voorbeeldbestand kan de ontwikkelomgeving opnieuw laten aanbieden in dezelfde runtime. Een bestaande identiteit wordt dan terecht geweigerd. Gebruik een nieuwe tijdelijke runtime voor het opnieuw opbouwen van het voorbeeldhuis; wis hiervoor geen gegevens van een bestaande installatie.
+Changing an example file can cause the development environment to submit it again to the same runtime. An existing identity is then correctly rejected. Use a fresh temporary runtime to rebuild the example home; do not erase an existing installation's data for this purpose.
 
-De optionele [Home Assistant-handleiding](../docs/home-assistant.md) bouwt verder op dit huis. De gewone voorbeelddata maakt geen externe verbinding en bevat geen credentials. `HomeAssistantTest` laat ook een waargenomen temperatuur via een gewone Home-automatisering een lamp bedienen.
+The optional [Home Assistant guide](../docs/home-assistant.md) builds on this home. The standard example data makes no external connection and contains no credentials. `HomeAssistantTest` also shows an observed temperature controlling a light through an ordinary Home automation.

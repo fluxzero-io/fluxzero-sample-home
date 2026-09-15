@@ -2,7 +2,7 @@
   "@class": "AddSpace",
   "spaceId": "example-living",
   "details": {
-    "name": "Woonkamer",
+    "name": "Living room",
     "kind": "ROOM"
   },
   "parentId": [
