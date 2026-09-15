@@ -5,6 +5,7 @@ import io.fluxzero.home.automation.HomeReactions;
 import io.fluxzero.home.homeassistant.*;
 import io.fluxzero.home.model.*;
 import io.fluxzero.sdk.Fluxzero;
+import io.fluxzero.sdk.test.Given;
 import io.fluxzero.sdk.test.TestFixture;
 import io.fluxzero.sdk.tracking.handling.IllegalCommandException;
 import io.fluxzero.sdk.web.WebRequest;
@@ -25,20 +26,26 @@ import static io.fluxzero.home.homeassistant.HomeAssistantStub.*;
 class HomeAssistantTest {
     static final HomeAssistantId CONNECTION = new HomeAssistantId("example");
     static final Duration INTERVAL = Duration.ofSeconds(10);
-    final HomeAssistantApi api = new HomeAssistantApi();
     final HomeAssistantStub remote = new HomeAssistantStub();
-    final HomeAssistantIntegration integration = new HomeAssistantIntegration(api);
+    final HomeAssistantIntegration integration = new HomeAssistantIntegration();
 
     TestFixture connected(boolean async) {
         return (async ? asyncHouse(integration, remote) : house(integration, remote))
                 .withProperty("home-assistant.example.url", BASE_URL)
                 .withProperty("home-assistant.example.token", TOKEN)
-                .withBean(api).givenCommands(new ConnectHomeAssistant(CONNECTION, HOME,
+                .givenCommands(new ConnectHomeAssistant(CONNECTION, HOME,
                         new HomeAssistantDetails("Example Home Assistant", "example"), INTERVAL));
     }
 
     TestFixture linked(boolean async) {
         return connected(async).givenCommands(new LinkHomeAssistantDevice(LIGHT, CONNECTION, Set.of("light.reading")));
+    }
+
+    Given<?> awaitingDelivery(boolean async) {
+        return linked(async).given(f -> remote.serviceStatus = 503)
+                .whenCommand(new DimLight(LIGHT, new LightLevel(20)))
+                .expectSuccessfulResult().expectError(HomeAssistantUnavailable.class)
+                .expectSchedules(new DeliverHomeAssistantSettings(LIGHT, CONNECTION)).andThen();
     }
 
     @Test
@@ -55,7 +62,10 @@ class HomeAssistantTest {
     void committedDimBecomesAServiceCallButNotAnObservation(boolean async) {
         linked(async)
                 .whenCommand(new DimLight(LIGHT, new LightLevel(25)))
-                .expectNoErrors().expectWebRequests(dimRequest(25)).expectThat(f -> {
+                .expectNoErrors().expectQueries(new GetHomeAssistantStates(CONNECTION))
+                .expectCommands(new CallHomeAssistantService(CONNECTION,
+                        new HomeAssistantAction("light", "turn_on", new HomeAssistantAction.DimEntity("light.reading", 25))))
+                .expectWebRequests(dimRequest(25)).expectThat(f -> {
                     assertEquals(new LightLevel(25), Fluxzero.loadModel(LIGHT).get().desiredSettings().get(Capability.LIGHT_LEVEL));
                     assertEquals(new LightLevel(0), Fluxzero.loadModel(LIGHT, DeviceStatus.class).get().reportedSettings().get(Capability.LIGHT_LEVEL));
                 });
@@ -117,10 +127,10 @@ class HomeAssistantTest {
                 .expectExceptionalResult().expectThat(f -> assertNull(Fluxzero.loadGraph(second).childModels(HomeAssistantDevice.class).stream().findFirst().orElse(null)));
     }
 
-    @Test
-    void retryUsesLatestIntentionAndClearsOnlyDeliveryProblem() {
-        linked(false).given(f -> remote.serviceStatus = 503)
-                .givenCommands(new DimLight(LIGHT, new LightLevel(20)), new DimLight(LIGHT, new LightLevel(60)))
+    @ParameterizedTest @ValueSource(booleans = {false, true})
+    void retryUsesLatestIntentionAndClearsOnlyDeliveryProblem(boolean async) {
+        awaitingDelivery(async).whenCommand(new DimLight(LIGHT, new LightLevel(60)))
+                .expectSuccessfulResult().expectError(HomeAssistantUnavailable.class).andThen()
                 .given(f -> remote.serviceStatus = 200)
                 .whenTimeElapses(INTERVAL)
                 .expectNoErrors().expectWebRequests(dimRequest(60))
@@ -132,10 +142,10 @@ class HomeAssistantTest {
                 });
     }
 
-    @Test
-    void disconnectedGatewayDoesNotInventOfflineDeviceReadingsAndRecovers() {
-        var result = linked(false).given(f -> remote.readStatus = 503)
-                .whenTimeElapses(INTERVAL).expectNoErrors().expectThat(f -> {
+    @ParameterizedTest @ValueSource(booleans = {false, true})
+    void disconnectedGatewayDoesNotInventOfflineDeviceReadingsAndRecovers(boolean async) {
+        var result = linked(async).given(f -> remote.readStatus = 503)
+                .whenTimeElapses(INTERVAL).expectSuccessfulResult().expectError(HomeAssistantUnavailable.class).expectThat(f -> {
                     assertEquals("Home Assistant returned HTTP 503.", Fluxzero.loadModel(CONNECTION).get().problem());
                     assertEquals(Availability.ONLINE, Fluxzero.loadModel(LIGHT, DeviceStatus.class).get().availability());
                 });
@@ -158,9 +168,7 @@ class HomeAssistantTest {
 
     @Test
     void disconnectCancelsRefreshAndPendingDeliveryWithoutDeletingDevices() {
-        linked(false).given(f -> remote.serviceStatus = 503)
-                .givenCommands(new DimLight(LIGHT, new LightLevel(20)))
-                .whenCommand(new DisconnectHomeAssistant(CONNECTION)).expectNoErrors().expectNoSchedules()
+        awaitingDelivery(false).whenCommand(new DisconnectHomeAssistant(CONNECTION)).expectNoErrors().expectNoSchedules()
                 .expectThat(f -> {
                     assertNotNull(Fluxzero.loadModel(LIGHT).get());
                     assertNull(Fluxzero.loadGraph(LIGHT).childModels(HomeAssistantDevice.class).stream().findFirst().orElse(null));
@@ -169,8 +177,7 @@ class HomeAssistantTest {
 
     @Test
     void unlinkCancelsPendingDeliveryAndLaterChangesHaveNoEffect() {
-        linked(false).given(f -> remote.serviceStatus = 503)
-                .givenCommands(new DimLight(LIGHT, new LightLevel(20)), new UnlinkHomeAssistantDevice(LIGHT))
+        awaitingDelivery(false).givenCommands(new UnlinkHomeAssistantDevice(LIGHT))
                 .whenCommand(new DimLight(LIGHT, new LightLevel(40)))
                 .expectNoErrors().expectOnlySchedules(new RefreshHomeAssistant(CONNECTION))
                 .expectNoWebRequests();

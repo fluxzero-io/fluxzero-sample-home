@@ -82,7 +82,7 @@ De SDK staat vast op `2.0.0-rc.13`. Lokaal en in CI wordt dezelfde gepubliceerde
 
 ## Fase 2
 
-De eerste adapter koppelt [Home Assistant](docs/home-assistant.md): entities ontdekken, bewust aan apparaten koppelen, licht en schakelaars bedienen en sensormetingen teruglezen. Hij volgt de officiële REST API via Fluxzero-webrequests met auditeerbare requests en SDK-retries. TestFixture-webstubs vervangen Home Assistant in de tests; echte hardware is niet nodig om het voorbeeld te draaien. De statusroute gebruikt Fluxzero-scheduling voor periodieke snapshots.
+De eerste adapter koppelt [Home Assistant](docs/home-assistant.md): entities ontdekken, bewust aan apparaten koppelen, licht en schakelaars bedienen en sensormetingen teruglezen. Concrete commands en queries bevatten hun eigen REST-interactie via Fluxzero-webrequests, met auditeerbare berichten en SDK-retries. TestFixture-webstubs vervangen Home Assistant in de tests; echte hardware is niet nodig om het voorbeeld te draaien. De statusroute gebruikt Fluxzero-scheduling voor periodieke snapshots.
 
 [Matter en KNX](docs/standaarden.md) dienen als referentie voor apparaatfuncties en complete huisinstallaties. Home Assistant is de eerste praktische gateway. Directe merkadapters en een eigen Matter-controller zijn nog niet geïmplementeerd.
 

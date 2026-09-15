@@ -8,7 +8,7 @@ import io.fluxzero.sdk.web.WebResponse;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-/** The remote installation in fixture scenarios; production always uses the real HomeAssistantApi. */
+/** The remote installation in fixture scenarios; the real command/query handlers remain in the test flow. */
 @Consumer(name = "home-assistant-http-stub", singleTracker = true)
 public class HomeAssistantStub {
     public static final String BASE_URL = "https://home-assistant.example/ha";

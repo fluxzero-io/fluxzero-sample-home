@@ -9,34 +9,21 @@ import io.fluxzero.sdk.scheduling.ScheduleId;
 import io.fluxzero.sdk.tracking.Consumer;
 import io.fluxzero.sdk.tracking.ThrowingErrorHandler;
 import io.fluxzero.sdk.tracking.handling.HandleEvent;
-import io.fluxzero.sdk.tracking.handling.HandleQuery;
 import io.fluxzero.sdk.tracking.handling.HandleSchedule;
 import io.fluxzero.sdk.tracking.handling.IllegalCommandException;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
-import java.util.List;
 
 /** Concrete HA orchestration. Physical effects run after commit on one event consumer; domain applies remain pure. */
 @Component
-@RequiredArgsConstructor
 @Consumer(name = "home-assistant", singleTracker = true, errorHandler = ThrowingErrorHandler.class)
 public class HomeAssistantIntegration {
-    private final HomeAssistantApi api;
-
     public static ScheduleId refreshSchedule(HomeAssistantId id) { return ScheduleId.of("home-assistant-refresh", id); }
     public static ScheduleId deliverySchedule(DeviceId id) { return ScheduleId.of("home-assistant-delivery", id); }
 
     private HomeAssistantDevice currentBinding(DeviceId deviceId) {
         return Fluxzero.loadCurrentGraph(deviceId).childModels(HomeAssistantDevice.class).stream().findFirst().orElse(null);
-    }
-
-    @HandleQuery
-    List<HomeAssistantEntity> discover(DiscoverHomeAssistantDevices query) {
-        var connection = Fluxzero.loadModel(query.connectionId()).get();
-        if (connection == null) throw new IllegalCommandException("Connect Home Assistant to this home first.");
-        return api.states(connection).discover();
     }
 
     @HandleEvent
@@ -79,7 +66,10 @@ public class HomeAssistantIntegration {
         var device = Fluxzero.loadCurrentGraph(request.deviceId()).get();
         if (connection == null || device == null || device.desiredSettings().isEmpty()) return;
         try {
-            for (var action : api.states(connection).actions(device, binding.entityIds())) api.call(connection, action);
+            var snapshot = Fluxzero.queryAndWait(new GetHomeAssistantStates(connection.connectionId()));
+            for (var action : snapshot.actions(device, binding.entityIds())) {
+                Fluxzero.sendCommandAndWait(new CallHomeAssistantService(connection.connectionId(), action));
+            }
             Fluxzero.cancelSchedule(deliverySchedule(device.deviceId()));
             if (binding.problem() != null) Fluxzero.sendCommandAndWait(
                     new RecordHomeAssistantDeliveryProblem(device.deviceId(), connection.connectionId(), null));
@@ -96,7 +86,7 @@ public class HomeAssistantIntegration {
         var connection = connectionGraph.get();
         if (connection == null) return;
         try {
-            var snapshot = api.states(connection);
+            var snapshot = Fluxzero.queryAndWait(new GetHomeAssistantStates(connection.connectionId()));
             var sampledAt = Fluxzero.currentTime();
             for (var binding : connectionGraph.childModels(HomeAssistantDevice.class)) {
                 var current = currentBinding(binding.deviceId());

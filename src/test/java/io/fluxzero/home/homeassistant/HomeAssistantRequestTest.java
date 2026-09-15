@@ -1,8 +1,11 @@
 package io.fluxzero.home.homeassistant;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import io.fluxzero.home.command.CreateHome;
+import io.fluxzero.home.model.HomeDetails;
 import io.fluxzero.home.model.HomeId;
 import io.fluxzero.sdk.test.TestFixture;
+import io.fluxzero.sdk.tracking.handling.IllegalCommandException;
 import io.fluxzero.sdk.web.RedirectPolicy;
 import io.fluxzero.sdk.web.WebRequest;
 import io.fluxzero.sdk.web.WebRequestSettings;
@@ -11,15 +14,15 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.time.Duration;
+import java.time.ZoneId;
 import java.util.List;
 
 import static io.fluxzero.home.homeassistant.HomeAssistantStub.BASE_URL;
 import static io.fluxzero.home.homeassistant.HomeAssistantStub.TOKEN;
 import static org.junit.jupiter.api.Assertions.*;
 
-/** Exact gateway requests and controlled remote responses, without a socket server or mocked application adapter. */
-class HomeAssistantApiTest {
-    final HomeAssistantApi api = new HomeAssistantApi();
+/** Commands and queries exercise their real handlers; only the external HTTP responses are stubbed. */
+class HomeAssistantRequestTest {
     final HomeAssistantStub remote = new HomeAssistantStub();
     final HomeAssistantConnection connection = new HomeAssistantConnection(new HomeAssistantId("contract"), new HomeId("home"),
             new HomeAssistantDetails("Contract example", "contract"), Duration.ofSeconds(10), null);
@@ -28,7 +31,10 @@ class HomeAssistantApiTest {
         return (async ? TestFixture.createAsync(remote) : TestFixture.create(remote))
                 .withProperty("fluxzero.defaults.version", "2026.09.10")
                 .withProperty("home-assistant.contract.url", BASE_URL)
-                .withProperty("home-assistant.contract.token", TOKEN);
+                .withProperty("home-assistant.contract.token", TOKEN)
+                .givenCommands(new CreateHome(connection.homeId(), new HomeDetails("Home"), ZoneId.of("UTC")),
+                        new ConnectHomeAssistant(connection.connectionId(), connection.homeId(),
+                                connection.details(), connection.refreshInterval()));
     }
 
     WebRequest getStates() {
@@ -42,14 +48,18 @@ class HomeAssistantApiTest {
                 .body(new HomeAssistantAction.DimEntity("light.reading", 25)).build();
     }
 
-    void dim() {
-        api.call(connection, new HomeAssistantAction("light", "turn_on", new HomeAssistantAction.DimEntity("light.reading", 25)));
+    CallHomeAssistantService dim() {
+        return new CallHomeAssistantService(connection.connectionId(),
+                new HomeAssistantAction("light", "turn_on", new HomeAssistantAction.DimEntity("light.reading", 25)));
     }
+
+    GetHomeAssistantStates states() { return new GetHomeAssistantStates(connection.connectionId()); }
 
     @ParameterizedTest @ValueSource(booleans = {false, true})
     void getStatesUsesBearerAndPreservesConfiguredBasePath(boolean async) {
-        configured(async).whenApplying(f -> api.states(connection).discover())
-                .expectSuccessfulResult().expectNoErrors().expectOnlyWebRequests(getStates())
+        configured(async).whenQuery(states())
+                .expectResult((HomeAssistantSnapshot snapshot) -> snapshot.discover().size() == 3)
+                .expectNoErrors().expectOnlyWebRequests(getStates())
                 .expectWebRequest(request -> {
                     var settings = request.getMetadata().get("settings", WebRequestSettings.class);
                     return settings.getTimeout().equals(Duration.ofSeconds(5))
@@ -59,7 +69,7 @@ class HomeAssistantApiTest {
 
     @ParameterizedTest @ValueSource(booleans = {false, true})
     void serviceUsesExactJsonAndDoesNotWriteToStates(boolean async) {
-        configured(async).whenExecuting(f -> dim()).expectSuccessfulResult().expectNoErrors()
+        configured(async).whenCommand(dim()).expectSuccessfulResult().expectNoErrors()
                 .expectOnlyWebRequests(dimLight()).expectWebRequest(request -> {
                     JsonNode body = request.getPayloadAs(JsonNode.class);
                     return body.size() == 2 && body.path("entity_id").asText().equals("light.reading")
@@ -67,17 +77,45 @@ class HomeAssistantApiTest {
                 });
     }
 
+    @ParameterizedTest @ValueSource(strings = {"turn_on", "turn_off"})
+    void switchServicesSendOnlyTheEntityInTheirRestBody(String service) {
+        var action = new HomeAssistantAction("switch", service, new HomeAssistantAction.SwitchEntity("switch.fountain"));
+        configured(true).whenCommand(new CallHomeAssistantService(connection.connectionId(), action))
+                .expectSuccessfulResult().expectNoErrors()
+                .expectOnlyWebRequests(WebRequest.post(BASE_URL + "/api/services/switch/" + service)
+                        .header("Authorization", "Bearer " + TOKEN).header("Accept", "application/json")
+                        .contentType("application/json").body(action.body()).build())
+                .expectWebRequest(request -> {
+                    JsonNode body = request.getPayloadAs(JsonNode.class);
+                    return body.size() == 1 && body.path("entity_id").asText().equals("switch.fountain");
+                });
+    }
+
+    @Test
+    void readingADisconnectedInstallationDoesNotSendHttp() {
+        configured(true).givenCommands(new DisconnectHomeAssistant(connection.connectionId()))
+                .whenQuery(states()).expectExceptionalResult(IllegalCommandException.class)
+                .expectNoWebRequests();
+    }
+
+    @Test
+    void callingADisconnectedInstallationDoesNotSendHttp() {
+        configured(true).givenCommands(new DisconnectHomeAssistant(connection.connectionId()))
+                .whenCommand(dim()).expectExceptionalResult(IllegalCommandException.class)
+                .expectNoWebRequests();
+    }
+
     @Test
     void transientReadFailuresRecoverThroughSdkRetries() {
         remote.nextReadStatuses.addAll(List.of(503, 502));
-        configured(true).whenApplying(f -> api.states(connection).discover()).expectSuccessfulResult()
+        configured(true).whenQuery(states()).expectSuccessfulResult()
                 .expectNoErrors().expectOnlyWebRequests(getStates(), getStates(), getStates());
     }
 
     @Test
     void transientServiceFailuresRetryTheSameExplicitSetting() {
         remote.nextServiceStatuses.addAll(List.of(503, 504));
-        configured(true).whenExecuting(f -> dim()).expectSuccessfulResult().expectNoErrors()
+        configured(true).whenCommand(dim()).expectSuccessfulResult().expectNoErrors()
                 .expectOnlyWebRequests(dimLight(), dimLight(), dimLight());
     }
 
@@ -85,38 +123,42 @@ class HomeAssistantApiTest {
     void nonRetryableFailuresDoNotCopyRemoteDiagnostics(int code) {
         remote.readStatus = code;
         remote.snapshot = "Sensitive diagnostic and token that must not enter a domain error";
-        configured(false).whenApplying(f -> assertThrows(HomeAssistantUnavailable.class, () -> api.states(connection)).getMessage())
-                .expectResult(code == 401 || code == 403
+        configured(false).whenQuery(states())
+                .expectExceptionalResult(HomeAssistantUnavailable.class)
+                .verifyExceptionalResult(failure -> assertEquals(code == 401 || code == 403
                         ? "Home Assistant refused access. Check the configured token and permissions."
-                        : "Home Assistant returned HTTP " + code + ".")
+                        : "Home Assistant returned HTTP " + code + ".", failure.getMessage()))
                 .expectOnlyWebRequests(getStates());
     }
 
     @Test
     void persistentFailureStopsAfterTheConfiguredAttempts() {
         remote.readStatus = 503;
-        configured(true).whenApplying(f -> assertThrows(HomeAssistantUnavailable.class, () -> api.states(connection)).getMessage())
-                .expectResult("Home Assistant returned HTTP 503.")
+        configured(true).whenQuery(states())
+                .expectExceptionalResult(HomeAssistantUnavailable.class)
+                .verifyExceptionalResult(failure -> assertEquals("Home Assistant returned HTTP 503.", failure.getMessage()))
                 .expectOnlyWebRequests(getStates(), getStates(), getStates());
     }
 
     @ParameterizedTest @ValueSource(strings = {"", "not-json", "null", "{\"unexpected\":\"sensitive diagnostic\"}"})
     void malformedSnapshotIsReportedWithoutItsContent(String body) {
         remote.snapshot = body;
-        configured(false).whenApplying(f -> assertThrows(HomeAssistantUnavailable.class, () -> api.states(connection)).getMessage())
-                .expectResult("Home Assistant returned an invalid state snapshot.").expectOnlyWebRequests(getStates());
+        configured(false).whenQuery(states())
+                .expectExceptionalResult(HomeAssistantUnavailable.class)
+                .verifyExceptionalResult(failure -> assertEquals("Home Assistant returned an invalid state snapshot.", failure.getMessage())).expectOnlyWebRequests(getStates());
     }
 
     @ParameterizedTest @ValueSource(strings = {"", "/relative", "http:ha", "http:/ha", "ftp://ha", "https://user:token@ha", "https://ha?a=b", "https://ha#part"})
     void rejectsUnsafeOrMalformedConfiguredUrls(String url) {
         configured(false).withProperty("home-assistant.contract.url", url)
-                .whenApplying(f -> api.states(connection)).expectExceptionalResult(HomeAssistantUnavailable.class).expectNoWebRequests();
+                .whenQuery(states()).expectExceptionalResult(HomeAssistantUnavailable.class).expectNoWebRequests();
     }
 
     @ParameterizedTest @ValueSource(strings = {"", "token\nheader", "invalid token", "非ASCII"})
     void invalidCredentialsAreRejectedBeforePublishing(String token) {
         configured(false).withProperty("home-assistant.contract.token", token)
-                .whenApplying(f -> assertThrows(HomeAssistantUnavailable.class, () -> api.states(connection)).getMessage())
-                .expectResult("Configure the Home Assistant URL and access token.").expectNoWebRequests();
+                .whenQuery(states())
+                .expectExceptionalResult(HomeAssistantUnavailable.class)
+                .verifyExceptionalResult(failure -> assertEquals("Configure the Home Assistant URL and access token.", failure.getMessage())).expectNoWebRequests();
     }
 }

@@ -2,7 +2,7 @@
 
 Dit voorbeeld volgt de openbare [Home Assistant REST API](https://developers.home-assistant.io/docs/api/rest/). Het ontdekt entities, koppelt ze bewust aan bestaande apparaten, vertaalt gecommitteerde wensen naar serviceacties en haalt gemelde toestanden periodiek op. De app start en haar tests draaien zonder Home Assistant of toegangstoken.
 
-Lees voor de flow eerst `HomeAssistantTest`: de gewone huiscommands blijven het uitgangspunt. `HomeAssistantApiTest` controleert requestmethode, URL, bearer-header, JSON, foutafhandeling en retrybeleid via `TestFixture`. Beide testklassen gebruiken de echte adapter en vervangen alleen de externe responses met `@HandleGet`- en `@HandlePost`-handlers. De requestinstellingen schakelen redirects expliciet uit. Dit zijn API-contracttests, geen kwalificatie met fysieke apparatuur.
+Lees voor de flow eerst `HomeAssistantTest`: de gewone huiscommands blijven het uitgangspunt. `HomeAssistantRequestTest` controleert requestmethode, URL, bearer-header, JSON, foutafhandeling en retrybeleid via `TestFixture`. Beide testklassen sturen echte commands en queries en vervangen alleen de externe HTTP-responses met `@HandleGet`- en `@HandlePost`-handlers. De requestinstellingen schakelen redirects expliciet uit. Dit zijn API-contracttests, geen kwalificatie met fysieke apparatuur.
 
 ## Het kleinste complete voorbeeld
 
@@ -39,19 +39,35 @@ var observed = Fluxzero.queryAndWait(new GetDeviceStatus(light));
 
 `observed` kan direct na het command nog de vorige toestand bevatten. Eerst commit Home de wens, daarna voert de adapter de serviceactie uit. Een volgende refresh rapporteert de toestand die Home Assistant kent. De REST-route `POST /api/states/...` wordt nooit gebruikt voor fysieke aansturing; de adapter gebruikt `POST /api/services/light/turn_on` met `entity_id` en `brightness_pct`. Een HTTP-succes wordt niet zelf een statusrapport. Zie de [REST API](https://developers.home-assistant.io/docs/api/rest/) en [lichtacties](https://www.home-assistant.io/integrations/light/).
 
-De daadwerkelijke API-call gebruikt de SDK-gateway. De concrete body bepaalt de Home Assistant-veldnamen:
+Iedere externe interactie heeft een eigen bericht. `GetHomeAssistantStates(connectionId)` leest de REST-snapshot; `CallHomeAssistantService(connectionId, action)` voert een serviceactie uit. Ontdekken, koppelen, afleveren en periodiek verversen gebruiken deze commands en queries:
 
 ```java
-var request = WebRequest.post(baseUrl + "/api/services/light/turn_on")
-        .header("Authorization", "Bearer " + token)
-        .header("Accept", "application/json")
-        .contentType("application/json")
-        .body(new HomeAssistantAction.DimEntity("light.reading", 25))
-        .build();
-var response = Fluxzero.sendWebRequestAndWait(request, requestSettings);
+var snapshot = Fluxzero.queryAndWait(new GetHomeAssistantStates(connection));
+Fluxzero.sendCommandAndWait(new CallHomeAssistantService(connection,
+        new HomeAssistantAction("light", "turn_on",
+                new HomeAssistantAction.DimEntity("light.reading", 25))));
 ```
 
-`HomeAssistantApi` stelt een timeout van vijf seconden in, volgt geen redirects en laat de SDK maximaal twee extra pogingen doen met 250 ms ertussen voor HTTP 500, 502, 503 en 504. De ondersteunde schrijfoperaties zetten expliciet een toestand; een herhaalde poging voert geen toggle uit. De adapter bezit geen eigen HTTP-client, retryloop of JSON-mapper.
+De webrequest staat in de eigen `@HandleCommand` of `@HandleQuery`. Bijvoorbeeld in `CallHomeAssistantService`:
+
+```java
+@HandleCommand
+void handle() {
+    var request = HomeAssistantEndpoint.load(connectionId)
+            .post("api/services/" + action.domain() + "/" + action.service(), action.body());
+    try {
+        requireSuccess(Fluxzero.sendWebRequestAndWait(request, REQUEST_SETTINGS));
+    } catch (GatewayException | TimeoutException failure) {
+        throw new HomeAssistantUnavailable("Home Assistant could not be reached or did not respond in time.");
+    }
+}
+```
+
+`HomeAssistantEndpoint` leest de vertrouwde configuratie, bouwt requests met de standaardheaders en controleert HTTP-statussen. Het verstuurt zelf geen HTTP-requests en wordt nergens geïnjecteerd. Een `HomeAssistantApi`-service of `withBean` in de tests is niet nodig.
+
+Beide interacties gebruiken `@TrackSelf` en de eigen `home-assistant-api`-consumer. Zo zijn de commands en queries ook over de runtime af te handelen. De apparaatconsumer wacht op hun resultaat; de externe HTTP-route blijft de gewone auditeerbare gateway. `HomeAssistantUnavailable` is een expliciete functionele foutuitkomst: de aanroeper kan een onbereikbare installatie tonen en later opnieuw proberen. Onverwachte programmeerfouten blijven technische fouten.
+
+De requestinstellingen kiezen een timeout van vijf seconden, geen redirects en maximaal twee extra pogingen met 250 ms ertussen voor HTTP 500, 502, 503 en 504. De ondersteunde schrijfoperaties zetten expliciet een toestand; een herhaalde poging voert geen toggle uit. De adapter bezit geen eigen HTTP-client, retryloop of JSON-mapper.
 
 Een ondersteunde entity mag méér kunnen dan het gekozen Home-apparaat. De koppeling moet wel alle gedeclareerde apparaatmogelijkheden en metingen afdekken. Voorbeeld: een RGB-lamp kan voorlopig worden gekoppeld als apparaat met uitsluitend `POWER` en `LIGHT_LEVEL`; een apparaat dat ook `LIGHT_COLOR` declareert wordt geweigerd totdat die vertaling is toegevoegd.
 

@@ -15,18 +15,16 @@ import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import java.util.Set;
-import org.springframework.beans.factory.annotation.Autowired;
 
 /** Explicitly choose the external entities that belong to an existing household device. */
 @TrackSelf
 public record LinkHomeAssistantDevice(DeviceId deviceId, HomeAssistantId connectionId,
                                       @NotEmpty Set<@NotNull @Pattern(regexp = "[a-z_]+\\.[a-z0-9_]+") String> entityIds) {
     @HandleCommand
-    void handle(@Autowired HomeAssistantApi api) {
+    void handle() {
         Fluxzero.assertLegal(this);
-        var connection = Fluxzero.loadModel(connectionId).get();
         var device = Fluxzero.loadModel(deviceId).get();
-        api.states(connection).validateBinding(device, entityIds);
+        Fluxzero.queryAndWait(new GetHomeAssistantStates(connectionId)).validateBinding(device, entityIds);
         Fluxzero.assertAndApply(this);
     }
 
