@@ -1,32 +1,34 @@
 package io.fluxzero.home.homeassistant;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.annotation.PreDestroy;
+import com.fasterxml.jackson.databind.JsonNode;
+import io.fluxzero.sdk.Fluxzero;
+import io.fluxzero.sdk.publishing.GatewayException;
+import io.fluxzero.sdk.publishing.TimeoutException;
+import io.fluxzero.sdk.web.RedirectPolicy;
+import io.fluxzero.sdk.web.WebRequest;
+import io.fluxzero.sdk.web.WebRequestSettings;
+import io.fluxzero.sdk.web.WebResponse;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.ArrayList;
 
-/** Only the HTTP boundary knows the token. Requests and remote error bodies never enter the Fluxzero log. */
+/** Home Assistant's REST contract over the auditable Fluxzero web gateway. */
 @Component
 public class HomeAssistantApi {
-    private final HttpClient client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5))
-            .followRedirects(HttpClient.Redirect.NEVER).build();
-    private final ObjectMapper json = new ObjectMapper();
+    private static final WebRequestSettings REQUEST_SETTINGS = WebRequestSettings.builder()
+            .timeout(Duration.ofSeconds(5)).redirectPolicy(RedirectPolicy.NEVER)
+            .maxRetries(2).retryDelay(Duration.ofMillis(250)).build();
 
     public HomeAssistantSnapshot states(HomeAssistantConnection connection) {
-        var body = exchange(connection, "api/states", null);
+        var response = exchange(connection, "api/states", null);
         try {
-            var states = json.readTree(body);
-            if (states == null || !states.isArray()) throw new IOException("Expected a state array");
+            var states = response.<JsonNode>getPayloadAs(JsonNode.class);
+            if (states == null || !states.isArray()) throw new IllegalArgumentException("Expected a state array");
             var result = new ArrayList<HomeAssistantState>();
             for (var state : states) result.add(HomeAssistantState.from(state));
             return new HomeAssistantSnapshot(result);
-        } catch (IOException | IllegalArgumentException invalid) {
+        } catch (Exception invalid) {
             throw new HomeAssistantUnavailable("Home Assistant returned an invalid state snapshot.");
         }
     }
@@ -36,30 +38,24 @@ public class HomeAssistantApi {
         // HTTP success confirms the service call, not the resulting physical state.
     }
 
-    private String exchange(HomeAssistantConnection connection, String path, Object body) {
+    private WebResponse exchange(HomeAssistantConnection connection, String path, Object body) {
         var access = HomeAssistantAccess.load(connection);
+        var url = access.baseUrl.resolve(path).toString();
+        var request = (body == null ? WebRequest.get(url)
+                : WebRequest.post(url).contentType("application/json").body(body))
+                .header("Authorization", "Bearer " + access.token).header("Accept", "application/json").build();
+        WebResponse response;
         try {
-            var request = HttpRequest.newBuilder(access.baseUrl.resolve(path)).timeout(Duration.ofSeconds(5))
-                    .header("Authorization", "Bearer " + access.token).header("Accept", "application/json");
-            if (body == null) request.GET();
-            else request.header("Content-Type", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(json.writeValueAsString(body)));
-            var response = client.send(request.build(), HttpResponse.BodyHandlers.ofString());
-            if (response.statusCode() == 401 || response.statusCode() == 403) {
-                throw new HomeAssistantUnavailable("Home Assistant refused access. Check the configured token and permissions.");
-            }
-            if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                throw new HomeAssistantUnavailable("Home Assistant returned HTTP " + response.statusCode() + ".");
-            }
-            return response.body();
-        } catch (InterruptedException interrupted) {
-            Thread.currentThread().interrupt();
-            throw new HomeAssistantUnavailable("The Home Assistant request was interrupted.");
-        } catch (IOException failure) {
+            response = Fluxzero.sendWebRequestAndWait(request, REQUEST_SETTINGS);
+        } catch (GatewayException | TimeoutException failure) {
             throw new HomeAssistantUnavailable("Home Assistant could not be reached or did not respond in time.");
         }
+        if (response.getStatus() == 401 || response.getStatus() == 403) {
+            throw new HomeAssistantUnavailable("Home Assistant refused access. Check the configured token and permissions.");
+        }
+        if (response.getStatus() < 200 || response.getStatus() >= 300) {
+            throw new HomeAssistantUnavailable("Home Assistant returned HTTP " + response.getStatus() + ".");
+        }
+        return response;
     }
-
-    @PreDestroy
-    public void close() { client.close(); }
 }

@@ -2,7 +2,7 @@
 
 Dit voorbeeld volgt de openbare [Home Assistant REST API](https://developers.home-assistant.io/docs/api/rest/). Het ontdekt entities, koppelt ze bewust aan bestaande apparaten, vertaalt gecommitteerde wensen naar serviceacties en haalt gemelde toestanden periodiek op. De app start en haar tests draaien zonder Home Assistant of toegangstoken.
 
-Lees voor de flow eerst `HomeAssistantTest`: de gewone huiscommands blijven het uitgangspunt. `HomeAssistantApiTest` gebruikt een lokale HTTP-testserver om de requestmethode, URL, bearer-header, JSON, foutafhandeling en het uitblijven van redirects te controleren. Dit zijn API-contracttests, geen kwalificatie met fysieke apparatuur.
+Lees voor de flow eerst `HomeAssistantTest`: de gewone huiscommands blijven het uitgangspunt. `HomeAssistantApiTest` controleert requestmethode, URL, bearer-header, JSON, foutafhandeling en retrybeleid via `TestFixture`. Beide testklassen gebruiken de echte adapter en vervangen alleen de externe responses met `@HandleGet`- en `@HandlePost`-handlers. De requestinstellingen schakelen redirects expliciet uit. Dit zijn API-contracttests, geen kwalificatie met fysieke apparatuur.
 
 ## Het kleinste complete voorbeeld
 
@@ -15,7 +15,9 @@ De bestaande voorbeelddata bevat `example-home` en `example-light`. Om die leesl
 
 Maak het token in het gebruikersprofiel van Home Assistant zoals beschreven in de REST-handleiding. Lever het via de deploymentconfiguratie of de bestaande versleutelde Fluxzero-configuratie aan; zet het niet in Git of command-JSON. Gebruik HTTPS wanneer de verbinding buiten een vertrouwd lokaal netwerk loopt. De gewone `ApplicationProperties`-resolutie verzorgt configuratie en fixture-overrides.
 
-Het huis kiest alleen de naam van een vooraf geconfigureerde groep. Een command kan geen token of willekeurige doel-URL aanleveren. Verkeer gaat rechtstreeks vanuit deze adapter naar Home Assistant; de bearer-header wordt niet als Fluxzero-webbericht opgeslagen. De HTTP-client volgt geen redirects, gebruikt een timeout van vijf seconden en neemt remote foutinhoud niet op in foutmeldingen.
+Het huis kiest alleen de naam van een vooraf geconfigureerde groep. Een domeincommand kan geen token of willekeurige doel-URL aanleveren. De adapter verstuurt gewone Fluxzero-webrequests met een `Authorization: Bearer ...`-header. Requests en responses lopen via de forward proxy en zijn auditeerbaar; Auditlog maskeert standaardcredentialheaders in zichtbare records en downloads. De adapter kopieert remote foutinhoud niet naar domeinfouten.
+
+De ingestelde URL moet bereikbaar zijn vanuit de **forward proxy**. Een adres zoals `homeassistant.local` werkt alleen wanneer die proxy het lokale netwerk en die naam kan bereiken. De URL en het token worden nog steeds door de Home-app uit haar configuratie gelezen.
 
 Vanuit een vertrouwde applicatiecomponent:
 
@@ -36,6 +38,20 @@ var observed = Fluxzero.queryAndWait(new GetDeviceStatus(light));
 ```
 
 `observed` kan direct na het command nog de vorige toestand bevatten. Eerst commit Home de wens, daarna voert de adapter de serviceactie uit. Een volgende refresh rapporteert de toestand die Home Assistant kent. De REST-route `POST /api/states/...` wordt nooit gebruikt voor fysieke aansturing; de adapter gebruikt `POST /api/services/light/turn_on` met `entity_id` en `brightness_pct`. Een HTTP-succes wordt niet zelf een statusrapport. Zie de [REST API](https://developers.home-assistant.io/docs/api/rest/) en [lichtacties](https://www.home-assistant.io/integrations/light/).
+
+De daadwerkelijke API-call gebruikt de SDK-gateway. De concrete body bepaalt de Home Assistant-veldnamen:
+
+```java
+var request = WebRequest.post(baseUrl + "/api/services/light/turn_on")
+        .header("Authorization", "Bearer " + token)
+        .header("Accept", "application/json")
+        .contentType("application/json")
+        .body(new HomeAssistantAction.DimEntity("light.reading", 25))
+        .build();
+var response = Fluxzero.sendWebRequestAndWait(request, requestSettings);
+```
+
+`HomeAssistantApi` stelt een timeout van vijf seconden in, volgt geen redirects en laat de SDK maximaal twee extra pogingen doen met 250 ms ertussen voor HTTP 500, 502, 503 en 504. De ondersteunde schrijfoperaties zetten expliciet een toestand; een herhaalde poging voert geen toggle uit. De adapter bezit geen eigen HTTP-client, retryloop of JSON-mapper.
 
 Een ondersteunde entity mag méér kunnen dan het gekozen Home-apparaat. De koppeling moet wel alle gedeclareerde apparaatmogelijkheden en metingen afdekken. Voorbeeld: een RGB-lamp kan voorlopig worden gekoppeld als apparaat met uitsluitend `POWER` en `LIGHT_LEVEL`; een apparaat dat ook `LIGHT_COLOR` declareert wordt geweigerd totdat die vertaling is toegevoegd.
 
@@ -76,7 +92,7 @@ Een `RefreshHomeAssistant`-schedule hoort via `@Parent` bij de verbinding. De re
 
 Een ontbrekende of door Home Assistant als `unavailable` gemelde entity geeft wel een offline apparaatrapport. `unknown`, ontbrekende benodigde waarden en ongeldige meetwaarden geven onbekende toestand zonder verzonnen nulwaarden. De adapter vergelijkt complete rapporten en publiceert alleen gewijzigde inhoud. `observedAt` is het moment waarop de adapter de gecombineerde API-snapshot bemonstert, niet een nieuwe fysieke meettijd voor iedere afzonderlijke sensor. De verschillende HA-velden `last_updated` worden niet tot één fictieve oorspronkelijke sensortijd samengevoegd.
 
-Na een mislukte serviceactie bewaart de koppeling een actuele afleverfout en plant de adapter `DeliverHomeAssistantSettings`. Die schedule bevat apparaat en verbinding, zonder gekopieerde instellingen. De herpoging leest de nieuwste apparaatwens. Na succes verdwijnt de afleverfout en stopt de herpoging; de fysieke terugmelding komt nog steeds uit een aparte refresh.
+Wanneer de korte SDK-pogingen geen succes opleveren, bewaart de koppeling een actuele afleverfout en plant de adapter `DeliverHomeAssistantSettings`. Die schedule bevat apparaat en verbinding, zonder gekopieerde instellingen. De herpoging leest de nieuwste apparaatwens. Na succes verdwijnt de afleverfout en stopt de herpoging; de fysieke terugmelding komt nog steeds uit een aparte refresh.
 
 Geplande pogingen en gewone apparaatwijzigingen komen voor fysieke uitvoering samen op één eventconsumer. Daardoor is er één uitvoeringsvolgorde, zonder een eigen threadpool of verbindingsmanager. Dat begrenst de doorvoer van dit voorbeeld: één traag HTTP-request kan andere Home Assistant-effecten enkele seconden ophouden. Een grotere toepassing kan dit gericht per installatie opdelen.
 

@@ -4,7 +4,7 @@ import io.fluxzero.sdk.configuration.ApplicationProperties;
 
 import java.net.URI;
 
-/** Resolves URL and credentials together from a trusted configuration group, outside persisted messages. */
+/** Resolves URL and credentials together from a trusted configuration group, outside domain messages. */
 final class HomeAssistantAccess {
     final URI baseUrl;
     final String token;
