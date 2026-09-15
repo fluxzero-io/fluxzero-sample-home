@@ -62,8 +62,9 @@ public class HomeAssistantIntegration {
 
     @HandleEvent
     void bindingChanged(Graph<HomeAssistantDevice> graph) {
-        var deviceId = new DeviceId(graph.functionalId());
-        if (graph.get() == null && currentBinding(deviceId) == null) Fluxzero.cancelSchedule(deliverySchedule(deviceId));
+        if (graph.get() == null && graph.current().get() == null) {
+            Fluxzero.cancelSchedule(deliverySchedule(new DeviceId(graph.functionalId())));
+        }
     }
 
     // Scheduled work joins the same event consumer as device changes, so physical writes do not race across trackers.

@@ -17,12 +17,9 @@ public class RoutineSchedules {
     public static ScheduleId scheduleId(RoutineId id) { return ScheduleId.of("home-routine", id); }
     @HandleEvent
     void changed(Graph<Routine> eventGraph) {
-        reconcile(new RoutineId(eventGraph.functionalId()));
-    }
-
-    private void reconcile(RoutineId id) {
-        var routine = Fluxzero.loadCurrentGraph(id).get();
+        var routine = eventGraph.current().get();
         if (routine == null) return; // Parent ownership cancels work belonging to a deleted routine.
+        var id = routine.routineId();
         if (!routine.enabled() || routine.nextRun() == null) {
             Fluxzero.cancelSchedule(scheduleId(id));
         } else {

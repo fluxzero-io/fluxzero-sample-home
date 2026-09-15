@@ -1,6 +1,6 @@
 # Fluxzero Home
 
-Een huis beschreven zoals je erin leeft: ruimtes, bewoners, licht, comfort, muziek, tuin en dagelijkse gewoontes. Fluxzero Home is een merkonafhankelijke voorbeeldapp op **Fluxzero SDK-commit `9ae3f349a2a`**, met een werkende domeinkern en uitvoerbare voorbeelden. De lokale kandidaat bouwt voort op rc.11.
+Een huis beschreven zoals je erin leeft: ruimtes, bewoners, licht, comfort, muziek, tuin en dagelijkse gewoontes. Fluxzero Home is een merkonafhankelijke voorbeeldapp op **Fluxzero SDK 2.0.0-rc.13**, met een werkende domeinkern en uitvoerbare voorbeelden.
 
 Je kunt er een appartement mee beschrijven, maar ook een landgoed met meerdere gebouwen, verdiepingen, tuinen en bijgebouwen. Ruimtes mogen vrij worden genest. Zones zoals *beneden*, *buiten* of *de slaapvertrekken* kunnen elkaar overlappen.
 
@@ -64,13 +64,7 @@ Routines kiezen `new Once(moment)` of bijvoorbeeld `new Weekly(Set.of(DayOfWeek.
 
 Vereist: Git, de Fluxzero CLI en Java 25. De Maven Wrapper zit in de repository.
 
-De kandidaat is nog niet gepubliceerd. Bouw eenmalig de vastgelegde SDK-commit vanuit de SDK-repository naast deze repo (of geef het pad als argument). Dit installeert een eigen lokale versie en laat de SDK-checkout en de gepubliceerde rc.11 intact:
-
-```bash
-scripts/prepare-sdk.sh
-```
-
-Start daarna de ontwikkelomgeving:
+Start de ontwikkelomgeving; Maven haalt de gepubliceerde SDK op uit Fluxzero Packages:
 
 ```bash
 fz dev
@@ -84,7 +78,7 @@ Voor CI of een expliciet volledige controle, buiten een actieve ontwikkelomgevin
 ./mvnw -B verify
 ```
 
-De SDK staat vast op `2.0.0-rc.11-local.9ae3f349a2a`, gebouwd uit `9ae3f349a2a94f9353e0e8419dd2ace299cc9fd7`. Dit is geen officiële release. De CI-workflows bereiden dezelfde SDK voor; ze kunnen deze commit pas ophalen nadat hij in de SDK-repository is gepubliceerd. `fluxzero.defaults.version=2026.09.10` activeert de nieuwe defaults voor Model-conflicten en routing. De lokale tools-versie staat apart in het buildbestand.
+De SDK staat vast op `2.0.0-rc.13`. Lokaal en in CI wordt dezelfde gepubliceerde versie gebruikt; een aparte SDK-checkout is niet nodig. `fluxzero.defaults.version=2026.09.10` activeert de nieuwe defaults voor Model-conflicten en routing. De lokale tools-versie staat apart in het buildbestand.
 
 ## Fase 2
 
