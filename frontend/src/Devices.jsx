@@ -2,13 +2,13 @@ import { useState } from "react";
 import {
   ArrowRight,
   Blinds,
+  ChevronRight,
   DoorClosed,
   Fan,
   Lamp,
   Leaf,
   Lightbulb,
   Minus,
-  MoreHorizontal,
   Music2,
   Play,
   Plus,
@@ -26,7 +26,7 @@ import {
   setting,
   titleCase,
 } from "./home.js";
-import { IconButton, Range, Toggle } from "./ui.jsx";
+import { BinaryControl, IconButton, Range } from "./ui.jsx";
 
 const icons = {
   POWER: Power,
@@ -55,38 +55,50 @@ export function DeviceCard({
 }) {
   const { device, status } = view;
   const Icon = deviceIcon(device);
-  const on = requestedOn(device);
+  const reportedOn =
+    status?.availability === "ONLINE" &&
+    setting(status.reportedSettings, "power")?.on === true;
   const state = observation(view);
+  const measurement = device.measurements.includes("TEMPERATURE")
+    ? "TEMPERATURE"
+    : device.measurements[0];
   const light = setting(device.desiredSettings, "lightLevel");
   const temp = setting(device.desiredSettings, "temperature");
   const opening = setting(device.desiredSettings, "opening");
   return (
-    <article className={`device-card ${on ? "is-on" : ""}`}>
+    <article className={`device-card ${reportedOn ? "is-on" : ""}`}>
       <div className="device-top">
         <button
-          className={`device-symbol ${on ? "lit" : ""}`}
+          className={`device-symbol ${reportedOn ? "lit" : ""}`}
           aria-label={`Open ${device.details.name}`}
           onClick={onOpen}
         >
           <Icon size={25} strokeWidth={1.65} />
         </button>
-        {device.capabilities.includes("POWER") ? (
-          <Toggle
-            label={`${on ? "Turn off" : "Turn on"} ${device.details.name}`}
-            checked={on}
-            disabled={disabled || busy}
-            onClick={() => control(on ? "off" : "on").catch(() => {})}
-          />
-        ) : (
-          <IconButton label={`Open ${device.details.name}`} onClick={onOpen}>
-            <MoreHorizontal size={18} />
-          </IconButton>
-        )}
+        <button className="device-title" onClick={onOpen}>
+          <span>{roomName}</span>
+          <h3>{device.details.name}</h3>
+        </button>
+        <IconButton
+          label={`Details for ${device.details.name}`}
+          onClick={onOpen}
+        >
+          <ChevronRight size={19} />
+        </IconButton>
       </div>
-      <button className="device-title" onClick={onOpen}>
-        <span>{roomName}</span>
-        <h3>{device.details.name}</h3>
-      </button>
+      {device.capabilities.length > 0 && (
+        <div className="requested-power">
+          <span>Requested</span>
+          {device.capabilities.includes("POWER") && (
+            <BinaryControl
+              label={`Requested power for ${device.details.name}`}
+              value={requestedOn(device)}
+              disabled={disabled || busy}
+              choose={(on) => control(on ? "on" : "off").catch(() => {})}
+            />
+          )}
+        </div>
+      )}
       <div className="device-control">
         {device.capabilities.includes("LIGHT_LEVEL") ? (
           <Range
@@ -110,13 +122,22 @@ export function DeviceCard({
           />
         ) : device.measurements.length ? (
           <div className="sensor-value">
-            {status?.readings?.[device.measurements[0]] ?? "—"}
-            <span>{UNITS[device.measurements[0]] || ""}</span>
+            {status?.readings?.[measurement] ?? "—"}
+            <span>{UNITS[measurement] || ""}</span>
             <small>{status ? "Last reported" : "Awaiting first reading"}</small>
           </div>
+        ) : device.capabilities.length === 1 &&
+          device.capabilities[0] === "POWER" ? (
+          <span className="power-request">
+            {requestedOn(device) == null
+              ? "No power request"
+              : requestedOn(device)
+                ? "On requested"
+                : "Off requested"}
+          </span>
         ) : (
           <button className="device-more" onClick={onOpen}>
-            Controls <ArrowRight size={15} />
+            More controls <ArrowRight size={15} />
           </button>
         )}
       </div>
@@ -178,15 +199,18 @@ export function DeviceDetail({ view, roomName, zone, disabled, control }) {
       {view.delivery?.problem && (
         <p className="form-error">{view.delivery.problem}</p>
       )}
+      <p className="control-caption">
+        Controls change requested settings. Device reports are shown below.
+      </p>
       <div className="detail-controls">
         {d.capabilities.includes("POWER") && (
           <div className="setting-row">
-            <label>Power</label>
-            <Toggle
-              label="Power"
-              checked={requestedOn(d)}
+            <label>Requested power</label>
+            <BinaryControl
+              label="Requested power"
+              value={requestedOn(d)}
               disabled={disabled}
-              onClick={() => send(requestedOn(d) ? "off" : "on")}
+              choose={(on) => send(on ? "on" : "off")}
             />
           </div>
         )}
@@ -226,9 +250,7 @@ export function DeviceDetail({ view, roomName, zone, disabled, control }) {
             />
             <Range
               label="Saturation"
-              value={
-                setting(d.desiredSettings, "lightColor")?.saturation ?? 100
-              }
+              value={setting(d.desiredSettings, "lightColor")?.saturation}
               disabled={disabled}
               commit={(v) =>
                 control("color", {
@@ -315,34 +337,22 @@ export function DeviceDetail({ view, roomName, zone, disabled, control }) {
         {d.capabilities.includes("IRRIGATION") && (
           <div className="setting-row">
             <label>Watering</label>
-            <Toggle
-              label="Watering"
-              checked={!!setting(d.desiredSettings, "irrigation")?.watering}
+            <BinaryControl
+              label="Requested watering"
+              value={setting(d.desiredSettings, "irrigation")?.watering}
               disabled={disabled}
-              onClick={() =>
-                send(
-                  setting(d.desiredSettings, "irrigation")?.watering
-                    ? "stop-watering"
-                    : "water",
-                )
-              }
+              choose={(on) => send(on ? "water" : "stop-watering")}
             />
           </div>
         )}
         {d.capabilities.includes("CHARGING") && (
           <div className="setting-row">
             <label>Charging</label>
-            <Toggle
-              label="Charging"
-              checked={!!setting(d.desiredSettings, "charging")?.enabled}
+            <BinaryControl
+              label="Requested charging"
+              value={setting(d.desiredSettings, "charging")?.enabled}
               disabled={disabled}
-              onClick={() =>
-                send(
-                  setting(d.desiredSettings, "charging")?.enabled
-                    ? "pause-charging"
-                    : "charge",
-                )
-              }
+              choose={(on) => send(on ? "charge" : "pause-charging")}
             />
           </div>
         )}
@@ -372,7 +382,7 @@ export function DeviceDetail({ view, roomName, zone, disabled, control }) {
             <div key={c}>
               <span>{CAPABILITIES[c]?.label || titleCase(c)}</span>
               <strong>
-                {formatSetting(setting(d.desiredSettings, kinds[c]))}
+                {formatSetting(setting(d.desiredSettings, kinds[c]), "Not set")}
               </strong>
               <strong>
                 {formatSetting(
@@ -401,8 +411,8 @@ export function DeviceDetail({ view, roomName, zone, disabled, control }) {
   );
 }
 
-export function formatSetting(s) {
-  if (!s) return "—";
+function formatSetting(s, missing = "Unknown") {
+  if (!s) return missing;
   if ("percent" in s) return `${s.percent}%`;
   if ("celsius" in s) return `${s.celsius}°C`;
   if ("hue" in s) return `${s.hue}° / ${s.saturation}%`;

@@ -79,14 +79,15 @@ export function Range({
   disabled,
   commit,
 }) {
-  const [draft, setDraft] = useState(value ?? min);
+  const initial = min + Math.round((max - min) / (2 * step)) * step;
+  const [draft, setDraft] = useState(value ?? null);
   const active = useRef(false);
   const dirty = useRef(false);
   const last = useRef(value);
   const id = useId();
   useEffect(() => {
     if (!active.current) {
-      setDraft(value ?? min);
+      setDraft(value ?? null);
       last.current = value;
     }
   }, [value, min]);
@@ -101,7 +102,7 @@ export function Range({
         await commit(draft);
       } catch {
         last.current = previous;
-        setDraft(previous ?? min);
+        setDraft(previous ?? null);
       }
     }
   };
@@ -110,7 +111,7 @@ export function Range({
       <div>
         <label htmlFor={id}>{label}</label>
         <output htmlFor={id}>
-          {last.current == null && !dirty.current ? "—" : `${draft}${unit}`}
+          {draft == null ? "Not set" : `${draft}${unit}`}
         </output>
       </div>
       <input
@@ -119,16 +120,27 @@ export function Range({
         min={min}
         max={max}
         step={step}
-        value={draft}
+        value={draft ?? initial}
+        aria-valuetext={draft == null ? "Not set" : `${draft}${unit}`}
+        data-unknown={draft == null}
         disabled={disabled}
         style={{ "--range": `${((draft - min) / (max - min)) * 100}%` }}
         onPointerDown={() => {
           active.current = true;
+          if (draft == null) {
+            dirty.current = true;
+            setDraft(initial);
+          }
         }}
         onChange={(e) => {
           active.current = true;
           dirty.current = true;
           setDraft(Number(e.target.value));
+        }}
+        onPointerCancel={() => {
+          active.current = false;
+          dirty.current = false;
+          setDraft(value ?? null);
         }}
         onPointerUp={submit}
         onKeyUp={(e) => {
@@ -165,6 +177,31 @@ export function Toggle({ label, checked, disabled, onClick }) {
     >
       <span />
     </button>
+  );
+}
+
+export function BinaryControl({
+  label,
+  value,
+  disabled,
+  choose,
+  off = "Off",
+  on = "On",
+}) {
+  return (
+    <div className="binary-control" role="group" aria-label={label}>
+      {[false, true].map((next) => (
+        <button
+          key={String(next)}
+          type="button"
+          aria-pressed={value === next}
+          disabled={disabled}
+          onClick={() => choose(next)}
+        >
+          {next ? on : off}
+        </button>
+      ))}
+    </div>
   );
 }
 

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  ArrowLeft,
   ArrowRight,
   ArrowUpRight,
   CalendarClock,
@@ -10,28 +11,18 @@ import {
   DoorClosed,
   House,
   LayoutGrid,
-  Lightbulb,
   LogOut,
   Menu,
   Moon,
   Pencil,
   Plus,
   Search,
-  SlidersHorizontal,
   Sparkles,
   Sun,
-  Thermometer,
   Wifi,
   X,
 } from "lucide-react";
-import {
-  dateIn,
-  requestedOn,
-  roomIds,
-  timeIn,
-  timingLabel,
-  titleCase,
-} from "./home.js";
+import { dayIn, roomIds, timeIn, timingLabel, titleCase } from "./home.js";
 import {
   IconButton,
   Empty,
@@ -44,6 +35,7 @@ import { api } from "./api.js";
 import { DeviceCard, DeviceDetail } from "./Devices.jsx";
 import { SceneCard, SceneEditor } from "./Scenes.jsx";
 import { RoutineEditor } from "./Routines.jsx";
+import { HomeSummary, RoomsOverview } from "./Overview.jsx";
 
 const modes = {
   HOME: [House, "Home"],
@@ -216,6 +208,7 @@ export function App() {
     setRoom(space);
     setSearch("");
     setNavOpen(false);
+    window.scrollTo({ top: 0, behavior: "instant" });
   };
   const logout = async () => {
     try {
@@ -426,19 +419,26 @@ export function App() {
             <House size={15} />
             <span>{data?.home.details.name || "Your home"}</span>
             <ChevronRight size={13} />
-            <strong>{titleCase(page)}</strong>
+            <strong>
+              {titleCase(page)}
+              {page === "rooms" && room ? ` / ${nameOfRoom(room)}` : ""}
+            </strong>
           </div>
           <div className="topbar-right">
             <span className={`live ${live === "live" ? "" : "connecting"}`}>
               <span />
-              {live === "live" ? "Live" : "Reconnecting"}
+              {live === "live" ? "App connected" : "App reconnecting"}
             </span>
             <button
               className="avatar small-avatar"
-              aria-label="Account and connections"
-              onClick={() => setDialog({ type: "connections" })}
+              aria-label="Account"
+              onClick={() => setDialog({ type: "account" })}
             >
-              {account.name[0]}
+              {account.name
+                .split(" ")
+                .map((part) => part[0])
+                .slice(0, 2)
+                .join("")}
             </button>
           </div>
         </header>
@@ -474,14 +474,14 @@ export function App() {
                 </span>
                 <h1>
                   {page === "overview"
-                    ? "A place to unwind."
+                    ? "Overview"
                     : page === "rooms"
                       ? room
                         ? nameOfRoom(room)
-                        : "Every room. Your way."
+                        : "Rooms"
                       : page === "scenes"
-                        ? "Set the mood."
-                        : "Your everyday, on time."}
+                        ? "Scenes"
+                        : "Routines"}
                 </h1>
               </div>
               <div className="heading-actions">
@@ -528,126 +528,66 @@ export function App() {
             </div>
             {page === "overview" && (
               <>
-                <div className="overview-grid">
-                  <div className="home-hero">
-                    <div>
-                      <span className="eyebrow">MAKE YOURSELF AT HOME</span>
-                      <h2>{data.home.details.name}</h2>
-                      <p>
-                        {activeRooms.length} rooms <span>·</span>{" "}
-                        {data.devices.length} devices
-                      </p>
-                      <button
-                        className="hero-link"
-                        onClick={() => navigate("rooms")}
-                      >
-                        Explore your spaces <ArrowUpRight size={16} />
-                      </button>
-                    </div>
-                    <HomeDrawing />
-                  </div>
-                  <div className="at-a-glance">
-                    <div className="section-caption">
-                      <span className="eyebrow">AT A GLANCE</span>
-                      <SlidersHorizontal size={15} />
-                    </div>
-                    <div className="glance-row">
-                      <span className="round-icon warm">
-                        <Lightbulb size={20} />
-                      </span>
-                      <div>
-                        <span>Lighting</span>
-                        <strong>
-                          {
-                            data.devices
-                              .filter(
-                                (v) =>
-                                  v.device.capabilities.includes(
-                                    "LIGHT_LEVEL",
-                                  ) || v.device.capabilities.includes("POWER"),
-                              )
-                              .filter((v) => requestedOn(v.device)).length
-                          }{" "}
-                          <small>requested on</small>
-                        </strong>
-                      </div>
-                    </div>
-                    <div className="glance-row">
-                      <span className="round-icon sage">
-                        <Thermometer size={20} />
-                      </span>
-                      <div>
-                        <span>Climate</span>
-                        <strong>
-                          {(() => {
-                            const v = data.devices.find(
-                              (v) =>
-                                v.status?.availability === "ONLINE" &&
-                                v.status?.readings?.TEMPERATURE != null,
-                            );
-                            return v ? (
-                              <>
-                                {v.status.readings.TEMPERATURE}°{" "}
-                                <small>{nameOfRoom(v.device.spaceId)}</small>
-                              </>
-                            ) : (
-                              <>
-                                — <small>No reading yet</small>
-                              </>
-                            );
-                          })()}
-                        </strong>
-                      </div>
-                    </div>
-                    <button
-                      className="next-up"
-                      onClick={() => navigate("routines")}
-                    >
-                      <Clock3 size={17} />
-                      <div>
-                        <span>Next up</span>
-                        <strong>
-                          {nextRoutine
-                            ? `${timeIn(nextRoutine.nextRun, zone)} · ${nextRoutine.details.name}`
-                            : "Nothing scheduled"}
-                        </strong>
-                      </div>
-                      <ChevronRight size={16} />
+                <HomeSummary
+                  data={data}
+                  nextRoutine={nextRoutine}
+                  navigate={navigate}
+                  openConnections={() => setDialog({ type: "connections" })}
+                />
+                {data.devices.some((v) => !v.delivery) && (
+                  <div className="connection-notice">
+                    <Wifi size={17} />
+                    <span>
+                      {data.devices.every((v) => !v.delivery)
+                        ? "No devices linked. Requests are saved only."
+                        : "Some devices are not linked. Their requests are saved only."}
+                    </span>
+                    <button onClick={() => setDialog({ type: "connections" })}>
+                      Connection details <ChevronRight size={15} />
                     </button>
                   </div>
-                </div>
+                )}
                 <SectionTitle
-                  title="A moment for every mood"
+                  title="Scenes"
                   action="All scenes"
                   onClick={() => navigate("scenes")}
                 />
                 <div className="scene-grid">
-                  {data.scenes.slice(0, 3).map((scene, i) => (
+                  {data.scenes.slice(0, 3).map((scene) => (
                     <SceneCard
                       key={scene.sceneId}
                       scene={scene}
-                      index={i}
                       busy={busy.has(scene.sceneId)}
                       disabled={!canControl}
                       onActivate={() => activate(scene)}
                     />
                   ))}
                   {!data.scenes.length && (
-                    <Empty title="Make room for a scene" icon={Sparkles} />
+                    <Empty title="No scenes yet" icon={Sparkles} />
                   )}
                 </div>
               </>
             )}
-            {(page === "overview" || page === "rooms") && (
+            {page === "rooms" && !room && (
+              <RoomsOverview
+                rooms={activeRooms}
+                data={data}
+                navigate={navigate}
+              />
+            )}
+            {page === "rooms" && room && (
+              <button
+                className="text-link room-back"
+                onClick={() => navigate("rooms")}
+              >
+                <ArrowLeft size={16} /> All rooms
+              </button>
+            )}
+            {(page === "overview" || (page === "rooms" && room)) && (
               <>
                 <div className="devices-heading">
                   <h2>
-                    {page === "overview"
-                      ? "Your devices"
-                      : room
-                        ? "In this space"
-                        : "All devices"}{" "}
-                    <span className="count">{devices.length}</span>
+                    Devices <span className="count">{devices.length}</span>
                   </h2>
                   <label className="search">
                     <Search size={17} />
@@ -666,23 +606,6 @@ export function App() {
                       </button>
                     )}
                   </label>
-                </div>
-                <div className="room-tabs" aria-label="Filter by room">
-                  <button
-                    className={!room ? "active" : ""}
-                    onClick={() => setRoom("")}
-                  >
-                    All rooms
-                  </button>
-                  {activeRooms.map((s) => (
-                    <button
-                      key={s.id}
-                      className={room === s.id ? "active" : ""}
-                      onClick={() => setRoom(s.id)}
-                    >
-                      {s.details.name}
-                    </button>
-                  ))}
                 </div>
                 <div className="device-grid">
                   {devices.map((v) => (
@@ -704,7 +627,7 @@ export function App() {
                 {!devices.length && (
                   <Empty
                     icon={Search}
-                    title={search ? "No devices found" : "A little quiet here"}
+                    title={search ? "No devices found" : "No devices"}
                   >
                     {search
                       ? "Try another name or room."
@@ -716,11 +639,10 @@ export function App() {
             {page === "scenes" && (
               <>
                 <div className="scene-grid full-scenes">
-                  {data.scenes.map((scene, i) => (
+                  {data.scenes.map((scene) => (
                     <SceneCard
                       key={scene.sceneId}
                       scene={scene}
-                      index={i}
                       busy={busy.has(scene.sceneId)}
                       disabled={!canControl}
                       onActivate={() => activate(scene)}
@@ -770,7 +692,7 @@ export function App() {
                         <p>
                           {data.scenes.find((s) => s.sceneId === r.sceneId)
                             ?.details.name || "Scene unavailable"}{" "}
-                          <span>·</span> {timingLabel(r.timing, zone)}
+                          <span>·</span> {timingLabel(r.timing, zone, false)}
                         </p>
                         {r.problem ? (
                           <span className="problem">
@@ -780,28 +702,26 @@ export function App() {
                         ) : (
                           <small>
                             {r.enabled && r.nextRun
-                              ? `Next ${dateIn(r.nextRun, zone)}`
+                              ? `Next ${dayIn(r.nextRun, zone)}`
                               : r.enabled
                                 ? "Completed"
                                 : "Paused"}
                           </small>
                         )}
                       </div>
-                      <Toggle
-                        label={`${r.enabled ? "Pause" : "Resume"} ${r.details.name}`}
-                        checked={r.enabled && !!r.nextRun}
-                        disabled={
-                          !canManage ||
-                          busy.has(r.routineId) ||
-                          (r.enabled && !r.nextRun)
-                        }
-                        onClick={() =>
-                          act(
-                            r.routineId,
-                            `/routines/${encodeURIComponent(r.routineId)}/${r.enabled ? "pause" : "resume"}`,
-                          ).catch(() => {})
-                        }
-                      />
+                      {!(r.enabled && !r.nextRun) && (
+                        <Toggle
+                          label={`${r.enabled ? "Pause" : "Resume"} ${r.details.name}`}
+                          checked={r.enabled && !!r.nextRun}
+                          disabled={!canManage || busy.has(r.routineId)}
+                          onClick={() =>
+                            act(
+                              r.routineId,
+                              `/routines/${encodeURIComponent(r.routineId)}/${r.enabled ? "pause" : "resume"}`,
+                            ).catch(() => {})
+                          }
+                        />
+                      )}
                       {canManage && (
                         <IconButton
                           label={`Edit ${r.details.name}`}
@@ -818,7 +738,7 @@ export function App() {
                 {!data.routines.length && (
                   <Empty
                     icon={CalendarClock}
-                    title="Let your home remember"
+                    title="No routines yet"
                     action={
                       canManage && data.scenes.length > 0 ? (
                         <button
@@ -836,16 +756,8 @@ export function App() {
               </>
             )}
             <footer className="page-footer">
-              <span>
-                <span className="tiny-dot" />
-                Your home, connected.
-              </span>
-              <span>
-                Fluxzero Home <span className="footer-divider">/</span>{" "}
-                {data.permission === "VIEW"
-                  ? "View only"
-                  : "Designed around you"}
-              </span>
+              <span>Fluxzero Home</span>
+              {data.permission === "VIEW" && <span>View-only access</span>}
             </footer>
           </div>
         )}
@@ -931,6 +843,24 @@ export function App() {
           }
         />
       )}
+      {dialog?.type === "account" && (
+        <Dialog title="Account" onClose={() => setDialog(null)}>
+          <div className="account-summary">
+            <h3>{account.name}</h3>
+            <p>{data?.home.details.name}</p>
+          </div>
+          <p className="note">
+            {data?.permission === "MANAGE"
+              ? "You can control devices and manage scenes and routines."
+              : data?.permission === "CONTROL"
+                ? "You can control devices and run scenes."
+                : "You have view-only access to this home."}
+          </p>
+          <button className="secondary" onClick={logout}>
+            <LogOut size={17} /> Sign out
+          </button>
+        </Dialog>
+      )}
       {dialog?.type === "connections" && data && (
         <Dialog title="Connections" onClose={() => setDialog(null)}>
           <div className="connection-summary">
@@ -956,18 +886,33 @@ export function App() {
             ))}
           {!data.devices.some((v) => v.delivery) && (
             <div className="note">
-              This example home is ready to connect. Device requests are saved;
-              physical control starts after an operator links Home Assistant.
+              No physical devices are linked. You can save settings and scenes,
+              but they will not control equipment yet.
             </div>
           )}
-          <a
-            className="text-link"
-            href="/api/docs"
-            target="_blank"
-            rel="noreferrer"
-          >
-            API reference <ArrowUpRight size={14} />
-          </a>
+          <p className="connection-help">
+            Device setup is not available in this interface yet. Your household
+            administrator can connect Home Assistant and link its devices.
+          </p>
+          {canManage && (
+            <details className="setup-help">
+              <summary>Administrator setup</summary>
+              <p>
+                Follow <code>docs/home-assistant.md</code> in the example
+                repository to configure Home Assistant, discover its entities
+                and link them to this home. Keep access tokens in the server
+                configuration.
+              </p>
+              <a
+                className="text-link"
+                href="/api/docs"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Developer API reference <ArrowUpRight size={14} />
+              </a>
+            </details>
+          )}
         </Dialog>
       )}
     </div>

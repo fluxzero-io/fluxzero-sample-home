@@ -57,7 +57,7 @@ export function RoutineEditor({ routine, data, close, save, remove }) {
     }
   }
   return (
-    <Dialog title={routine ? "Edit routine" : "A new rhythm"} onClose={close}>
+    <Dialog title={routine ? "Edit routine" : "New routine"} onClose={close}>
       <form onSubmit={submit}>
         <div className="field">
           <label htmlFor="routine-name">Name</label>

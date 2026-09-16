@@ -1,33 +1,22 @@
 import { useState } from "react";
 import {
   ArrowDown,
-  ArrowUpRight,
-  BookOpen,
+  ArrowUp,
   Check,
-  Moon,
-  MoreHorizontal,
+  Pencil,
   Play,
   Plus,
   Sparkles,
-  Sun,
-  Sunset,
   Trash2,
   X,
 } from "lucide-react";
-import { CAPABILITIES, setting, titleCase } from "./home.js";
+import { CAPABILITIES, sceneSummary, setting, titleCase } from "./home.js";
 import { IconButton, Empty, Dialog } from "./ui.jsx";
 
-export function SceneCard({
-  scene,
-  index,
-  busy,
-  disabled,
-  onActivate,
-  onEdit,
-}) {
-  const Icon = [Sunset, Moon, BookOpen, Sun, Sparkles][index % 5];
+export function SceneCard({ scene, busy, disabled, onActivate, onEdit }) {
+  const Icon = Sparkles;
   return (
-    <div className={`scene-card tone-${index % 3}`}>
+    <div className="scene-card">
       <button
         className="scene-activate"
         onClick={onActivate}
@@ -38,11 +27,7 @@ export function SceneCard({
         </span>
         <span>
           <strong>{scene.details.name}</strong>
-          <small>
-            {busy
-              ? "Setting the mood…"
-              : `${scene.actions.length} ${scene.actions.length === 1 ? "action" : "actions"}`}
-          </small>
+          <small>{busy ? "Requesting…" : sceneSummary(scene)}</small>
         </span>
         <span className="scene-play">
           <Play size={15} />
@@ -50,7 +35,7 @@ export function SceneCard({
       </button>
       {onEdit && (
         <IconButton label={`Edit ${scene.details.name}`} onClick={onEdit}>
-          <MoreHorizontal size={18} />
+          <Pencil size={18} />
         </IconButton>
       )}
     </div>
@@ -106,11 +91,7 @@ export function SceneEditor({ scene, data, close, save, remove }) {
     }
   }
   return (
-    <Dialog
-      title={scene ? "Edit scene" : "Set a new mood"}
-      onClose={close}
-      wide
-    >
+    <Dialog title={scene ? "Edit scene" : "New scene"} onClose={close} wide>
       <form onSubmit={submit}>
         <div className="field">
           <label htmlFor="scene-name">Name</label>
@@ -189,7 +170,7 @@ export function SceneEditor({ scene, data, close, save, remove }) {
             className="primary"
             disabled={pending || !name.trim() || !actions.length}
           >
-            {pending ? "Saving…" : "Save scene"}
+            {pending ? "Saving…" : scene ? "Save scene" : "Create scene"}
             <Check size={16} />
           </button>
         </div>
@@ -284,7 +265,7 @@ export function SceneActionEditor({
           disabled={!index}
           onClick={() => move(-1)}
         >
-          <ArrowUpRight className="rotate-up" size={15} />
+          <ArrowUp size={15} />
         </IconButton>
         <IconButton
           label={`Move action ${index + 1} down`}

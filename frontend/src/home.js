@@ -47,10 +47,7 @@ export function roomIds(spaces, selected) {
   return result;
 }
 export function requestedOn(device) {
-  const power = setting(device.desiredSettings, "power");
-  return power
-    ? power.on
-    : (setting(device.desiredSettings, "lightLevel")?.percent ?? 0) > 0;
+  return setting(device.desiredSettings, "power")?.on;
 }
 export function observation(view) {
   if (view.delivery?.problem)
@@ -64,12 +61,17 @@ export function observation(view) {
     return report && Object.keys(s).every((k) => report[k] === s[k]);
   });
   return {
-    label: matches ? "Reported" : "Not yet confirmed",
+    label: !desired.length
+      ? "Online"
+      : matches
+        ? "Confirmed"
+        : "Awaiting confirmation",
     tone: matches ? "good" : "pending",
   };
 }
-export function timingLabel(timing, zone) {
-  if (timing.kind === "once") return dateIn(timing.at, zone);
+export function timingLabel(timing, zone, includeTime = true) {
+  if (timing.kind === "once")
+    return includeTime ? dateIn(timing.at, zone) : dayIn(timing.at, zone);
   const days = DAYS.filter((d) => timing.days.includes(d));
   const group =
     days.length === 7
@@ -77,7 +79,48 @@ export function timingLabel(timing, zone) {
       : days.join() === DAYS.slice(0, 5).join()
         ? "Weekdays"
         : days.map((d) => titleCase(d.slice(0, 3))).join(", ");
-  return `${group} · ${timing.time.slice(0, 5)}`;
+  return includeTime ? `${group} · ${timing.time.slice(0, 5)}` : group;
+}
+export const dayIn = (at, zone) =>
+  new Intl.DateTimeFormat("en-GB", {
+    timeZone: zone,
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  }).format(new Date(at));
+
+export function sceneSummary(scene) {
+  const summaries = scene.actions.map((action) => {
+    switch (action.kind) {
+      case "switchPower":
+        return action.power.on ? "Power on" : "Power off";
+      case "dimLights":
+        return `Lights ${action.brightness.percent}%`;
+      case "colorLights":
+        return "Light color";
+      case "setHeating":
+        return `Heating ${action.temperature.celsius}°C`;
+      case "positionCoverings":
+        return `Shades ${action.opening.percent}%`;
+      case "setLocks":
+        return action.lock.locked ? "Lock doors" : "Unlock doors";
+      case "setPlayback":
+        return action.playback.playing ? "Play music" : "Stop music";
+      case "adjustVolume":
+        return `Volume ${action.volume.percent}%`;
+      case "setVentilation":
+        return `Fans ${action.speed.percent}%`;
+      case "setWatering":
+        return action.irrigation.watering ? "Watering on" : "Watering off";
+      case "setCharging":
+        return action.charging.enabled ? "Start charging" : "Pause charging";
+      default:
+        return titleCase(action.kind);
+    }
+  });
+  return summaries.length > 2
+    ? `${summaries.slice(0, 2).join(" · ")} · +${summaries.length - 2}`
+    : summaries.join(" · ") || "No actions";
 }
 export const CAPABILITIES = {
   POWER: {

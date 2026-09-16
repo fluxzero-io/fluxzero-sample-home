@@ -1,6 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { observation, roomIds, timingLabel, requestedOn } from "./home.js";
+import {
+  observation,
+  roomIds,
+  timingLabel,
+  requestedOn,
+  sceneSummary,
+} from "./home.js";
 
 test("a requested setting is never treated as a physical acknowledgement", () => {
   const device = { desiredSettings: [{ kind: "lightLevel", percent: 42 }] };
@@ -10,7 +16,7 @@ test("a requested setting is never treated as a physical acknowledgement", () =>
       device,
       status: { availability: "ONLINE", reportedSettings: [] },
     }).label,
-    "Not yet confirmed",
+    "Awaiting confirmation",
   );
   assert.equal(
     observation({
@@ -20,7 +26,7 @@ test("a requested setting is never treated as a physical acknowledgement", () =>
         reportedSettings: device.desiredSettings,
       },
     }).label,
-    "Reported",
+    "Confirmed",
   );
   assert.equal(
     observation({
@@ -79,5 +85,39 @@ test("weekly timing is shown in weekday order and one-off timing in the home tim
       "Europe/Amsterdam",
     ),
     /20:00/,
+  );
+});
+
+test("brightness alone does not invent a power request", () => {
+  assert.equal(
+    requestedOn({ desiredSettings: [{ kind: "lightLevel", percent: 80 }] }),
+    undefined,
+  );
+  assert.equal(requestedOn({ desiredSettings: [] }), undefined);
+  assert.equal(
+    requestedOn({ desiredSettings: [{ kind: "power", on: true }] }),
+    true,
+  );
+});
+
+test("an online device without a request is not called confirmed", () => {
+  assert.equal(
+    observation({
+      device: { desiredSettings: [] },
+      status: { availability: "ONLINE" },
+    }).label,
+    "Online",
+  );
+});
+
+test("scene summaries describe their intentions, without claiming execution", () => {
+  assert.equal(
+    sceneSummary({
+      actions: [
+        { kind: "dimLights", brightness: { percent: 25 } },
+        { kind: "setHeating", temperature: { celsius: 21 } },
+      ],
+    }),
+    "Lights 25% · Heating 21°C",
   );
 });

@@ -12,12 +12,12 @@ The dev gateway routes `/api`, `/app` and the managed IDP's `/login` to Fluxzero
 
 ## What is available
 
-- Overview and room filters, including nested spaces and device search.
+- A compact overview with device connections, reported temperature, the next routine, scene intentions and device controls. Rooms has a dedicated overview; opening a room includes its nested spaces and device search.
 - All current core capabilities: power, brightness, color, temperature, opening, locks, playback, volume, ventilation, irrigation and charging. Tiles show common controls; device details contain the complete set.
-- Requested settings alongside reported settings, availability and measurements. An accepted command is an intention, not a physical acknowledgement. The example has no linked equipment and displays **No report** until observations arrive.
+- Requested settings alongside reported settings, availability and measurements. An accepted command is an intention, not a physical acknowledgement. The example has no linked equipment and displays **No report** until observations arrive. Power requests are explicit: brightness never implies power on, and an unset request selects neither On nor Off. Unknown sliders show **Not set** without a position marker. Device tile highlighting comes only from reported online power; setting controls are labelled **Requested**. An online device with no requested settings is not called confirmed.
 - Scene activation and an ordered scene editor. Actions can target a device, a space, a zone or the whole home. The existing domain commits the scene's intentions together.
 - One-off and weekly routines, with editing, pause, resume and removal. Weekly times use the home's timezone. One-off entry explicitly names the browser's timezone; the resulting instant and next execution are displayed in the home's timezone. Completed one-off routines can be edited to choose a new time.
-- Connection status for existing Home Assistant device links. An operator configures and links the adapter; the browser never receives its credentials.
+- Separate app connectivity and Home Assistant device-link status. **App connected** refers only to live updates. Unlinked devices can save intentions but cannot control equipment. Connections explains that in-app device setup is not available yet, with administrator guidance kept under a separate disclosure. An operator configures and links the adapter; the browser never receives its credentials. The account button opens identity, permission and sign-out controls.
 
 Home layout, residents, automation definitions and adapter provisioning remain command-driven. This slice exposes viewing and everyday control, scene composition and scheduling.
 
