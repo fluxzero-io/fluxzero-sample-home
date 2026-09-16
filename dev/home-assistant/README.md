@@ -4,7 +4,7 @@ Use a real Home Assistant API without physical devices or an existing installati
 
 ## Start
 
-Install Docker with a running Linux container engine and Python 3, then run from this repository:
+First follow [Fluxzero Get started](https://fluxzero.io/get-started) and the [Home quickstart](../../README.md#try-it-locally). This optional profile additionally requires Docker with a running Linux container engine and Python 3. Then run from this repository:
 
 ```sh
 fz dev --profile home-assistant

@@ -140,7 +140,7 @@ If you changed it several times during the outage, the latest intention should w
 
 ## 5. Work with a coding agent
 
-Install the [Fluxzero agent plugin](https://github.com/fluxzero-io/fluxzero-agent-plugins) in your agent and open this repository. [AGENTS.md](../AGENTS.md) supplies the project-specific boundaries. A useful task is:
+Follow [Fluxzero Get started](https://fluxzero.io/get-started) to set up your coding agent, then open this repository. [AGENTS.md](../AGENTS.md) supplies the project-specific boundaries. A useful task is:
 
 > Follow docs/testing-home-assistant.md against the local demo. Use the existing Fluxzero development environment, verify authentication without revealing credentials, control a virtual light through Home, compare its reported state with HA, and exercise temporary connection loss. Restore the demo and report the observations and any failures.
 

@@ -13,7 +13,16 @@ An example application for **Fluxzero 2.0**: model a home, control its devices, 
 
 ## Try it locally
 
-Install [the Fluxzero CLI](https://github.com/fluxzero-io/fluxzero-cli#installation), **Java 25** and **Node.js 22.12+**. Git and the included Maven Wrapper are used below. No Fluxzero account, API token or Home Assistant installation is required for this first run.
+Start with **[Fluxzero Get started](https://fluxzero.io/get-started)** to set up Fluxzero in your coding agent. Then ask your agent:
+
+> Clone https://github.com/fluxzero-io/fluxzero-sample-home and run this existing example locally. Follow its AGENTS.md and use the Fluxzero plugin to start the development environment.
+
+No Fluxzero account, API token or Home Assistant installation is required for this first run.
+
+<details>
+<summary>Alternative: install and run with the CLI</summary>
+
+Install [the Fluxzero CLI](https://github.com/fluxzero-io/fluxzero-cli#installation), **Java 25**, **Node.js 22.12+** and Git. The repository includes the Maven Wrapper.
 
 ```sh
 git clone https://github.com/fluxzero-io/fluxzero-sample-home.git
@@ -21,7 +30,9 @@ cd fluxzero-sample-home
 fz dev
 ```
 
-Open the URL printed by `fz dev`. Sign in through the local identity provider as **alex** to manage the home, or **sam** for read-only access.
+</details>
+
+Open the local URL shown by your agent or the CLI. Sign in through the local identity provider as **alex** to manage the home, or **sam** for read-only access.
 
 The environment starts the matching SDK runtime, backend, identity provider and **Vite dev server**, and populates an example home. React and CSS edits hot-reload; Java changes use the managed compile and test loop. The first start downloads dependencies and checks the frontend production build.
 
@@ -70,7 +81,7 @@ Read [SDK 2.0 in this example](docs/sdk-2.md) for the modeling and execution cho
 
 ## Develop and verify
 
-Use `fz dev` for the development loop. Coding agents should read [AGENTS.md](AGENTS.md) and use the [Fluxzero agent plugin](https://github.com/fluxzero-io/fluxzero-agent-plugins) for version-matched SDK guidance and managed build/test feedback.
+Use `fz dev` for the development loop. Coding agents should read [AGENTS.md](AGENTS.md) and follow [Fluxzero Get started](https://fluxzero.io/get-started) to set up the plugin for version-matched SDK guidance and managed build/test feedback.
 
 CI performs a clean frontend check and full backend verification without Docker, a Fluxzero account or repository secrets. Outside an active dev environment, the equivalent commands are:
 
