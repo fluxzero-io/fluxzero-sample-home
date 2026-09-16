@@ -235,10 +235,7 @@ export function App() {
       <div className="sign-in">
         <div className="signin-art">
           <HomeDrawing />
-          <span>
-            Space to live.
-            <br />A home that listens.
-          </span>
+          <span>A home that listens.</span>
         </div>
         <div className="signin-content">
           <div className="brand">
