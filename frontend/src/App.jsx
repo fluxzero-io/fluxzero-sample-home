@@ -35,6 +35,7 @@ import { api } from "./api.js";
 import { DeviceCard, DeviceDetail } from "./Devices.jsx";
 import { SceneCard, SceneEditor } from "./Scenes.jsx";
 import { RoutineEditor } from "./Routines.jsx";
+import { RoomEditor } from "./Rooms.jsx";
 import { HomeSummary, RoomsOverview } from "./Overview.jsx";
 
 const modes = {
@@ -171,12 +172,16 @@ export function App() {
     if (busy.has(key)) return;
     setBusy((prev) => new Set(prev).add(key));
     try {
-      await api(`/api/homes/${encodeURIComponent(homeId)}${path}`, {
-        method,
-        body,
-      });
+      const result = await api(
+        `/api/homes/${encodeURIComponent(homeId)}${path}`,
+        {
+          method,
+          body,
+        },
+      );
       await reload();
       if (success) setToast({ text: success });
+      return result;
     } catch (e) {
       setToast({ text: e.message, error: true });
       if (e.status === 401) refreshAccount();
@@ -459,6 +464,14 @@ export function App() {
                 </h1>
               </div>
               <div className="heading-actions">
+                {page === "rooms" && canManage && (
+                  <button
+                    className="primary"
+                    onClick={() => setDialog({ type: "room" })}
+                  >
+                    <Plus size={17} /> New room
+                  </button>
+                )}
                 {page === "scenes" && canManage && (
                   <button
                     className="primary"
@@ -769,6 +782,16 @@ export function App() {
             }
           />
         </Dialog>
+      )}
+      {dialog?.type === "room" && data && (
+        <RoomEditor
+          data={data}
+          close={() => setDialog(null)}
+          save={(body) =>
+            act("new-room", "/spaces", body, "POST", "Room created")
+          }
+          created={(id) => navigate("devices", id)}
+        />
       )}
       {dialog?.type === "routine" && data && (
         <RoutineEditor

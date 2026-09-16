@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.net.HttpCookie;
 import java.net.URI;
@@ -50,7 +51,7 @@ class HomeWebTest {
         };
         fixture = populate(TestFixture.create(DefaultFluxzero.builder().registerUserProvider(provider),
                 AppAuthEndpoint.class, HomeEndpoint.class, DeviceEndpoint.class, SceneEndpoint.class,
-                RoutineEndpoint.class, HomeSocket.class, RoutineSchedules.class, FluxzeroIdpStub.class))
+                RoutineEndpoint.class, SpaceEndpoint.class, HomeSocket.class, RoutineSchedules.class, FluxzeroIdpStub.class))
                 .withProperty("fluxzero.auth.external-base-url", BASE)
                 .withProperty("fluxzero.auth.oidc.issuer", BASE)
                 .withProperty("fluxzero.auth.oidc.client-id", "local-auth-app")
@@ -173,6 +174,73 @@ class HomeWebTest {
         fixture.whenWebRequestByUser(OWNER.id(), request("POST", HOME_URL + "/devices/" + MULTI.getId() + "/" + route, body))
                 .expectWebResult(r -> r.getStatus() < 300)
                 .expectThat(f -> assertEquals(expected, Fluxzero.loadModel(MULTI).get().desiredSettings().get(expected.capability())));
+    }
+
+    @Test void aManagerCanCreateARoomInAnExistingFloor() {
+        home();
+        var details = new SpaceDetails("Study", SpaceKind.ROOM);
+        fixture.whenWebRequest(browser("POST", HOME_URL + "/spaces",
+                        new SpaceEndpoint.Definition(details, FLOOR), session(OWNER)))
+                .expectWebResult(response -> {
+                    assertEquals(201, response.getStatus());
+                    SpaceEndpoint.CreatedSpace created = response.getPayloadAs(SpaceEndpoint.CreatedSpace.class);
+                    var id = created.spaceId();
+                    Space space = Fluxzero.loadModel(id).get();
+                    assertEquals(FLOOR, space.parentId());
+                    assertEquals(details, space.details());
+                    return true;
+                });
+    }
+
+    @Test void aRoomCanBeCreatedDirectlyInTheHome() {
+        home().whenWebRequestByUser(OWNER, request("POST", HOME_URL + "/spaces",
+                        Map.of("details", Map.of("name", "Study", "kind", "ROOM"))))
+                .expectWebResult(response -> {
+                    SpaceEndpoint.CreatedSpace created = response.getPayloadAs(SpaceEndpoint.CreatedSpace.class);
+                    var id = created.spaceId();
+                    assertEquals(HOME, Fluxzero.loadModel(id).get().parentId());
+                    return response.getStatus() == 201;
+                });
+    }
+
+    @ParameterizedTest @ValueSource(strings = {"VIEW", "CONTROL"})
+    void creatingRoomsRequiresManagementAccess(String permission) {
+        home().givenCommandsByUser(HomeUser.SYSTEM, new GrantHomeAccess(new AccountId(VIEWER.id()),
+                        new AccountDetails("Sam"), HOME, HomePermission.valueOf(permission)))
+                .whenWebRequestByUser(VIEWER, request("POST", HOME_URL + "/spaces",
+                        new SpaceEndpoint.Definition(new SpaceDetails("Study", SpaceKind.ROOM), null)))
+                .expectExceptionalResult(UnauthorizedException.class).expectNoCommands();
+    }
+
+    @Test void roomCreationRequiresAnAuthenticatedSameOriginRequest() {
+        home();
+        var body = new SpaceEndpoint.Definition(new SpaceDetails("Study", SpaceKind.ROOM), null);
+        fixture.whenWebRequest(request("POST", HOME_URL + "/spaces", body))
+                .expectExceptionalResult(UnauthenticatedException.class).expectNoCommands();
+        fixture.whenWebRequest(browser("POST", HOME_URL + "/spaces", body, "x".repeat(43)))
+                .expectExceptionalResult(UnauthenticatedException.class).expectNoCommands();
+        fixture.whenWebRequest(WebRequest.post(HOME_URL + "/spaces").payload(body)
+                        .header("Cookie", "home_session=" + session(OWNER))
+                        .header("X-Home-Request", "1").header("Origin", "https://other.example").build())
+                .expectExceptionalResult(UnauthorizedException.class).expectNoCommands();
+    }
+
+    @Test void roomCreationRejectsAnotherHomesLocation() {
+        var other = new HomeId("other-home");
+        var otherRoom = new SpaceId("other-room");
+        home().givenCommands(new CreateHome(other, new HomeDetails("Other"), AMSTERDAM),
+                        new AddSpace(otherRoom, other, new SpaceDetails("Study", SpaceKind.ROOM)))
+                .whenWebRequestByUser(OWNER, request("POST", HOME_URL + "/spaces",
+                        new SpaceEndpoint.Definition(new SpaceDetails("Study", SpaceKind.ROOM), otherRoom)))
+                .expectExceptionalResult(UnauthorizedException.class).expectNoCommands();
+    }
+
+    @ParameterizedTest @ValueSource(strings = {
+            "{}", "{\"details\":null}", "{\"details\":{\"name\":\" \",\"kind\":\"ROOM\"}}",
+            "{\"details\":{\"name\":\"Study\"}}"})
+    void roomCreationValidatesItsDetails(String json) {
+        home().whenWebRequestByUser(OWNER, request("POST", HOME_URL + "/spaces", json))
+                .expectExceptionalResult(ValidationException.class).expectNoCommands();
     }
 
     @Test void scenesCanBeDefinedActivatedAndRemoved() {
@@ -300,6 +368,8 @@ class HomeWebTest {
             String base = "/api/homes/{homeId}";
             assertEquals("getHome", paths.path(base).path("get").path("operationId").asText());
             assertEquals("changeHomeMode", paths.path(base + "/mode").path("put").path("operationId").asText());
+            assertEquals("addSpace", paths.path(base + "/spaces").path("post").path("operationId").asText());
+            assertTrue(paths.path(base + "/spaces").path("post").path("responses").has("201"));
             deviceActions().forEach(row -> assertTrue(paths.path(base + "/devices/{deviceId}/" + row.get()[0]).has("post")));
             assertEquals("defineScene", paths.path(base + "/scenes/{sceneId}").path("put").path("operationId").asText());
             assertTrue(paths.path(base + "/scenes/{sceneId}").has("delete"));

@@ -12,14 +12,14 @@ The dev gateway routes `/api`, `/app` and the managed IDP's `/login` to Fluxzero
 
 ## What is available
 
-- A compact overview with device connections, set and measured room temperature, the next routine, scene intentions and device controls. Rooms has a dedicated overview. Devices in the sidebar opens all devices or filters them by room, including nested spaces and device search. Room cards open the same device view. Pages end with breathing room instead of a footer.
+- A compact overview with device connections, set and measured room temperature, the next routine, scene intentions and device controls. Rooms has a dedicated overview with **New room** for managers. A room can belong directly to the home or to an existing space; it does not depend on an integration or discovery. Devices in the sidebar opens all devices or filters them by room, including nested spaces and device search. Room cards open the same device view. Pages end with breathing room instead of a footer.
 - All current core capabilities: power, brightness, color, temperature, opening, locks, playback, volume, ventilation, irrigation and charging. Tiles show common controls; device details contain the complete set.
 - Requested settings alongside reported settings, availability and measurements. An accepted command is an intention, not a physical acknowledgement. The example has no linked equipment and displays **No report** until observations arrive. Power requests are explicit: brightness never implies power on, and an unknown power state uses a left-aligned switch thumb with a question mark. An online power report is used when no power setting exists. Unknown sliders show **Not set** without a position marker. Device tile highlighting comes only from reported online power; controls show the chosen setting directly. For linked devices, a **Syncing** indicator appears only after a mismatch persists for one second and disappears on confirmation. A pending HTTP command uses the same delay. Delivery failures and offline state remain visible; unlinked devices retain **Not linked** instead of an endless spinner. The temperature summary pairs a thermostat setting with an online measurement from the same room, never a different room. An online device with no requested settings is not called confirmed.
 - Scene activation and an ordered scene editor. Actions can target a device, a space, a zone or the whole home. The existing domain commits the scene's intentions together.
 - One-off and weekly routines, with editing, pause, resume and removal. Weekly times use the home's timezone. One-off entry explicitly names the browser's timezone; the resulting instant and next execution are displayed in the home's timezone. Completed one-off routines can be edited to choose a new time.
 - Home Assistant device-link status is available under Connections; the header has no routine connection badge. Unlinked devices can save intentions but cannot control equipment. Connections explains that in-app device setup is not available yet, with administrator guidance kept under a separate disclosure. An operator configures and links the adapter; the browser never receives its credentials. The bottom-left identity is the single account menu, with Sign out. It supports keyboard navigation, Escape and outside-click dismissal.
 
-Home layout, residents, automation definitions and adapter provisioning remain command-driven. This slice exposes viewing and everyday control, scene composition and scheduling.
+Further layout changes, residents, automation definitions and adapter provisioning remain command-driven. This slice exposes room creation, viewing and everyday control, scene composition and scheduling.
 
 ## Identity and permissions
 
@@ -27,7 +27,7 @@ The BFF follows OIDC authorization code with PKCE through the official Fluxzero 
 
 A trusted operator sends `GrantHomeAccess(accountId, details, homeId, permission)` as the system user. Use the exact identity-provider subject as `AccountId` input. `RevokeHomeAccess(accountId, homeId)` removes that membership. These provisioning commands have no public HTTP routes and require `SYSTEM`.
 
-| Permission | Read / live view | Devices, home mode, activate scene | Define / remove scenes, manage routines |
+| Permission | Read / live view | Devices, home mode, activate scene | Create rooms, define / remove scenes, manage routines |
 | --- | --- | --- | --- |
 | `VIEW` | Yes | No | No |
 | `CONTROL` | Yes | Yes | No |
@@ -59,6 +59,8 @@ Use `private_key_jwt` for a provisioned confidential client. The local managed I
 ## HTTP and live updates
 
 The generated reference is served at `/api/docs`, with OpenAPI at `/api/openapi.json`. Public discovery describes routes and schemas, not household data. The handlers and their annotations own this contract; there is no handwritten OpenAPI copy. JSON IDs are functional IDs, without their internal storage prefixes.
+
+`POST /api/homes/{homeId}/spaces` accepts `{ "details": { "name": "Study", "kind": "ROOM" }, "enclosingSpaceId": null }` and returns `201` with `{ "spaceId": "..." }`. The server generates the identity. An optional enclosing space must belong to the selected home. The endpoint dispatches `AddSpace`, retaining the core details validation and parent model behavior.
 
 HTTP adapters authorize the household, then dispatch existing Fluxzero commands or the `GetHomeOverview` query. They do not duplicate domain rules or call physical APIs. Device observations and desired settings are assembled from one pinned current Home graph.
 
