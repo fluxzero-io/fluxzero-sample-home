@@ -1,5 +1,7 @@
 package io.fluxzero.home.homeassistant;
 
+import io.fluxzero.home.homeassistant.api.HomeAssistantId;
+import io.fluxzero.home.homeassistant.api.model.HomeAssistantUnavailable;
 import io.fluxzero.sdk.Fluxzero;
 import io.fluxzero.sdk.configuration.ApplicationProperties;
 import io.fluxzero.sdk.tracking.handling.IllegalCommandException;
@@ -7,24 +9,23 @@ import io.fluxzero.sdk.web.RedirectPolicy;
 import io.fluxzero.sdk.web.WebRequest;
 import io.fluxzero.sdk.web.WebRequestSettings;
 import io.fluxzero.sdk.web.WebResponse;
-
 import java.net.URI;
 import java.time.Duration;
 
 /** Configured REST endpoint and request policy. The command/query handlers perform the actual I/O. */
-final class HomeAssistantEndpoint {
-    static final WebRequestSettings REQUEST_SETTINGS = WebRequestSettings.builder()
+public final class HomeAssistantEndpoint {
+    public static final WebRequestSettings REQUEST_SETTINGS = WebRequestSettings.builder()
             .timeout(Duration.ofSeconds(5)).redirectPolicy(RedirectPolicy.NEVER)
             .maxRetries(2).retryDelay(Duration.ofMillis(250)).build();
-    final URI baseUrl;
-    final String token;
+    private final URI baseUrl;
+    private final String token;
 
     private HomeAssistantEndpoint(URI baseUrl, String token) {
         this.baseUrl = baseUrl;
         this.token = token;
     }
 
-    static HomeAssistantEndpoint load(HomeAssistantId connectionId) {
+    public static HomeAssistantEndpoint load(HomeAssistantId connectionId) {
         var connection = Fluxzero.loadModel(connectionId).get();
         if (connection == null) throw new IllegalCommandException("Connect Home Assistant to this home first.");
         String prefix = "home-assistant." + connection.details().configuration();
@@ -43,11 +44,11 @@ final class HomeAssistantEndpoint {
         return new HomeAssistantEndpoint(URI.create(url.replaceAll("/+$", "") + "/"), token);
     }
 
-    WebRequest get(String path) {
+    public WebRequest get(String path) {
         return authorize(WebRequest.get(baseUrl.resolve(path).toString()));
     }
 
-    WebRequest post(String path, Object body) {
+    public WebRequest post(String path, Object body) {
         return authorize(WebRequest.post(baseUrl.resolve(path).toString()).contentType("application/json").body(body));
     }
 
@@ -55,7 +56,7 @@ final class HomeAssistantEndpoint {
         return request.header("Authorization", "Bearer " + token).header("Accept", "application/json").build();
     }
 
-    static WebResponse requireSuccess(WebResponse response) {
+    public static WebResponse requireSuccess(WebResponse response) {
         if (response.getStatus() == 401 || response.getStatus() == 403) {
             throw new HomeAssistantUnavailable("Home Assistant refused access. Check the configured token and permissions.");
         }

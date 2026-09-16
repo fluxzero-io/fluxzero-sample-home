@@ -2,8 +2,8 @@ package io.fluxzero.home;
 
 import io.fluxzero.sdk.tracking.handling.authentication.NoUserRequired;
 import io.fluxzero.sdk.web.ServeStatic;
-import org.springframework.stereotype.Component;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnResource;
+import org.springframework.stereotype.Component;
 
 /** Production assets; fz dev routes the UI to Vite during development. */
 @Component

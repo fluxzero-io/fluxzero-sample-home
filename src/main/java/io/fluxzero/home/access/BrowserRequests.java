@@ -2,7 +2,6 @@ package io.fluxzero.home.access;
 
 import io.fluxzero.sdk.tracking.handling.authentication.UnauthorizedException;
 import io.fluxzero.sdk.web.WebRequest;
-
 import java.net.URI;
 
 import static io.fluxzero.sdk.configuration.ApplicationProperties.requireProperty;

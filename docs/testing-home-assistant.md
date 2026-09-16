@@ -150,7 +150,7 @@ Use the browser to drive Home, not a replacement HTTP client that bypasses its d
 
 ## Automated tests and troubleshooting
 
-[HomeAssistantTest](../src/test/java/io/fluxzero/home/HomeAssistantTest.java) covers the integration workflows, [HomeAssistantRequestTest](../src/test/java/io/fluxzero/home/homeassistant/HomeAssistantRequestTest.java) covers message and HTTP contracts, and [HomeAssistantTranslationTest](../src/test/java/io/fluxzero/home/homeassistant/HomeAssistantTranslationTest.java) covers units and device capability translation. They dispatch commands and queries through `TestFixture`; only external web responses are stubbed. CI runs them without Docker or secrets.
+[HomeAssistantTest](../src/test/java/io/fluxzero/home/homeassistant/HomeAssistantTest.java) covers the integration workflows, [HomeAssistantRequestTest](../src/test/java/io/fluxzero/home/homeassistant/HomeAssistantRequestTest.java) covers message and HTTP contracts, and [HomeAssistantTranslationTest](../src/test/java/io/fluxzero/home/homeassistant/api/model/HomeAssistantTranslationTest.java) covers units and device capability translation. They dispatch commands and queries through `TestFixture`; only external web responses are stubbed. CI runs them without Docker or secrets.
 
 | Symptom | Check |
 | --- | --- |

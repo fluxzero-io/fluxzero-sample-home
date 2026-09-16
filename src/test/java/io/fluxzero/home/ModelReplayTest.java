@@ -1,8 +1,10 @@
 package io.fluxzero.home;
 
 import io.fluxzero.home.automation.RoutineSchedules;
-import io.fluxzero.home.command.*;
-import io.fluxzero.home.model.*;
+import io.fluxzero.home.devices.api.RemoveDevice;
+import io.fluxzero.home.devices.api.model.Device;
+import io.fluxzero.home.household.api.ChoosePrimaryLight;
+import io.fluxzero.home.scenes.api.ActivateScene;
 import io.fluxzero.sdk.Fluxzero;
 import org.junit.jupiter.api.Test;
 

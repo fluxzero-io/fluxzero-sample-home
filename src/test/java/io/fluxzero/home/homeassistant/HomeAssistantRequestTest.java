@@ -1,21 +1,31 @@
 package io.fluxzero.home.homeassistant;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import io.fluxzero.home.command.CreateHome;
-import io.fluxzero.home.model.HomeDetails;
-import io.fluxzero.home.model.HomeId;
+import io.fluxzero.home.homeassistant.api.CallHomeAssistantService;
+import io.fluxzero.home.homeassistant.api.ConnectHomeAssistant;
+import io.fluxzero.home.homeassistant.api.DisconnectHomeAssistant;
+import io.fluxzero.home.homeassistant.api.GetHomeAssistantStates;
+import io.fluxzero.home.homeassistant.api.GetHomeAssistantTemperatureUnit;
+import io.fluxzero.home.homeassistant.api.HomeAssistantId;
+import io.fluxzero.home.homeassistant.api.model.HomeAssistantAction;
+import io.fluxzero.home.homeassistant.api.model.HomeAssistantConnection;
+import io.fluxzero.home.homeassistant.api.model.HomeAssistantDetails;
+import io.fluxzero.home.homeassistant.api.model.HomeAssistantSnapshot;
+import io.fluxzero.home.homeassistant.api.model.HomeAssistantUnavailable;
+import io.fluxzero.home.household.api.CreateHome;
+import io.fluxzero.home.household.api.HomeId;
+import io.fluxzero.home.household.api.model.HomeDetails;
 import io.fluxzero.sdk.test.TestFixture;
 import io.fluxzero.sdk.tracking.handling.IllegalCommandException;
 import io.fluxzero.sdk.web.RedirectPolicy;
 import io.fluxzero.sdk.web.WebRequest;
 import io.fluxzero.sdk.web.WebRequestSettings;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
-
 import java.time.Duration;
 import java.time.ZoneId;
 import java.util.List;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static io.fluxzero.home.homeassistant.HomeAssistantStub.BASE_URL;
 import static io.fluxzero.home.homeassistant.HomeAssistantStub.TOKEN;

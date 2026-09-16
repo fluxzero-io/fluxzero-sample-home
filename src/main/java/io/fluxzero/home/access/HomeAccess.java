@@ -1,7 +1,11 @@
 package io.fluxzero.home.access;
 
-import io.fluxzero.home.model.Home;
-import io.fluxzero.home.model.HomeId;
+import io.fluxzero.home.access.api.AccountId;
+import io.fluxzero.home.access.api.model.Account;
+import io.fluxzero.home.access.api.model.HomePermission;
+import io.fluxzero.home.access.api.model.HomeUser;
+import io.fluxzero.home.household.api.HomeId;
+import io.fluxzero.home.household.api.model.Home;
 import io.fluxzero.sdk.Fluxzero;
 import io.fluxzero.sdk.modeling.Graph;
 import io.fluxzero.sdk.tracking.handling.authentication.UnauthorizedException;

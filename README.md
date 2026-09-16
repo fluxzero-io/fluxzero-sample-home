@@ -108,17 +108,38 @@ A `HomeAssistantDevice` link has two parents: the Home device and its Home Assis
 
 See the [domain guide](docs/domain.md) for lifecycle rules and the [integration boundary](docs/integration-boundary.md) for external delivery.
 
+## Source layout
+
+Java code is grouped by product domain under `io.fluxzero.home`:
+
+| Domain | Owns |
+| --- | --- |
+| `household` | Homes, spaces, zones, residents and the household overview. |
+| `devices` | Device capabilities, control and observations. |
+| `scenes` | Reusable intentions and device selections. |
+| `automation` | Scheduled routines and reactions to household changes. |
+| `access` | Accounts, household permissions and browser sessions. |
+| `homeassistant` | Connection, discovery, delivery and observation through Home Assistant. |
+
+Each domain keeps commands, queries and typed IDs in `api`, and Models, details and other values in `api.model`.
+Self-handling messages stay in `api`; separate handlers, endpoints and integration configuration live directly in
+their domain. Tests follow the same domains. Application-wide contract tests and the shared `HouseExample` fixture
+remain at the test root.
+
+This is a source layout, not a split into services: Home still builds and runs as one application. HTTP routes
+remain `/api/homes/...`; `api` in a Java package denotes its message/model contract, not a web transport.
+
 ## A short code tour
 
 | Start here | What it demonstrates |
 | --- | --- |
-| [AddSpace](src/main/java/io/fluxzero/home/command/AddSpace.java) and [Space](src/main/java/io/fluxzero/home/model/Space.java) | Typed identities, cohesive details, independent Models and recursive `@Parent` relationships. |
-| [FindDevices](src/main/java/io/fluxzero/home/query/FindDevices.java) | Search within a known home's relationships, without projecting every home. |
-| [ActivateScene](src/main/java/io/fluxzero/home/command/ActivateScene.java) | Ordinary device commands combined into one atomic Model commit. |
-| [RunRoutine](src/main/java/io/fluxzero/home/automation/RunRoutine.java) and [RoutineSchedules](src/main/java/io/fluxzero/home/automation/RoutineSchedules.java) | Owned schedules, current Graph reconciliation and functional workflow outcomes. |
-| [DeviceStatus](src/main/java/io/fluxzero/home/model/DeviceStatus.java) | A separate observation lifecycle, sharing one input ID with its device parent. |
-| [CallHomeAssistantService](src/main/java/io/fluxzero/home/homeassistant/CallHomeAssistantService.java) | A local message handler making an auditable external web request. |
-| [SceneBehaviorTest](src/test/java/io/fluxzero/home/SceneBehaviorTest.java) and [HomeAssistantRequestTest](src/test/java/io/fluxzero/home/homeassistant/HomeAssistantRequestTest.java) | Product behavior and API contracts through Fluxzero's `TestFixture`. |
+| [AddSpace](src/main/java/io/fluxzero/home/household/api/AddSpace.java) and [Space](src/main/java/io/fluxzero/home/household/api/model/Space.java) | Typed identities, cohesive details, independent Models and recursive `@Parent` relationships. |
+| [FindDevices](src/main/java/io/fluxzero/home/devices/api/FindDevices.java) | Search within a known home's relationships, without projecting every home. |
+| [ActivateScene](src/main/java/io/fluxzero/home/scenes/api/ActivateScene.java) | Ordinary device commands combined into one atomic Model commit. |
+| [RunRoutine](src/main/java/io/fluxzero/home/automation/api/RunRoutine.java) and [RoutineSchedules](src/main/java/io/fluxzero/home/automation/RoutineSchedules.java) | Owned schedules, current Graph reconciliation and functional workflow outcomes. |
+| [DeviceStatus](src/main/java/io/fluxzero/home/devices/api/model/DeviceStatus.java) | A separate observation lifecycle, sharing one input ID with its device parent. |
+| [CallHomeAssistantService](src/main/java/io/fluxzero/home/homeassistant/api/CallHomeAssistantService.java) | A local message handler making an auditable external web request. |
+| [SceneBehaviorTest](src/test/java/io/fluxzero/home/scenes/SceneBehaviorTest.java) and [HomeAssistantRequestTest](src/test/java/io/fluxzero/home/homeassistant/HomeAssistantRequestTest.java) | Product behavior and API contracts through Fluxzero's `TestFixture`. |
 
 Read [SDK 2.0 in this example](docs/sdk-2.md) for the modeling and execution choices, then the [domain guide](docs/domain.md), [scenes and time](docs/scenes-and-time.md), [interface guide](docs/interface.md) and [Home Assistant adapter](docs/home-assistant.md). The [example commands](examples/README.md) are another executable entry point.
 

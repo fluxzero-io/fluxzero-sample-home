@@ -1,20 +1,40 @@
 package io.fluxzero.home.automation;
 
-import io.fluxzero.home.command.*;
-import io.fluxzero.home.model.*;
+import io.fluxzero.home.automation.api.PlanRoutine;
+import io.fluxzero.home.automation.api.RoutineId;
+import io.fluxzero.home.automation.api.model.Once;
+import io.fluxzero.home.automation.api.model.Routine;
+import io.fluxzero.home.automation.api.model.RoutineDetails;
+import io.fluxzero.home.devices.api.AddDevice;
+import io.fluxzero.home.devices.api.DeviceId;
+import io.fluxzero.home.devices.api.model.Capability;
+import io.fluxzero.home.devices.api.model.DeviceDetails;
+import io.fluxzero.home.devices.api.model.Power;
+import io.fluxzero.home.household.api.AddSpace;
+import io.fluxzero.home.household.api.CreateHome;
+import io.fluxzero.home.household.api.HomeId;
+import io.fluxzero.home.household.api.RemoveHome;
+import io.fluxzero.home.household.api.SpaceId;
+import io.fluxzero.home.household.api.model.HomeDetails;
+import io.fluxzero.home.household.api.model.SpaceDetails;
+import io.fluxzero.home.household.api.model.SpaceKind;
+import io.fluxzero.home.scenes.api.DefineScene;
+import io.fluxzero.home.scenes.api.SceneId;
+import io.fluxzero.home.scenes.api.model.OneDevice;
+import io.fluxzero.home.scenes.api.model.SceneDetails;
+import io.fluxzero.home.scenes.api.model.SwitchPower;
 import io.fluxzero.sdk.Fluxzero;
 import io.fluxzero.sdk.modeling.Graph;
 import io.fluxzero.sdk.test.TestFixture;
 import io.fluxzero.sdk.tracking.handling.HandleEvent;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
-
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.junit.jupiter.api.Assertions.*;
 

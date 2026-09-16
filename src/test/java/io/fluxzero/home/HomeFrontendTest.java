@@ -1,9 +1,8 @@
 package io.fluxzero.home;
 
 import io.fluxzero.sdk.test.TestFixture;
-import org.junit.jupiter.api.Test;
-
 import java.util.regex.Pattern;
+import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 

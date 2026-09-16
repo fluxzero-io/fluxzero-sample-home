@@ -1,23 +1,23 @@
 package io.fluxzero.home.automation;
 
-import io.fluxzero.home.command.ChangeHomeMode;
-import io.fluxzero.home.command.ReportDeviceStatus;
-import io.fluxzero.home.model.Automation;
-import io.fluxzero.home.model.DeviceObservationChanged;
-import io.fluxzero.home.model.DeviceStatus;
-import io.fluxzero.home.model.Home;
-import io.fluxzero.home.model.HomeChange;
-import io.fluxzero.home.model.HomeId;
-import io.fluxzero.home.model.HomeModeChanged;
+import io.fluxzero.home.automation.api.ReactToHome;
+import io.fluxzero.home.automation.api.model.Automation;
+import io.fluxzero.home.automation.api.model.DeviceObservationChanged;
+import io.fluxzero.home.automation.api.model.HomeChange;
+import io.fluxzero.home.automation.api.model.HomeModeChanged;
+import io.fluxzero.home.devices.api.ReportDeviceStatus;
+import io.fluxzero.home.devices.api.model.DeviceStatus;
+import io.fluxzero.home.household.api.ChangeHomeMode;
+import io.fluxzero.home.household.api.HomeId;
+import io.fluxzero.home.household.api.model.Home;
 import io.fluxzero.sdk.Fluxzero;
 import io.fluxzero.sdk.common.Message;
 import io.fluxzero.sdk.modeling.Graph;
 import io.fluxzero.sdk.tracking.Consumer;
 import io.fluxzero.sdk.tracking.ThrowingErrorHandler;
 import io.fluxzero.sdk.tracking.handling.HandleEvent;
-import org.springframework.stereotype.Component;
-
 import java.util.Map;
+import org.springframework.stereotype.Component;
 
 /** After-commit reactions; only source changes can trigger them, so scene execution cannot feed itself. */
 @Component

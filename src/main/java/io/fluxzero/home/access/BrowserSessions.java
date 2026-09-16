@@ -4,8 +4,6 @@ import io.fluxzero.common.api.Metadata;
 import io.fluxzero.sdk.Fluxzero;
 import io.fluxzero.sdk.tracking.handling.HandleSchedule;
 import io.fluxzero.sdk.web.WebRequest;
-import lombok.SneakyThrows;
-
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
@@ -13,6 +11,7 @@ import java.time.Instant;
 import java.util.Base64;
 import java.util.HexFormat;
 import java.util.Optional;
+import lombok.SneakyThrows;
 
 /** Opaque browser credentials; only their hashes are stored, shared across app instances. */
 public final class BrowserSessions {

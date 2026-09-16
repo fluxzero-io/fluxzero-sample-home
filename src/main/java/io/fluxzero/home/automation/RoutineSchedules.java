@@ -1,7 +1,8 @@
 package io.fluxzero.home.automation;
 
-import io.fluxzero.home.model.Routine;
-import io.fluxzero.home.model.RoutineId;
+import io.fluxzero.home.automation.api.RoutineId;
+import io.fluxzero.home.automation.api.RunRoutine;
+import io.fluxzero.home.automation.api.model.Routine;
 import io.fluxzero.sdk.Fluxzero;
 import io.fluxzero.sdk.modeling.Graph;
 import io.fluxzero.sdk.scheduling.ScheduleId;

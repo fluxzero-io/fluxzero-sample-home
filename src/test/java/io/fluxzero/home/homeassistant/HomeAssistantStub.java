@@ -4,7 +4,6 @@ import io.fluxzero.sdk.tracking.Consumer;
 import io.fluxzero.sdk.web.HandleGet;
 import io.fluxzero.sdk.web.HandlePost;
 import io.fluxzero.sdk.web.WebResponse;
-
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 

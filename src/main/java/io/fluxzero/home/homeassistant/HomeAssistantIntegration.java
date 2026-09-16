@@ -1,8 +1,20 @@
 package io.fluxzero.home.homeassistant;
 
-import io.fluxzero.home.command.DeviceCommand;
-import io.fluxzero.home.model.DeviceId;
-import io.fluxzero.home.model.DeviceStatus;
+import io.fluxzero.home.devices.api.DeviceCommand;
+import io.fluxzero.home.devices.api.DeviceId;
+import io.fluxzero.home.devices.api.model.DeviceStatus;
+import io.fluxzero.home.homeassistant.api.AcceptHomeAssistantObservation;
+import io.fluxzero.home.homeassistant.api.CallHomeAssistantService;
+import io.fluxzero.home.homeassistant.api.ConnectHomeAssistant;
+import io.fluxzero.home.homeassistant.api.DeliverHomeAssistantSettings;
+import io.fluxzero.home.homeassistant.api.GetHomeAssistantStates;
+import io.fluxzero.home.homeassistant.api.HomeAssistantId;
+import io.fluxzero.home.homeassistant.api.LinkHomeAssistantDevice;
+import io.fluxzero.home.homeassistant.api.RecordHomeAssistantDeliveryProblem;
+import io.fluxzero.home.homeassistant.api.RecordHomeAssistantProblem;
+import io.fluxzero.home.homeassistant.api.RefreshHomeAssistant;
+import io.fluxzero.home.homeassistant.api.model.HomeAssistantDevice;
+import io.fluxzero.home.homeassistant.api.model.HomeAssistantUnavailable;
 import io.fluxzero.sdk.Fluxzero;
 import io.fluxzero.sdk.modeling.Graph;
 import io.fluxzero.sdk.scheduling.ScheduleId;
@@ -11,9 +23,8 @@ import io.fluxzero.sdk.tracking.ThrowingErrorHandler;
 import io.fluxzero.sdk.tracking.handling.HandleEvent;
 import io.fluxzero.sdk.tracking.handling.HandleSchedule;
 import io.fluxzero.sdk.tracking.handling.IllegalCommandException;
-import org.springframework.stereotype.Component;
-
 import java.time.Duration;
+import org.springframework.stereotype.Component;
 
 /** Concrete HA orchestration. Physical effects run after commit on one event consumer; domain applies remain pure. */
 @Component
