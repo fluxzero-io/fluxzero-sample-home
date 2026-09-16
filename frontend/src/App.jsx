@@ -11,7 +11,6 @@ import {
   DoorClosed,
   House,
   LayoutGrid,
-  LogOut,
   Menu,
   Moon,
   Pencil,
@@ -30,6 +29,7 @@ import {
   Toggle,
   SectionTitle,
   HomeDrawing,
+  ProfileMenu,
 } from "./ui.jsx";
 import { api } from "./api.js";
 import { DeviceCard, DeviceDetail } from "./Devices.jsx";
@@ -56,7 +56,6 @@ export function App() {
   const [busy, setBusy] = useState(new Set());
   const [toast, setToast] = useState(null);
   const [error, setError] = useState("");
-  const [live, setLive] = useState("connecting");
   const [navOpen, setNavOpen] = useState(false);
   const homeRef = useRef(homeId);
   homeRef.current = homeId;
@@ -117,13 +116,11 @@ export function App() {
       heartbeat,
       attempt = 0;
     const connect = () => {
-      setLive("connecting");
       socket = new WebSocket(
         `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/api/homes/${encodeURIComponent(homeId)}/live`,
       );
       socket.onopen = () => {
         attempt = 0;
-        setLive("live");
         heartbeat = setInterval(() => {
           if (socket.readyState === WebSocket.OPEN) socket.send("refresh");
         }, 30000);
@@ -140,13 +137,12 @@ export function App() {
             setError("");
           }
         } catch {
-          setLive("reconnecting");
+          setError("Could not refresh your home.");
         }
       };
       socket.onclose = (event) => {
         clearInterval(heartbeat);
         if (stopped) return;
-        setLive("reconnecting");
         if (event.code === 1008) {
           refreshAccount();
         }
@@ -381,29 +377,17 @@ export function App() {
             <Wifi size={18} />
             Connections
           </button>
-          <div className="profile">
-            <span className="avatar">
-              {account.name
-                .split(" ")
-                .map((s) => s[0])
-                .slice(0, 2)
-                .join("")}
-            </span>
-            <div>
-              <strong>{account.name}</strong>
-              <small>
-                {data?.permission === "VIEW"
-                  ? "View-only access"
-                  : data?.permission === "CONTROL"
-                    ? "Household member"
-                    : "Household manager"}
-              </small>
-            </div>
-            <IconButton label="Sign out" onClick={logout}>
-              <LogOut size={16} />
-            </IconButton>
-          </div>
-          <span className="powered">BUILT WITH FLUXZERO</span>
+          <ProfileMenu
+            name={account.name}
+            role={
+              data?.permission === "VIEW"
+                ? "View-only access"
+                : data?.permission === "CONTROL"
+                  ? "Household member"
+                  : "Household manager"
+            }
+            onSignOut={logout}
+          />
         </div>
       </aside>
       <main className="workspace">
@@ -423,23 +407,6 @@ export function App() {
               {titleCase(page)}
               {page === "rooms" && room ? ` / ${nameOfRoom(room)}` : ""}
             </strong>
-          </div>
-          <div className="topbar-right">
-            <span className={`live ${live === "live" ? "" : "connecting"}`}>
-              <span />
-              {live === "live" ? "App connected" : "App reconnecting"}
-            </span>
-            <button
-              className="avatar small-avatar"
-              aria-label="Account"
-              onClick={() => setDialog({ type: "account" })}
-            >
-              {account.name
-                .split(" ")
-                .map((part) => part[0])
-                .slice(0, 2)
-                .join("")}
-            </button>
           </div>
         </header>
         {error && (
@@ -842,24 +809,6 @@ export function App() {
             )
           }
         />
-      )}
-      {dialog?.type === "account" && (
-        <Dialog title="Account" onClose={() => setDialog(null)}>
-          <div className="account-summary">
-            <h3>{account.name}</h3>
-            <p>{data?.home.details.name}</p>
-          </div>
-          <p className="note">
-            {data?.permission === "MANAGE"
-              ? "You can control devices and manage scenes and routines."
-              : data?.permission === "CONTROL"
-                ? "You can control devices and run scenes."
-                : "You have view-only access to this home."}
-          </p>
-          <button className="secondary" onClick={logout}>
-            <LogOut size={17} /> Sign out
-          </button>
-        </Dialog>
       )}
       {dialog?.type === "connections" && data && (
         <Dialog title="Connections" onClose={() => setDialog(null)}>

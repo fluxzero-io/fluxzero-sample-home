@@ -1,5 +1,12 @@
 import { useEffect, useId, useRef, useState } from "react";
-import { ArrowDown, ArrowRight, House, X } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowRight,
+  ChevronUp,
+  House,
+  LogOut,
+  X,
+} from "lucide-react";
 
 export function IconButton({ label, children, ...props }) {
   return (
@@ -168,10 +175,11 @@ export function Toggle({ label, checked, disabled, onClick }) {
   return (
     <button
       type="button"
-      className={`toggle ${checked ? "on" : ""}`}
-      role="switch"
-      aria-checked={checked}
-      aria-label={label}
+      className={`toggle ${checked == null ? "unknown" : checked ? "on" : ""}`}
+      role={checked == null ? "button" : "switch"}
+      aria-checked={checked == null ? undefined : checked}
+      aria-label={checked == null ? `${label}: unknown, turn on` : label}
+      title={checked == null ? "Power unknown" : undefined}
       disabled={disabled}
       onClick={onClick}
     >
@@ -254,5 +262,95 @@ export function HomeDrawing() {
         opacity=".4"
       />
     </svg>
+  );
+}
+
+export function ProfileMenu({ name, role, onSignOut }) {
+  const [open, setOpen] = useState(false);
+  const root = useRef(null);
+  const trigger = useRef(null);
+  const action = useRef(null);
+  const id = useId();
+  useEffect(() => {
+    if (!open) return;
+    action.current?.focus();
+    const outside = (event) => {
+      if (!root.current?.contains(event.target)) setOpen(false);
+    };
+    document.addEventListener("pointerdown", outside);
+    return () => document.removeEventListener("pointerdown", outside);
+  }, [open]);
+  return (
+    <div
+      className="profile-menu"
+      ref={root}
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false);
+      }}
+      onKeyDown={(event) => {
+        if (
+          open &&
+          ["ArrowUp", "ArrowDown", "Home", "End"].includes(event.key)
+        ) {
+          event.preventDefault();
+          action.current?.focus();
+        }
+        if (event.key === "Escape") {
+          setOpen(false);
+          trigger.current.focus();
+          event.stopPropagation();
+        }
+      }}
+    >
+      <button
+        ref={trigger}
+        className="profile"
+        type="button"
+        aria-label={`Account menu for ${name}`}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-controls={id}
+        onClick={() => setOpen(!open)}
+        onKeyDown={(event) => {
+          if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+            event.preventDefault();
+            setOpen(true);
+          }
+        }}
+      >
+        <span className="avatar">
+          {name
+            .split(" ")
+            .map((part) => part[0])
+            .slice(0, 2)
+            .join("")}
+        </span>
+        <span className="profile-identity">
+          <strong>{name}</strong>
+          <small>{role}</small>
+        </span>
+        <ChevronUp size={16} />
+      </button>
+      {open && (
+        <div
+          className="profile-actions"
+          id={id}
+          role="menu"
+          aria-label="Account"
+        >
+          <button
+            ref={action}
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              setOpen(false);
+              onSignOut();
+            }}
+          >
+            <LogOut size={17} /> Sign out
+          </button>
+        </div>
+      )}
+    </div>
   );
 }

@@ -8,6 +8,7 @@ import {
   Lamp,
   Leaf,
   Lightbulb,
+  LoaderCircle,
   Minus,
   Music2,
   Play,
@@ -22,11 +23,12 @@ import {
   UNITS,
   dateIn,
   observation,
+  awaitingSync,
   requestedOn,
   setting,
   titleCase,
 } from "./home.js";
-import { BinaryControl, IconButton, Range } from "./ui.jsx";
+import { BinaryControl, IconButton, Range, Toggle } from "./ui.jsx";
 
 const icons = {
   POWER: Power,
@@ -58,7 +60,13 @@ export function DeviceCard({
   const reportedOn =
     status?.availability === "ONLINE" &&
     setting(status.reportedSettings, "power")?.on === true;
+  const power =
+    requestedOn(device) ??
+    (status?.availability === "ONLINE"
+      ? setting(status.reportedSettings, "power")?.on
+      : undefined);
   const state = observation(view);
+  const syncing = busy || awaitingSync(view);
   const measurement = device.measurements.includes("TEMPERATURE")
     ? "TEMPERATURE"
     : device.measurements[0];
@@ -79,26 +87,22 @@ export function DeviceCard({
           <span>{roomName}</span>
           <h3>{device.details.name}</h3>
         </button>
-        <IconButton
-          label={`Details for ${device.details.name}`}
-          onClick={onOpen}
-        >
-          <ChevronRight size={19} />
-        </IconButton>
+        {device.capabilities.includes("POWER") ? (
+          <Toggle
+            label={`Power for ${device.details.name}`}
+            checked={power}
+            disabled={disabled || busy}
+            onClick={() => control(power ? "off" : "on").catch(() => {})}
+          />
+        ) : (
+          <IconButton
+            label={`Details for ${device.details.name}`}
+            onClick={onOpen}
+          >
+            <ChevronRight size={19} />
+          </IconButton>
+        )}
       </div>
-      {device.capabilities.length > 0 && (
-        <div className="requested-power">
-          <span>Requested</span>
-          {device.capabilities.includes("POWER") && (
-            <BinaryControl
-              label={`Requested power for ${device.details.name}`}
-              value={requestedOn(device)}
-              disabled={disabled || busy}
-              choose={(on) => control(on ? "on" : "off").catch(() => {})}
-            />
-          )}
-        </div>
-      )}
       <div className="device-control">
         {device.capabilities.includes("LIGHT_LEVEL") ? (
           <Range
@@ -128,12 +132,8 @@ export function DeviceCard({
           </div>
         ) : device.capabilities.length === 1 &&
           device.capabilities[0] === "POWER" ? (
-          <span className="power-request">
-            {requestedOn(device) == null
-              ? "No power request"
-              : requestedOn(device)
-                ? "On requested"
-                : "Off requested"}
+          <span className="power-state">
+            {power == null ? "Power unknown" : power ? "On" : "Off"}
           </span>
         ) : (
           <button className="device-more" onClick={onOpen}>
@@ -142,13 +142,29 @@ export function DeviceCard({
         )}
       </div>
       <div className="device-foot">
-        <span className={`status-label ${state.tone}`}>
+        {state.tone !== "pending" ? (
+          <span className={`status-label ${state.tone}`}>
+            <span />
+            {state.label}
+          </span>
+        ) : (
           <span />
-          {state.label}
-        </span>
-        <span>
-          {busy ? "Saving…" : view.delivery ? "Linked" : "Not linked"}
-        </span>
+        )}
+        {syncing ? (
+          <span
+            className="sync-indicator"
+            role="status"
+            title={
+              view.delivery
+                ? "Waiting for the device to confirm this setting"
+                : "Saving your setting"
+            }
+          >
+            <LoaderCircle size={14} /> {view.delivery ? "Syncing" : "Saving"}
+          </span>
+        ) : (
+          <span>{view.delivery ? "Linked" : "Not linked"}</span>
+        )}
       </div>
     </article>
   );

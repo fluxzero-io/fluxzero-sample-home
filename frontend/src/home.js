@@ -56,10 +56,7 @@ export function observation(view) {
   if (view.status.availability !== "ONLINE")
     return { label: titleCase(view.status.availability), tone: "warning" };
   const desired = view.device.desiredSettings || [];
-  const matches = desired.every((s) => {
-    const report = setting(view.status.reportedSettings, s.kind);
-    return report && Object.keys(s).every((k) => report[k] === s[k]);
-  });
+  const matches = settingsMatch(view);
   return {
     label: !desired.length
       ? "Online"
@@ -67,6 +64,51 @@ export function observation(view) {
         ? "Confirmed"
         : "Awaiting confirmation",
     tone: matches ? "good" : "pending",
+  };
+}
+function settingsMatch(view) {
+  return (view.device.desiredSettings || []).every((desired) => {
+    const reported = setting(view.status?.reportedSettings, desired.kind);
+    return (
+      reported &&
+      Object.keys(desired).every((key) => reported[key] === desired[key])
+    );
+  });
+}
+export function awaitingSync(view) {
+  return Boolean(
+    view.delivery &&
+      !view.delivery.problem &&
+      view.device.desiredSettings?.length &&
+      (view.status?.availability !== "ONLINE" || !settingsMatch(view)),
+  );
+}
+export function homeClimate(views) {
+  const hasReading = (view) =>
+    view.status?.availability === "ONLINE" &&
+    view.status.readings?.TEMPERATURE != null;
+  const thermostat =
+    views.find(
+      (view) =>
+        view.device.capabilities.includes("TEMPERATURE") &&
+        setting(view.device.desiredSettings, "temperature"),
+    ) || views.find((view) => view.device.capabilities.includes("TEMPERATURE"));
+  const source =
+    thermostat ||
+    views.find(hasReading) ||
+    views.find((view) => view.device.measurements.includes("TEMPERATURE"));
+  const reading =
+    source &&
+    (hasReading(source)
+      ? source
+      : views.find(
+          (view) =>
+            view.device.spaceId === source.device.spaceId && hasReading(view),
+        ));
+  return {
+    spaceId: source?.device.spaceId,
+    set: setting(thermostat?.device.desiredSettings, "temperature")?.celsius,
+    measured: reading?.status.readings.TEMPERATURE,
   };
 }
 export function timingLabel(timing, zone, includeTime = true) {

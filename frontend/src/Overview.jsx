@@ -6,7 +6,7 @@ import {
   Thermometer,
   Wifi,
 } from "lucide-react";
-import { dateIn, roomIds } from "./home.js";
+import { dateIn, homeClimate, roomIds } from "./home.js";
 import { Empty } from "./ui.jsx";
 
 function temperature(views) {
@@ -19,7 +19,8 @@ function temperature(views) {
 
 export function HomeSummary({ data, nextRoutine, navigate, openConnections }) {
   const linked = data.devices.filter((v) => v.delivery).length;
-  const reading = temperature(data.devices);
+  const climate = homeClimate(data.devices);
+  const climateRoom = data.spaces.find((space) => space.id === climate.spaceId);
   return (
     <div className="home-summary">
       <button className="summary-item" onClick={openConnections}>
@@ -35,18 +36,17 @@ export function HomeSummary({ data, nextRoutine, navigate, openConnections }) {
       <div className="summary-item">
         <Thermometer size={21} />
         <span>
-          <small>Reported temperature</small>
-          <strong>
-            {reading ? `${reading.status.readings.TEMPERATURE}°C` : "Unknown"}
-          </strong>
-          {reading && (
-            <small>
-              {
-                data.spaces.find((s) => s.id === reading.device.spaceId)
-                  ?.details.name
-              }
-            </small>
-          )}
+          <small>{climateRoom?.details.name || "Temperature"}</small>
+          <span className="climate-values">
+            <span>
+              <small>Set</small>
+              <strong>{climate.set ?? "—"}°C</strong>
+            </span>
+            <span>
+              <small>Measured</small>
+              <strong>{climate.measured ?? "—"}°C</strong>
+            </span>
+          </span>
         </span>
       </div>
       <button className="summary-item" onClick={() => navigate("routines")}>

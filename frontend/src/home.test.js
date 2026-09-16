@@ -2,6 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   observation,
+  awaitingSync,
+  homeClimate,
   roomIds,
   timingLabel,
   requestedOn,
@@ -120,4 +122,83 @@ test("scene summaries describe their intentions, without claiming execution", ()
     }),
     "Lights 25% · Heating 21°C",
   );
+});
+
+test("sync feedback waits for an online matching report, not a service acknowledgement", () => {
+  const device = { desiredSettings: [{ kind: "power", on: true }] };
+  const linked = { device, delivery: {} };
+  assert.equal(awaitingSync({ device }), false);
+  assert.equal(awaitingSync(linked), true);
+  assert.equal(
+    awaitingSync({
+      ...linked,
+      status: { availability: "ONLINE", reportedSettings: [] },
+    }),
+    true,
+  );
+  assert.equal(
+    awaitingSync({
+      ...linked,
+      status: {
+        availability: "ONLINE",
+        reportedSettings: device.desiredSettings,
+      },
+    }),
+    false,
+  );
+  assert.equal(
+    awaitingSync({
+      ...linked,
+      status: {
+        availability: "OFFLINE",
+        reportedSettings: device.desiredSettings,
+      },
+    }),
+    true,
+  );
+  assert.equal(
+    awaitingSync({ ...linked, delivery: { problem: "Unavailable" } }),
+    false,
+  );
+  assert.equal(
+    awaitingSync({ device: { desiredSettings: [] }, delivery: {} }),
+    false,
+  );
+});
+
+test("the climate summary pairs set and measured temperature in the same room", () => {
+  const thermostat = {
+    device: {
+      spaceId: "living",
+      capabilities: ["TEMPERATURE"],
+      measurements: [],
+      desiredSettings: [{ kind: "temperature", celsius: 21 }],
+    },
+  };
+  const sensor = (spaceId, celsius, availability = "ONLINE") => ({
+    device: { spaceId, capabilities: [], measurements: ["TEMPERATURE"] },
+    status: { availability, readings: { TEMPERATURE: celsius } },
+  });
+  assert.deepEqual(
+    homeClimate([sensor("bedroom", 18), thermostat, sensor("living", 20.5)]),
+    { spaceId: "living", set: 21, measured: 20.5 },
+  );
+  assert.deepEqual(
+    homeClimate([
+      sensor("bedroom", 18),
+      thermostat,
+      sensor("living", 20.5, "OFFLINE"),
+    ]),
+    { spaceId: "living", set: 21, measured: undefined },
+  );
+  assert.deepEqual(homeClimate([sensor("living", 0)]), {
+    spaceId: "living",
+    set: undefined,
+    measured: 0,
+  });
+  assert.deepEqual(homeClimate([]), {
+    spaceId: undefined,
+    set: undefined,
+    measured: undefined,
+  });
 });
