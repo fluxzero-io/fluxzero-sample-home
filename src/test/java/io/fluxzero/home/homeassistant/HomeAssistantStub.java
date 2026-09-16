@@ -16,6 +16,8 @@ public class HomeAssistantStub {
     public volatile String snapshot = snapshot("off", 0, "68", "off");
     public volatile int readStatus = 200;
     public volatile int serviceStatus = 200;
+    public volatile String config = "{\"unit_system\":{\"temperature\":\"°C\"}}";
+    public volatile int configStatus = 200;
     public final Queue<Integer> nextReadStatuses = new ConcurrentLinkedQueue<>();
     public final Queue<Integer> nextServiceStatuses = new ConcurrentLinkedQueue<>();
 
@@ -31,6 +33,11 @@ public class HomeAssistantStub {
         var nextStatus = nextServiceStatuses.poll();
         return WebResponse.builder().status(nextStatus == null ? serviceStatus : nextStatus)
                 .contentType("application/json").payload("[]").build();
+    }
+
+    @HandleGet(BASE_URL + "/api/config")
+    WebResponse config() {
+        return WebResponse.builder().status(configStatus).contentType("application/json").payload(config).build();
     }
 
     public static String snapshot(String lightState, int brightness, String temperature, String motion) {

@@ -1,0 +1,8 @@
+{
+  "@class": "LinkHomeAssistantDevice",
+  "deviceId": "example-blinds",
+  "connectionId": "demo",
+  "entityIds": [
+    "cover.hall_window"
+  ]
+}

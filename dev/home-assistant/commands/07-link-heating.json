@@ -1,0 +1,8 @@
+{
+  "@class": "LinkHomeAssistantDevice",
+  "deviceId": "example-heating",
+  "connectionId": "demo",
+  "entityIds": [
+    "climate.heatpump"
+  ]
+}

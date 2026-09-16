@@ -6,7 +6,7 @@ Start with `HomeAssistantTest` to understand the flow: ordinary home commands re
 
 ## Local demo with real authentication
 
-For an end-to-end tryout without hardware, use the optional [local Home Assistant demo](../dev/home-assistant/README.md). It runs the official Home Assistant image and Demo integration, creates a real local user and bearer token, and links the example reading lamp and room sensor. The ordinary `local` profile still requires neither Docker nor credentials.
+For an end-to-end tryout without hardware, use the optional [local Home Assistant demo](../dev/home-assistant/README.md). It runs the official Home Assistant image and Demo integration, creates a real local user and bearer token, and links all seven example devices, including colored lighting, heating and window shades. The ordinary `local` profile still requires neither Docker nor credentials.
 
 ## The smallest complete example
 
@@ -91,8 +91,10 @@ One snapshot contains both measurements. Two sources for the same measurement or
 
 | Home Assistant | Home | Behavior |
 | --- | --- | --- |
-| `light` | `Power`, optionally `LightLevel` | On/off and brightness percentage; dimming requires a suitable `supported_color_modes`. |
+| `light` | `Power`, optionally `LightLevel` and `LightColor` | On/off, brightness percentage and hue/saturation; advertised color modes determine support. HA converts hue/saturation for RGB and XY lights. |
 | `switch` | `Power` | Explicit `turn_on` / `turn_off`; no toggle. |
+| `climate`, single-target-temperature feature | `RoomTemperature` | `climate.set_temperature`; reported `temperature` is the accepted setpoint, not measured room temperature. |
+| `cover`, set-position feature | `Opening` | `cover.set_cover_position`; `current_position` is 0 = closed, 100 = open. Open/close-only covers are not advertised. |
 | `sensor`, temperature class | `TEMPERATURE` | °C or °F to °C. |
 | humidity / illuminance / battery / carbon_dioxide | Corresponding measurement | Only %, lx, % and ppm. |
 | power / energy | `POWER` / `ENERGY` | W/kW to W; Wh/kWh to kWh. |
@@ -102,9 +104,13 @@ One snapshot contains both measurements. Two sources for the same measurement or
 
 Classification and attributes follow the documentation for [lights](https://developers.home-assistant.io/docs/core/entity/light/), [sensors](https://developers.home-assistant.io/docs/core/entity/sensor/) and [binary sensors](https://developers.home-assistant.io/docs/core/entity/binary-sensor/). Unknown domains, units and unsupported capabilities are not advertised as working support.
 
-For combined lighting intentions, explicit off takes precedence over dimming; zero brightness also means off. The core stores the chosen dimensions independently. An API refresh only observes: manual control is not reversed every ten seconds to restore an old intention that has already been delivered.
+For combined lighting intentions, color and brightness share one `light.turn_on` call. Explicit off takes precedence over color and dimming; zero brightness also means off. The core stores the chosen dimensions independently. An API refresh only observes: manual control is not reversed every ten seconds to restore an old intention that has already been delivered.
 
-Color, climate control, coverings, locks, media, ventilation, irrigation and charging have not yet been mapped to Home Assistant. They remain available in the generic core model. Extending support means adding a concrete mapping and protocol example, including units, valid ranges and the meaning of reported state.
+Locks, media, ventilation, irrigation and charging have not yet been mapped to Home Assistant. They remain available in the generic core model. Extending support means adding a concrete mapping and protocol example, including units, valid ranges and the meaning of reported state.
+
+Temperature snapshots additionally query `GET /api/config` through the local `GetHomeAssistantTemperatureUnit` query. Climate state attributes and service values use that installation unit; Home converts °C/°F at the adapter boundary. The adapter refuses an unknown unit, an out-of-range setpoint or a thermostat currently in `heat_cool` range mode. It leaves HVAC modes unchanged, so setting a temperature does not turn an off thermostat on. See the [climate entity contract](https://developers.home-assistant.io/docs/core/entity/climate/), [cover entity contract](https://developers.home-assistant.io/docs/core/entity/cover/) and [REST configuration endpoint](https://developers.home-assistant.io/docs/api/rest/).
+
+Color readings are rounded to Home's whole-degree hue and whole-percent saturation; missing color and cover positions remain unknown. Cover movement is confirmed only by its observed position. As with lights, HTTP success never substitutes for a subsequent device report.
 
 ## Scheduling, failures and deletion
 

@@ -25,14 +25,16 @@ public record GetHomeAssistantStates(@NotNull HomeAssistantId connectionId) impl
         } catch (GatewayException | TimeoutException failure) {
             throw new HomeAssistantUnavailable("Home Assistant could not be reached or did not respond in time.");
         }
+        var result = new ArrayList<HomeAssistantState>();
         try {
             var states = response.<JsonNode>getPayloadAs(JsonNode.class);
             if (states == null || !states.isArray()) throw new IllegalArgumentException("Expected a state array");
-            var result = new ArrayList<HomeAssistantState>();
             for (var state : states) result.add(HomeAssistantState.from(state));
-            return new HomeAssistantSnapshot(result);
         } catch (Exception invalid) {
             throw new HomeAssistantUnavailable("Home Assistant returned an invalid state snapshot.");
         }
+        String temperatureUnit = result.stream().anyMatch(s -> s.entityId().startsWith("climate."))
+                ? Fluxzero.queryAndWait(new GetHomeAssistantTemperatureUnit(connectionId)) : null;
+        return new HomeAssistantSnapshot(result, temperatureUnit);
     }
 }

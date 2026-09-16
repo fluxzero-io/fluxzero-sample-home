@@ -1,5 +1,6 @@
 package io.fluxzero.home;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import io.fluxzero.home.command.*;
 import io.fluxzero.home.automation.HomeReactions;
 import io.fluxzero.home.homeassistant.*;
@@ -83,6 +84,74 @@ class HomeAssistantTest {
     }
 
     @ParameterizedTest @ValueSource(booleans = {false, true})
+    void heatingUsesASetpointAndWaitsForAnIndependentObservation(boolean async) {
+        remote.snapshot = """
+                [{"entity_id":"climate.heating","state":"heat","attributes":{
+                  "supported_features":1,"min_temp":45,"max_temp":95,"temperature":68,"current_temperature":66}}]
+                """;
+        remote.config = "{\"unit_system\":{\"temperature\":\"°F\"}}";
+        connected(async).givenCommands(new LinkHomeAssistantDevice(HEAT, CONNECTION, Set.of("climate.heating")))
+                .whenCommand(new SetRoomTemperature(HEAT, new RoomTemperature(BigDecimal.valueOf(21))))
+                .expectNoErrors().expectWebRequest(request -> {
+                    var body = request.<JsonNode>getPayloadAs(JsonNode.class);
+                    return WebRequest.getUrl(request.getMetadata()).endsWith("/api/services/climate/set_temperature")
+                            && body.size() == 2 && body.path("entity_id").asText().equals("climate.heating")
+                            && body.path("temperature").decimalValue().compareTo(new BigDecimal("69.8")) == 0;
+                }).expectThat(f -> assertEquals(0, BigDecimal.valueOf(20).compareTo(((RoomTemperature)
+                        Fluxzero.loadModel(HEAT, DeviceStatus.class).get().reportedSettings().get(Capability.TEMPERATURE)).celsius())))
+                .andThen().given(f -> remote.snapshot = remote.snapshot.replace("\"temperature\":68", "\"temperature\":69.8"))
+                .whenTimeElapses(INTERVAL).expectNoErrors().expectNoWebRequestLike(r -> r.getMethod().equals("POST"))
+                .expectThat(f -> assertEquals(0, BigDecimal.valueOf(21).compareTo(((RoomTemperature)
+                        Fluxzero.loadModel(HEAT, DeviceStatus.class).get().reportedSettings().get(Capability.TEMPERATURE)).celsius())));
+    }
+
+    @ParameterizedTest @ValueSource(booleans = {false, true})
+    void coversSendPercentOpenAndObserveActualPosition(boolean async) {
+        var blinds = new DeviceId("blinds");
+        remote.snapshot = """
+                [{"entity_id":"cover.window","state":"open","attributes":{"supported_features":15,"current_position":20}}]
+                """;
+        connected(async).givenCommands(new AddDevice(blinds, LIVING, new DeviceDetails("Window shades"), null,
+                        Set.of(Capability.OPENING), Set.of()), new LinkHomeAssistantDevice(blinds, CONNECTION, Set.of("cover.window")))
+                .whenCommand(new SetOpening(blinds, 65))
+                .expectNoErrors().expectWebRequest(request -> {
+                    var body = request.<JsonNode>getPayloadAs(JsonNode.class);
+                    return WebRequest.getUrl(request.getMetadata()).endsWith("/api/services/cover/set_cover_position")
+                            && body.size() == 2 && body.path("entity_id").asText().equals("cover.window")
+                            && body.path("position").asInt() == 65;
+                }).expectThat(f -> assertEquals(new Opening(20),
+                        Fluxzero.loadModel(blinds, DeviceStatus.class).get().reportedSettings().get(Capability.OPENING)))
+                .andThen().given(f -> remote.snapshot = remote.snapshot.replace("\"current_position\":20", "\"current_position\":65"))
+                .whenTimeElapses(INTERVAL).expectNoErrors()
+                .expectThat(f -> assertEquals(new Opening(65),
+                        Fluxzero.loadModel(blinds, DeviceStatus.class).get().reportedSettings().get(Capability.OPENING)));
+    }
+
+    @ParameterizedTest @ValueSource(booleans = {false, true})
+    void coloredLightsSendHueAndSaturationAndObserveTheReturnedColor(boolean async) {
+        var coloredLight = new DeviceId("colored-light");
+        remote.snapshot = """
+                [{"entity_id":"light.color","state":"on","attributes":{
+                  "supported_color_modes":["hs"],"brightness":128,"hs_color":[30,50]}}]
+                """;
+        connected(async).givenCommands(new AddDevice(coloredLight, LIVING, new DeviceDetails("Colored light"), null,
+                        Set.of(Capability.POWER, Capability.LIGHT_LEVEL, Capability.LIGHT_COLOR), Set.of()),
+                        new LinkHomeAssistantDevice(coloredLight, CONNECTION, Set.of("light.color")))
+                .whenCommand(new SetLightColor(coloredLight, 210, 70))
+                .expectNoErrors().expectWebRequest(request -> {
+                    var body = request.<JsonNode>getPayloadAs(JsonNode.class);
+                    return WebRequest.getUrl(request.getMetadata()).endsWith("/api/services/light/turn_on") && body.size() == 2
+                            && body.path("entity_id").asText().equals("light.color")
+                            && body.path("hs_color").toString().equals("[210,70]");
+                }).expectThat(f -> assertEquals(new LightColor(30, 50),
+                        Fluxzero.loadModel(coloredLight, DeviceStatus.class).get().reportedSettings().get(Capability.LIGHT_COLOR)))
+                .andThen().given(f -> remote.snapshot = remote.snapshot.replace("[30,50]", "[210,70]"))
+                .whenTimeElapses(INTERVAL).expectNoErrors()
+                .expectThat(f -> assertEquals(new LightColor(210, 70),
+                        Fluxzero.loadModel(coloredLight, DeviceStatus.class).get().reportedSettings().get(Capability.LIGHT_COLOR)));
+    }
+
+    @ParameterizedTest @ValueSource(booleans = {false, true})
     void externalChangesAreObservedWithoutWritingThemBack(boolean async) {
         linked(async).given(f -> remote.snapshot = snapshot("on", 128, "77", "on"))
                 .whenTimeElapses(INTERVAL)
@@ -146,7 +215,7 @@ class HomeAssistantTest {
     void disconnectedGatewayDoesNotInventOfflineDeviceReadingsAndRecovers(boolean async) {
         var result = linked(async).given(f -> remote.readStatus = 503)
                 .whenTimeElapses(INTERVAL).expectSuccessfulResult().expectError(HomeAssistantUnavailable.class).expectThat(f -> {
-                    assertEquals("Home Assistant returned HTTP 503.", Fluxzero.loadModel(CONNECTION).get().problem());
+                    assertEquals("Home Assistant is temporarily unavailable.", Fluxzero.loadModel(CONNECTION).get().problem());
                     assertEquals(Availability.ONLINE, Fluxzero.loadModel(LIGHT, DeviceStatus.class).get().availability());
                 });
         result.andThen().given(f -> { remote.readStatus = 200; remote.snapshot = snapshot("on", 255, "68", "off"); })

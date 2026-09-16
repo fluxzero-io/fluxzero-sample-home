@@ -85,10 +85,10 @@ The SDK is pinned to `2.0.0-rc.13`. Local development and CI use the same publis
 
 ## Phase 2
 
-The first adapter connects [Home Assistant](docs/home-assistant.md): discover entities, explicitly link them to devices, control lights and switches, and read sensor measurements. Local commands and queries contain their own REST interaction through Fluxzero web requests, with auditable HTTP traffic and SDK retries. TestFixture web stubs replace Home Assistant in tests; no physical hardware is needed to run the example. The observation path uses Fluxzero scheduling for periodic snapshots.
+The first adapter connects [Home Assistant](docs/home-assistant.md): discover entities, explicitly link them to devices, control lights, switches, thermostat setpoints and window shades, and read sensor measurements. Local commands and queries contain their own REST interaction through Fluxzero web requests, with auditable HTTP traffic and SDK retries. TestFixture web stubs replace Home Assistant in tests; no physical hardware is needed to run the example. The observation path uses Fluxzero scheduling for periodic snapshots.
 
 [Matter and KNX](docs/standards.md) serve as references for device capabilities and complete home installations. Home Assistant is the first practical gateway. Direct brand adapters and a dedicated Matter controller have not been implemented.
 
 [The integration boundary](docs/integration-boundary.md) describes where adapters belong, including acknowledgements, unknown capabilities and user identity. Core commands and queries serve trusted application components. The public interface enforces household-scoped `Account` permissions; a resident's household role does not grant API access.
 
-To try real integration traffic without hardware, see the [local Home Assistant demo](dev/home-assistant/README.md). The optional `home-assistant` dev profile includes authenticated virtual devices; the normal `local` profile remains standalone.
+To try real integration traffic without hardware, see the [local Home Assistant demo](dev/home-assistant/README.md). The optional `home-assistant` dev profile links all seven example devices to authenticated virtual devices; the normal `local` profile remains standalone.

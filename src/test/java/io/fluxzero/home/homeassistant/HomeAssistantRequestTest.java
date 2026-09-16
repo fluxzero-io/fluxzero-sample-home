@@ -56,6 +56,32 @@ class HomeAssistantRequestTest {
     GetHomeAssistantStates states() { return new GetHomeAssistantStates(connection.connectionId()); }
 
     @ParameterizedTest @ValueSource(booleans = {false, true})
+    void climateSnapshotsUseAuthenticatedInstallationUnits(boolean async) {
+        remote.snapshot = "[{\"entity_id\":\"climate.heating\",\"state\":\"heat\",\"attributes\":{\"supported_features\":1}}]";
+        remote.config = "{\"unit_system\":{\"temperature\":\"°F\"}}";
+        configured(async).whenQuery(states()).expectNoErrors()
+                .expectResult((HomeAssistantSnapshot snapshot) -> "°F".equals(snapshot.temperatureUnit()))
+                .expectOnlyWebRequests(getStates(), WebRequest.get(BASE_URL + "/api/config")
+                        .header("Authorization", "Bearer " + TOKEN).header("Accept", "application/json").build());
+    }
+
+    @ParameterizedTest @ValueSource(strings = {"null", "not-json", "{}", "{\"unit_system\":{\"temperature\":\"K\"}}"})
+    void climateNeverGuessesItsTemperatureUnit(String config) {
+        remote.config = config;
+        configured(false).whenQuery(new GetHomeAssistantTemperatureUnit(connection.connectionId()))
+                .expectExceptionalResult(HomeAssistantUnavailable.class);
+    }
+
+    @Test
+    void configurationRefusalKeepsTheCredentialError() {
+        remote.configStatus = 401;
+        configured(false).whenQuery(new GetHomeAssistantTemperatureUnit(connection.connectionId()))
+                .expectExceptionalResult(HomeAssistantUnavailable.class)
+                .verifyExceptionalResult(failure -> assertEquals(
+                        "Home Assistant refused access. Check the configured token and permissions.", failure.getMessage()));
+    }
+
+    @ParameterizedTest @ValueSource(booleans = {false, true})
     void getStatesUsesBearerAndPreservesConfiguredBasePath(boolean async) {
         configured(async).whenQuery(states())
                 .expectResult((HomeAssistantSnapshot snapshot) -> snapshot.discover().size() == 3)

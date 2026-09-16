@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.Set;
 
 /** One GET /api/states can assemble a complete observation from several entities without erasing sibling readings. */
-public record HomeAssistantSnapshot(List<HomeAssistantState> states) {
+public record HomeAssistantSnapshot(List<HomeAssistantState> states, String temperatureUnit) {
     public List<HomeAssistantEntity> discover() {
         return states.stream().map(HomeAssistantState::describe)
                 .filter(e -> !e.capabilities().isEmpty() || !e.measurements().isEmpty()).toList();
@@ -56,7 +56,7 @@ public record HomeAssistantSnapshot(List<HomeAssistantState> states) {
                 continue;
             }
             if (state.availability() == Availability.UNKNOWN && availability != Availability.OFFLINE) availability = Availability.UNKNOWN;
-            for (var setting : state.settings().values()) {
+            for (var setting : state.settings(temperatureUnit).values()) {
                 if (device.capabilities().contains(setting.capability())) settings = settings.with(setting);
             }
             var reading = state.reading();
@@ -72,7 +72,9 @@ public record HomeAssistantSnapshot(List<HomeAssistantState> states) {
     List<HomeAssistantAction> actions(Device device, Set<String> entityIds) {
         validateBinding(device, entityIds);
         var result = new ArrayList<HomeAssistantAction>();
-        for (var state : states) if (entityIds.contains(state.entityId())) result.addAll(state.actions(device.desiredSettings()));
+        for (var state : states) if (entityIds.contains(state.entityId())) {
+            result.addAll(state.actions(device.desiredSettings(), temperatureUnit));
+        }
         return result;
     }
 }

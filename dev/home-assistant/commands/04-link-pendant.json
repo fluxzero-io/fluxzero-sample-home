@@ -1,0 +1,8 @@
+{
+  "@class": "LinkHomeAssistantDevice",
+  "deviceId": "example-pendant",
+  "connectionId": "demo",
+  "entityIds": [
+    "light.kitchen_lights"
+  ]
+}

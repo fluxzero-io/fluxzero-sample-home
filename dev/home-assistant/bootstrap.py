@@ -90,11 +90,14 @@ async def main():
         if grant:
             await request("POST", "/auth/revoke", data={"token": grant["refresh_token"]})
 
-        required = {"light.bed_light", "sensor.outside_temperature", "binary_sensor.movement_backyard"}
+        required = {
+            "light.bed_light", "light.kitchen_lights", "light.ceiling_lights", "switch.decorative_lights",
+            "climate.heatpump", "cover.hall_window", "sensor.outside_temperature", "binary_sensor.movement_backyard",
+        }
         for attempt in range(60):
             states = await request("GET", "/api/states", token=token)
             if required <= {s["entity_id"] for s in states}:
-                print("Home Assistant demo ready: authenticated light, temperature and motion APIs.", flush=True)
+                print("Home Assistant demo ready: authenticated lighting, heating, cover and sensor APIs.", flush=True)
                 return
             await asyncio.sleep(1)
         raise RuntimeError("Expected demo entities are missing; check the pinned Home Assistant demo integration.")

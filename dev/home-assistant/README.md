@@ -19,11 +19,18 @@ The profile automatically links:
 | Home device | Home Assistant Demo entities |
 | --- | --- |
 | Reading lamp | `light.bed_light` (on/off and brightness) |
+| Bedside lamp | `light.ceiling_lights` (on/off, brightness and color) |
+| Pendant lights | `light.kitchen_lights` (on/off and brightness) |
+| Path lights | `switch.decorative_lights` (on/off) |
+| Heating | `climate.heatpump` (temperature setpoint) |
+| Window shades | `cover.hall_window` (percent open) |
 | Room sensor | `sensor.outside_temperature` and `binary_sensor.movement_backyard` |
 
-These are synthetic signals: the Demo integration's outside temperature is deliberately used as the example room reading. It does not represent the room's physical temperature. Demo motion and temperature are static; they demonstrate observation, not real sensor transitions. Other Home devices stay unlinked. In particular, this adapter does not yet support climate control or color.
+These are synthetic signals: the Demo integration's outside temperature is deliberately used as the example room reading. It does not represent the room's physical temperature. Demo motion and temperature are static; they demonstrate observation, not real sensor transitions. All seven Home devices are linked to distinct demo entities. Their Home names describe the example rooms; Home Assistant retains its demo entity names. Heating changes the thermostat setpoint without changing its HVAC mode. The synthetic measured temperature does not rise when you turn up the heating.
 
-Turn the Reading lamp on, change its brightness, then inspect its reported settings. Observations refresh every five seconds. The Home Assistant UI is available at the support-service URL reported by `fz dev status`. Changing the lamp there is also observed by Home; polling does not continually restore an already delivered intention.
+Try power and brightness on the lights, hue and saturation in the Bedside lamp details, the heating temperature and the Window shades slider. Inspect each device’s reported settings after a change. Observations refresh every five seconds. The Home Assistant UI is available at the support-service URL reported by `fz dev status`. Changing the lamp there is also observed by Home; polling does not continually restore an already delivered intention.
+
+The official Demo cover rounds requested positions to steps of 10 and simulates movement over several seconds. Use 0, 10, 20, …, 100 for an exact match in this demo. Other values remain visible as requested versus reported; Home does not invent confirmation. Real covers retain the ordinary 0–100% control.
 
 ## Authentication and local data
 
@@ -44,6 +51,6 @@ Ordinary development restarts reuse HA credentials and data. Home's temporary Fl
 
 The fast `HomeAssistantRequestTest` and `HomeAssistantTest` fixtures remain independent of Docker. They check the adapter's authentication header, API contract, rejected credentials, retries and domain outcomes using Fluxzero's web test handlers.
 
-The running demo additionally supports a real HTTP roundtrip: Home command → Fluxzero web request → HA light service → HA state snapshot → Home reported settings. Connection loss must retain the last observation, show a connection problem, and recover on a subsequent scheduled refresh. A pending device intention is retried using its latest settings. Invalid bearer tokens must receive HTTP 401 from HA.
+The running demo additionally supports a real HTTP roundtrip: Home command → Fluxzero web request → HA service → HA state snapshot → Home reported settings. Connection loss must retain the last observation, show a connection problem, and recover on a subsequent scheduled refresh. A pending device intention is retried using its latest settings. Invalid bearer tokens must receive HTTP 401 from HA.
 
 To simulate a temporary network outage, pause the **demo container named in `.state/connection.json`**, wait for a connection problem, change the reading lamp's brightness in Home, then unpause that same container. Always unpause it after the check. Do not stop or pause unrelated containers. No physical equipment is involved.

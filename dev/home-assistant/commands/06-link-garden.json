@@ -1,0 +1,8 @@
+{
+  "@class": "LinkHomeAssistantDevice",
+  "deviceId": "example-garden-light",
+  "connectionId": "demo",
+  "entityIds": [
+    "switch.decorative_lights"
+  ]
+}

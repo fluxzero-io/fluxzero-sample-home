@@ -1,0 +1,8 @@
+{
+  "@class": "LinkHomeAssistantDevice",
+  "deviceId": "example-bedside",
+  "connectionId": "demo",
+  "entityIds": [
+    "light.ceiling_lights"
+  ]
+}
