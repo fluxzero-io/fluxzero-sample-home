@@ -65,6 +65,49 @@ The guide covers authenticated and rejected requests, device control, independen
 
 Atomic scene changes apply to Home's intentions; physical devices are controlled after commit and confirm independently. The core also models locks, media, ventilation, irrigation and charging. The current Home Assistant adapter supports lights, switches, temperature setpoints, covers and sensor observations. Device provisioning and automation definitions are currently command-driven. Direct Matter and KNX adapters are not included.
 
+## The model graph
+
+Each box is an independent `@Model` with its own identity and history. Solid arrows run **from parent to child** (`@Parent`); dotted arrows show key references or selections without ownership.
+
+```mermaid
+flowchart TD
+    Home --> Resident
+    Home --> Zone
+    Home --> Space
+    Home --> Routine
+    Home --> Automation
+    Home --> Scene
+    Space -->|nested spaces| Space
+    Space --> Device
+    Device --> DeviceStatus
+
+    Zone -. groups .-> Space
+    Routine -. runs .-> Scene
+    Automation -. triggers .-> Scene
+    Scene -. selects devices .-> Device
+```
+
+A space belongs to either the home or another space. Zones group spaces without owning them. Scenes select devices directly or through a space, zone or the whole home. `Device` stores desired settings; `DeviceStatus` has its own observation history. Routine and automation references do not make a scene their parent: removing a scene is refused while they still use it.
+
+<details>
+<summary>Integration and access models</summary>
+
+```mermaid
+flowchart LR
+    Account -. grants access .-> Home
+    Home --> Space
+    Space --> Device
+    Home --> HomeAssistantConnection
+    Device --> HomeAssistantDevice
+    HomeAssistantConnection --> HomeAssistantDevice
+```
+
+A `HomeAssistantDevice` link has two parents: the Home device and its Home Assistant connection. Deleting either parent removes the link; deleting a connection leaves the Home device intact. `Account` references the homes it grants access to and has a separate lifecycle from `Resident`.
+
+</details>
+
+See the [domain guide](docs/domain.md) for lifecycle rules and the [integration boundary](docs/integration-boundary.md) for external delivery.
+
 ## A short code tour
 
 | Start here | What it demonstrates |
