@@ -1,0 +1,13 @@
+{
+  "@class": "AddDevice",
+  "deviceId": "example-blinds",
+  "spaceId": "example-bedroom",
+  "details": {
+    "name": "Window shades"
+  },
+  "label": null,
+  "capabilities": [
+    "OPENING"
+  ],
+  "measurements": []
+}

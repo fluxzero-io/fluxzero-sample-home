@@ -1,0 +1,12 @@
+{
+  "@class": "AddSpace",
+  "spaceId": "example-kitchen",
+  "parentId": [
+    "space",
+    "example-floor"
+  ],
+  "details": {
+    "name": "Kitchen",
+    "kind": "ROOM"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "@class": "AddDevice",
+  "deviceId": "example-garden-light",
+  "spaceId": "example-garden",
+  "details": {
+    "name": "Path lights"
+  },
+  "label": null,
+  "capabilities": [
+    "POWER"
+  ],
+  "measurements": []
+}

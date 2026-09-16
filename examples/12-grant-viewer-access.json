@@ -1,0 +1,9 @@
+{
+  "@class": "GrantHomeAccess",
+  "accountId": "sam",
+  "details": {
+    "name": "Sam Morgan"
+  },
+  "homeId": "example-home",
+  "permission": "VIEW"
+}

@@ -1,0 +1,14 @@
+{
+  "@class": "AddDevice",
+  "deviceId": "example-pendant",
+  "spaceId": "example-kitchen",
+  "details": {
+    "name": "Pendant lights"
+  },
+  "label": null,
+  "capabilities": [
+    "POWER",
+    "LIGHT_LEVEL"
+  ],
+  "measurements": []
+}

@@ -1,0 +1,15 @@
+{
+  "@class": "AddDevice",
+  "deviceId": "example-bedside",
+  "spaceId": "example-bedroom",
+  "details": {
+    "name": "Bedside lamp"
+  },
+  "label": null,
+  "capabilities": [
+    "POWER",
+    "LIGHT_LEVEL",
+    "LIGHT_COLOR"
+  ],
+  "measurements": []
+}

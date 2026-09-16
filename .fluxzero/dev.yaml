@@ -1,6 +1,13 @@
 version: 1
 environment: local
 fastCompiler: true
-idp: external
+idp: managed
+backendPaths:
+  - /app
+  - /login
+frontend:
+  directory: frontend
+  setupCommand: "npm ci --prefer-online --no-audit --no-fund && npm run check"
+  command: "npm run dev -- --host 127.0.0.1 --port {frontendPort}"
 commands:
   - examples/*.json

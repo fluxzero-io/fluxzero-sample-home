@@ -1,6 +1,6 @@
 # Fluxzero Home
 
-A home described the way you live in it: spaces, residents, lighting, comfort, music, gardens and daily habits. Fluxzero Home is a brand-independent example application on **Fluxzero SDK 2.0.0-rc.13**, with a working domain core and executable examples.
+A home described the way you live in it: spaces, residents, lighting, comfort, music, gardens and daily habits. Fluxzero Home is a brand-independent example application on **Fluxzero SDK 2.0.0-rc.13**, with a working domain core, a responsive control interface and executable examples.
 
 It can describe an apartment or an estate with several buildings, floors, gardens and outbuildings. Spaces can be nested freely. Zones such as *downstairs*, *outdoors* or *bedrooms* can overlap.
 
@@ -62,7 +62,7 @@ Routines choose `new Once(moment)` or, for example, `new Weekly(Set.of(DayOfWeek
 
 ## Run locally
 
-Requirements: Git, the Fluxzero CLI and Java 25. The repository includes the Maven Wrapper.
+Requirements: Git, the Fluxzero CLI, Java 25 and Node 22.12+. The repository includes the Maven Wrapper.
 
 Start the development environment; Maven resolves the published SDK from Fluxzero Packages:
 
@@ -70,11 +70,14 @@ Start the development environment; Maven resolves the published SDK from Fluxzer
 fz dev
 ```
 
-The development environment starts the matching local SDK runtime, the application and focused tests. This is a backend project; it does not yet have a dashboard or public HTTP control layer. The core and tests require no API keys. The optional Home Assistant integration uses the operator's configuration. The [example commands](examples/README.md) describe a small home that the development environment can load.
+Open the public URL printed by `fz dev`. Sign in through the local identity provider as **alex** (manage) or **sam** (view only). The environment starts the matching SDK runtime, backend, local IDP and Vite frontend dev server. React and CSS edits hot-reload without rebuilding Java. Initial frontend setup also checks the production bundle.
+
+The [interface guide](docs/interface.md) covers controls, scenes, routines, authentication, API discovery and production setup. The [example commands](examples/README.md) populate a small home with no physical devices or credentials. Optional Home Assistant links use the operator's configuration.
 
 For CI or an explicitly requested full verification, outside an active development environment:
 
 ```bash
+(cd frontend && npm ci && npm run check)
 ./mvnw -B verify
 ```
 
@@ -86,4 +89,4 @@ The first adapter connects [Home Assistant](docs/home-assistant.md): discover en
 
 [Matter and KNX](docs/standards.md) serve as references for device capabilities and complete home installations. Home Assistant is the first practical gateway. Direct brand adapters and a dedicated Matter controller have not been implemented.
 
-[The integration boundary](docs/integration-boundary.md) describes where adapters belong, including acknowledgements, unknown capabilities and user identity. The current commands and queries are for trusted application components; household roles are domain information and do not yet provide access control for a public API.
+[The integration boundary](docs/integration-boundary.md) describes where adapters belong, including acknowledgements, unknown capabilities and user identity. Core commands and queries serve trusted application components. The public interface enforces household-scoped `Account` permissions; a resident's household role does not grant API access.

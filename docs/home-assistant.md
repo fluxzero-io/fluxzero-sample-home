@@ -128,4 +128,4 @@ The [WebSocket API](https://developers.home-assistant.io/docs/api/websocket/) su
 
 A brief motion or open/close transition between polls can therefore be missed. This example teaches the architecture, controls and measurement-threshold reactions; it does not implement a reliable alarm system. Capturing every transition will require replacing the incoming path with a WebSocket subscription and a recovery snapshot. Commands, scenes and `ReportDeviceStatus` need not change for that.
 
-There are no public control endpoints. Commands and queries are intended for trusted components. A user interface or public API first requires household-scoped authentication and authorization.
+The [Home interface](interface.md) authenticates browser sessions and enforces household permissions before dispatching core commands. Adapter discovery, configuration and linking remain trusted operator operations; they have no browser-facing routes.

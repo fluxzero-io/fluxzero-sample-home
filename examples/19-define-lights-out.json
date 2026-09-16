@@ -1,0 +1,20 @@
+{
+  "@class": "DefineScene",
+  "sceneId": "example-lights-out",
+  "homeId": "example-home",
+  "details": {
+    "name": "Lights out"
+  },
+  "actions": [
+    {
+      "kind": "switchPower",
+      "target": {
+        "kind": "home"
+      },
+      "power": {
+        "on": false,
+        "kind": "power"
+      }
+    }
+  ]
+}

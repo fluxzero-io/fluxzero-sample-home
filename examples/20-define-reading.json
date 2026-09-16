@@ -1,0 +1,32 @@
+{
+  "@class": "DefineScene",
+  "sceneId": "example-reading",
+  "homeId": "example-home",
+  "details": {
+    "name": "Time to read"
+  },
+  "actions": [
+    {
+      "kind": "switchPower",
+      "target": {
+        "kind": "device",
+        "deviceId": "example-light"
+      },
+      "power": {
+        "on": true,
+        "kind": "power"
+      }
+    },
+    {
+      "kind": "dimLights",
+      "target": {
+        "kind": "device",
+        "deviceId": "example-light"
+      },
+      "brightness": {
+        "percent": 65,
+        "kind": "lightLevel"
+      }
+    }
+  ]
+}

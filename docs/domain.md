@@ -50,4 +50,4 @@ Measurements have fixed units, such as °C, %, lx, W, kWh or ppm. Binary observa
 
 `Device.desiredSettings` describes what was requested. `DeviceStatus.reportedSettings` describes what an adapter observed. `Availability` describes reachability. The core keeps these meanings separate. Both sets of settings use `DeviceSettings`: an immutable collection with at most one value per capability. The capability follows from the value; callers do not supply a second key. In JSON, settings are an array of values with a `kind`, for example `[{"kind":"lightLevel","percent":25}]`. Duplicate capabilities and invalid values are rejected.
 
-A resident role such as owner or guest is currently a household concept. An API user's identity and permissions must be connected to these domain boundaries before external access is offered. There is no public endpoint that lets unauthorized users control homes.
+A resident role such as owner or guest is a household concept. The [public interface](interface.md) maps a validated identity to a separate `Account` with per-home permissions. It checks that membership and the home boundary before reading or changing household data.

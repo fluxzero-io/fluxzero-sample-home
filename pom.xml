@@ -11,6 +11,7 @@
     <jetty.version>12.1.11</jetty.version>
     <fluxzero.version>2.0.0-rc.13</fluxzero.version>
     <java.version>25</java.version>
+    <fluxzero-idp.version>0.20.2</fluxzero-idp.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <fluxzero.package.tag>${project.version}</fluxzero.package.tag>
@@ -73,6 +74,17 @@
   </dependencyManagement>
   <dependencies>
     <dependency>
+      <groupId>io.fluxzero.idp</groupId>
+      <artifactId>client</artifactId>
+      <version>${fluxzero-idp.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.fluxzero.idp</groupId>
+      <artifactId>test-support</artifactId>
+      <version>${fluxzero-idp.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>io.fluxzero</groupId>
       <artifactId>sdk</artifactId>
     </dependency>
@@ -108,6 +120,10 @@
   </dependencies>
   <build>
     <finalName>app</finalName>
+    <resources>
+      <resource><directory>src/main/resources</directory></resource>
+      <resource><directory>frontend/dist</directory><targetPath>static</targetPath></resource>
+    </resources>
     <pluginManagement>
       <plugins>
         <plugin>
