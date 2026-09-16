@@ -93,7 +93,7 @@ A space belongs to either the home or another space. Zones group spaces without 
 <summary>Integration and access models</summary>
 
 ```mermaid
-flowchart LR
+flowchart TD
     Account -. grants access .-> Home
     Home --> Space
     Space --> Device
