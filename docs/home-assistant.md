@@ -4,6 +4,10 @@ This example follows the public [Home Assistant REST API](https://developers.hom
 
 Start with `HomeAssistantTest` to understand the flow: ordinary home commands remain the entry point. `HomeAssistantRequestTest` checks request methods, URLs, bearer headers, JSON, error handling and retry policy through `TestFixture`. Both test classes dispatch real commands and queries, replacing only external HTTP responses with `@HandleGet` and `@HandlePost` handlers. Request settings explicitly disable redirects. These are API contract tests, not qualification against physical equipment.
 
+## Local demo with real authentication
+
+For an end-to-end tryout without hardware, use the optional [local Home Assistant demo](../dev/home-assistant/README.md). It runs the official Home Assistant image and Demo integration, creates a real local user and bearer token, and links the example reading lamp and room sensor. The ordinary `local` profile still requires neither Docker nor credentials.
+
 ## The smallest complete example
 
 The existing example data contains `example-home` and `example-light`. To connect that reading lamp to an installation, the operator configures two values on the machine running the **Home application**:

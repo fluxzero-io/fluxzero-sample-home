@@ -59,6 +59,9 @@ final class HomeAssistantEndpoint {
         if (response.getStatus() == 401 || response.getStatus() == 403) {
             throw new HomeAssistantUnavailable("Home Assistant refused access. Check the configured token and permissions.");
         }
+        if (response.getStatus() == 502 || response.getStatus() == 503 || response.getStatus() == 504) {
+            throw new HomeAssistantUnavailable("Home Assistant is temporarily unavailable.");
+        }
         if (response.getStatus() < 200 || response.getStatus() >= 300) {
             throw new HomeAssistantUnavailable("Home Assistant returned HTTP " + response.getStatus() + ".");
         }

@@ -1,0 +1,6 @@
+{
+  "@class": "LinkHomeAssistantDevice",
+  "deviceId": "example-light",
+  "connectionId": "demo",
+  "entityIds": ["light.bed_light"]
+}

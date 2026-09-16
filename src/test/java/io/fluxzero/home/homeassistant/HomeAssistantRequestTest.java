@@ -140,12 +140,12 @@ class HomeAssistantRequestTest {
                 .expectOnlyWebRequests(dimLight());
     }
 
-    @Test
-    void persistentFailureStopsAfterTheConfiguredAttempts() {
-        remote.readStatus = 503;
+    @ParameterizedTest @ValueSource(ints = {502, 503, 504})
+    void persistentFailureStopsAfterTheConfiguredAttempts(int status) {
+        remote.readStatus = status;
         configured(true).whenQuery(states())
                 .expectExceptionalResult(HomeAssistantUnavailable.class)
-                .verifyExceptionalResult(failure -> assertEquals("Home Assistant returned HTTP 503.", failure.getMessage()))
+                .verifyExceptionalResult(failure -> assertEquals("Home Assistant is temporarily unavailable.", failure.getMessage()))
                 .expectOnlyWebRequests(getStates(), getStates(), getStates());
     }
 

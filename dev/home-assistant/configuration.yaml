@@ -1,0 +1,15 @@
+homeassistant:
+  name: Fluxzero Home demo
+  latitude: 0
+  longitude: 0
+  elevation: 0
+  unit_system: metric
+  time_zone: Europe/Amsterdam
+
+frontend:
+api:
+onboarding:
+person:
+demo:
+logger:
+  default: warning

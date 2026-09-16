@@ -1,0 +1,7 @@
+{
+  "@class": "ConnectHomeAssistant",
+  "connectionId": "demo",
+  "homeId": "example-home",
+  "details": { "name": "Home Assistant demo", "configuration": "demo" },
+  "refreshInterval": "PT5S"
+}

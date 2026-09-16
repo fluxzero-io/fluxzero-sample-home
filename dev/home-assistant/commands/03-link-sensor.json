@@ -1,0 +1,6 @@
+{
+  "@class": "LinkHomeAssistantDevice",
+  "deviceId": "example-sensor",
+  "connectionId": "demo",
+  "entityIds": ["sensor.outside_temperature", "binary_sensor.movement_backyard"]
+}

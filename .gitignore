@@ -73,3 +73,7 @@ node_modules/
 
 # Frontend artifacts
 frontend/dist/
+
+# Local Home Assistant demo credentials and runtime data
+dev/home-assistant/.state/
+__pycache__/

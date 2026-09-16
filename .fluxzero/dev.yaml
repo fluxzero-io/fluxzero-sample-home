@@ -1,13 +1,43 @@
 version: 1
-environment: local
-fastCompiler: true
-idp: managed
-backendPaths:
-  - /app
-  - /login
-frontend:
-  directory: frontend
-  setupCommand: "npm ci --prefer-online --no-audit --no-fund && npm run check"
-  command: "npm run dev -- --host 127.0.0.1 --port {frontendPort}"
-commands:
-  - examples/*.json
+defaultProfile: local
+profiles:
+  local:
+    environment: local
+    fastCompiler: true
+    idp: managed
+    backendPaths: [/app, /login]
+    frontend:
+      directory: frontend
+      setupCommand: "npm ci --prefer-online --no-audit --no-fund && npm run check"
+      command: "npm run dev -- --host 127.0.0.1 --port {frontendPort}"
+    commands:
+      - examples/*.json
+  home-assistant:
+    environment: local
+    fastCompiler: true
+    idp: managed
+    backendPaths: [/app, /login]
+    apps: [home-demo]
+    applicationConfig:
+      home-demo:
+        application: fluxzero-home
+        env:
+          FLUXZERO_CONFIG_LOCATIONS: "file:dev/home-assistant/.state/home.properties"
+    services:
+      homeAssistant:
+        directory: dev/home-assistant
+        command: "python3 service.py --port {servicePort.http} --ready-port {servicePort.ready}"
+        ports:
+          http: dynamic
+          ready: dynamic
+        url: "http://127.0.0.1:{servicePort.http}"
+        readiness:
+          http: "http://127.0.0.1:{servicePort.ready}/ready"
+          timeout: 8m
+    frontend:
+      directory: frontend
+      setupCommand: "npm ci --prefer-online --no-audit --no-fund && npm run check"
+      command: "npm run dev -- --host 127.0.0.1 --port {frontendPort}"
+    commands:
+      - examples/*.json
+      - dev/home-assistant/commands/*.json

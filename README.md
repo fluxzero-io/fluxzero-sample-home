@@ -90,3 +90,5 @@ The first adapter connects [Home Assistant](docs/home-assistant.md): discover en
 [Matter and KNX](docs/standards.md) serve as references for device capabilities and complete home installations. Home Assistant is the first practical gateway. Direct brand adapters and a dedicated Matter controller have not been implemented.
 
 [The integration boundary](docs/integration-boundary.md) describes where adapters belong, including acknowledgements, unknown capabilities and user identity. Core commands and queries serve trusted application components. The public interface enforces household-scoped `Account` permissions; a resident's household role does not grant API access.
+
+To try real integration traffic without hardware, see the [local Home Assistant demo](dev/home-assistant/README.md). The optional `home-assistant` dev profile includes authenticated virtual devices; the normal `local` profile remains standalone.
