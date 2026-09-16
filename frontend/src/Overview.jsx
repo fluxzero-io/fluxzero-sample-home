@@ -93,7 +93,7 @@ export function RoomsOverview({ rooms, data, navigate }) {
           <button
             className="room-card"
             key={room.id}
-            onClick={() => navigate("rooms", room.id)}
+            onClick={() => navigate("devices", room.id)}
           >
             <span className="room-card-top">
               <span className="round-icon sage">

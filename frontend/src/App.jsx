@@ -347,6 +347,7 @@ export function App() {
             <button
               key={id}
               className={page === id ? "nav-item active" : "nav-item"}
+              aria-current={page === id ? "page" : undefined}
               onClick={() => navigate(id)}
             >
               <Icon size={19} />
@@ -355,20 +356,32 @@ export function App() {
             </button>
           ))}
         </nav>
-        <div className="sidebar-rooms">
-          <span className="eyebrow">ROOMS</span>
+        <nav className="sidebar-devices" aria-label="Devices">
+          <span className="eyebrow">DEVICES</span>
+          <button
+            className={`room-link ${page === "devices" && !room ? "selected" : ""}`}
+            aria-current={page === "devices" && !room ? "page" : undefined}
+            onClick={() => navigate("devices")}
+          >
+            <span className="room-bullet" />
+            All devices
+            <ChevronRight size={13} />
+          </button>
           {activeRooms.map((s) => (
             <button
               key={s.id}
-              className={`room-link ${room === s.id && page === "rooms" ? "selected" : ""}`}
-              onClick={() => navigate("rooms", s.id)}
+              className={`room-link ${room === s.id && page === "devices" ? "selected" : ""}`}
+              aria-current={
+                page === "devices" && room === s.id ? "page" : undefined
+              }
+              onClick={() => navigate("devices", s.id)}
             >
               <span className="room-bullet" />
               {s.details.name}
               <ChevronRight size={13} />
             </button>
           ))}
-        </div>
+        </nav>
         <div className="sidebar-bottom">
           <button
             className="nav-item"
@@ -405,7 +418,7 @@ export function App() {
             <ChevronRight size={13} />
             <strong>
               {titleCase(page)}
-              {page === "rooms" && room ? ` / ${nameOfRoom(room)}` : ""}
+              {page === "devices" && room ? ` / ${nameOfRoom(room)}` : ""}
             </strong>
           </div>
         </header>
@@ -440,15 +453,9 @@ export function App() {
                   }).format(new Date())}
                 </span>
                 <h1>
-                  {page === "overview"
-                    ? "Overview"
-                    : page === "rooms"
-                      ? room
-                        ? nameOfRoom(room)
-                        : "Rooms"
-                      : page === "scenes"
-                        ? "Scenes"
-                        : "Routines"}
+                  {page === "devices" && room
+                    ? nameOfRoom(room)
+                    : titleCase(page)}
                 </h1>
               </div>
               <div className="heading-actions">
@@ -535,27 +542,34 @@ export function App() {
                 </div>
               </>
             )}
-            {page === "rooms" && !room && (
+            {page === "rooms" && (
               <RoomsOverview
                 rooms={activeRooms}
                 data={data}
                 navigate={navigate}
               />
             )}
-            {page === "rooms" && room && (
+            {page === "devices" && room && (
               <button
                 className="text-link room-back"
-                onClick={() => navigate("rooms")}
+                onClick={() => navigate("devices")}
               >
-                <ArrowLeft size={16} /> All rooms
+                <ArrowLeft size={16} /> All devices
               </button>
             )}
-            {(page === "overview" || (page === "rooms" && room)) && (
+            {(page === "overview" || page === "devices") && (
               <>
                 <div className="devices-heading">
-                  <h2>
-                    Devices <span className="count">{devices.length}</span>
-                  </h2>
+                  {page === "devices" && !room ? (
+                    <span className="device-total">
+                      {devices.length}{" "}
+                      {devices.length === 1 ? "device" : "devices"}
+                    </span>
+                  ) : (
+                    <h2>
+                      Devices <span className="count">{devices.length}</span>
+                    </h2>
+                  )}
                   <label className="search">
                     <Search size={17} />
                     <input
@@ -722,10 +736,6 @@ export function App() {
                 )}
               </>
             )}
-            <footer className="page-footer">
-              <span>Fluxzero Home</span>
-              {data.permission === "VIEW" && <span>View-only access</span>}
-            </footer>
           </div>
         )}
       </main>

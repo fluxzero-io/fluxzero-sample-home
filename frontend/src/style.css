@@ -185,11 +185,12 @@ small,
   background: #49634d;
   margin-left: auto;
 }
-.sidebar-rooms {
+.sidebar .sidebar-devices {
+  display: block;
   margin: 38px 11px 20px;
   overflow: auto;
 }
-.sidebar-rooms > .eyebrow {
+.sidebar-devices > .eyebrow {
   display: block;
   margin-bottom: 12px;
 }
@@ -293,7 +294,7 @@ small,
 }
 .page-content {
   max-width: 1430px;
-  padding: 34px 44px 0;
+  padding: 34px 44px 56px;
   margin: auto;
 }
 .page-heading {
@@ -726,21 +727,6 @@ input[type="range"]:disabled {
 }
 .mobile-menu {
   display: none;
-}
-.page-footer {
-  margin-top: 36px;
-  padding: 24px 0;
-  border-top: 1px solid var(--line);
-  font-size: 13px;
-  color: var(--muted);
-  display: flex;
-  justify-content: space-between;
-  gap: 15px;
-}
-.page-footer .tiny-dot {
-  margin-right: 6px;
-  width: 4px;
-  height: 4px;
 }
 .primary,
 .secondary {
@@ -1340,7 +1326,7 @@ input[type="range"]:disabled {
     padding: 0 28px;
   }
   .page-content {
-    padding: 28px 28px 0;
+    padding: 28px 28px 56px;
   }
   .scene-activate {
     padding: 20px 14px;
@@ -1469,7 +1455,7 @@ input[type="range"]:disabled {
     gap: 8px;
   }
   .page-content {
-    padding: 24px 20px 0;
+    padding: 24px 20px 48px;
   }
   .page-heading {
     align-items: flex-start;
@@ -1598,11 +1584,6 @@ input[type="range"]:disabled {
   }
   .sensor-value {
     font-size: 26px;
-  }
-  .page-footer {
-    font-size: 13px;
-    margin-top: 28px;
-    gap: 7px;
   }
   .toast {
     left: 50%;
@@ -2130,4 +2111,9 @@ input[type="range"][data-unknown="true"]::-moz-range-thumb {
 .summary-item .climate-values small {
   font-size: 12px;
   margin-bottom: 2px;
+}
+
+.device-total {
+  color: var(--muted);
+  font-size: 14px;
 }
