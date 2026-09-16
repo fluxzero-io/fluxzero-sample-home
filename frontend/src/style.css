@@ -1290,11 +1290,30 @@ input[type="range"]:disabled {
   min-width: 220px;
   padding: 15px 20px;
 }
-.signin-content > .small {
-  display: block;
+.powered-by {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
   margin-top: 55px;
-  font-size: 13px;
-  color: #afbc9e;
+  font-size: 12px;
+  color: var(--muted);
+}
+.powered-by-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.powered-by-logo {
+  width: 18px;
+  height: auto;
+}
+.powered-by-wordmark {
+  width: 76px;
+  height: auto;
+}
+.powered-by:hover > span:first-child {
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 .nav-scrim {
   display: none;

@@ -37,6 +37,8 @@ import { SceneCard, SceneEditor } from "./Scenes.jsx";
 import { RoutineEditor } from "./Routines.jsx";
 import { RoomEditor } from "./Rooms.jsx";
 import { HomeSummary, RoomsOverview } from "./Overview.jsx";
+import fluxzeroLogo from "./assets/fluxzero-logo.svg";
+import fluxzeroWordmark from "./assets/fluxzero-wordmark.svg";
 
 const modes = {
   HOME: [House, "Home"],
@@ -266,7 +268,22 @@ export function App() {
           <a href="/app/login" className="primary">
             Sign in <ArrowRight size={18} />
           </a>
-          <span className="small muted">Fluxzero Home</span>
+          <a
+            className="powered-by"
+            href="https://fluxzero.io"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <span>Powered by</span>
+            <span className="powered-by-brand">
+              <img className="powered-by-logo" src={fluxzeroLogo} alt="" />
+              <img
+                className="powered-by-wordmark"
+                src={fluxzeroWordmark}
+                alt="Fluxzero"
+              />
+            </span>
+          </a>
         </div>
       </div>
     );
