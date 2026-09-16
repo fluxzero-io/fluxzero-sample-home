@@ -49,6 +49,8 @@ Ordinary development restarts reuse HA credentials and data. Home's temporary Fl
 
 ## Verification
 
+Follow [Testing the Home Assistant integration](../../docs/testing-home-assistant.md) for the developer and agent walkthrough, including executable authentication checks and a reversible outage exercise.
+
 The fast `HomeAssistantRequestTest` and `HomeAssistantTest` fixtures remain independent of Docker. They check the adapter's authentication header, API contract, rejected credentials, retries and domain outcomes using Fluxzero's web test handlers.
 
 The running demo additionally supports a real HTTP roundtrip: Home command → Fluxzero web request → HA service → HA state snapshot → Home reported settings. Connection loss must retain the last observation, show a connection problem, and recover on a subsequent scheduled refresh. A pending device intention is retried using its latest settings. Invalid bearer tokens must receive HTTP 401 from HA.

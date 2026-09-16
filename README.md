@@ -1,94 +1,88 @@
 # Fluxzero Home
 
-A home described the way you live in it: spaces, residents, lighting, comfort, music, gardens and daily habits. Fluxzero Home is a brand-independent example application on **Fluxzero SDK 2.0.0-rc.13**, with a working domain core, a responsive control interface and executable examples.
+**A home that listens.**
 
-It can describe an apartment or an estate with several buildings, floors, gardens and outbuildings. Spaces can be nested freely. Zones such as *downstairs*, *outdoors* or *bedrooms* can overlap.
+[![Verify](https://github.com/fluxzero-io/fluxzero-sample-home/actions/workflows/verify.yml/badge.svg)](https://github.com/fluxzero-io/fluxzero-sample-home/actions/workflows/verify.yml)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 
-```mermaid
-flowchart LR
-    Home[Home] --> Space[Space]
-    Space --> Nested[Nested space]
-    Space --> Device[Device]
-    Device --> Status[Reported state]
-    Home --> Resident[Resident]
-    Home --> Zone[Zone]
-    Home --> Scene[Scene]
-    Home --> Routine[Routine]
-    Home --> Automation[Automation]
-    Zone -. groups .-> Space
-    Scene -. describes intentions for .-> Device
-    Routine -. activates on schedule .-> Scene
-    Automation -. responds with .-> Scene
-```
+An example application for **Fluxzero 2.0**: model a home, control its devices, compose scenes and schedule daily routines. A brand-independent Java domain connects to a React interface and a working Home Assistant integration.
 
-## What the core does
+![Home dashboard with room navigation, scenes, lighting, heating, window shades and observed temperature](docs/images/dashboard.png)
 
-- **Homes and spaces:** names, local time zones, home modes, flexible layouts and moves within the same home.
-- **Residents:** household roles and explicit presence. One resident leaving does not silently switch the entire home to away mode.
-- **Devices:** capabilities for power, brightness, color, temperature, coverings, locks, media, volume, ventilation, irrigation and charging. A device can have several capabilities and measurements.
-- **Scenes:** target one device, a space and its descendants, a zone or the entire home. All changes succeed together or none are applied.
-- **Routines:** run once or on selected weekdays in the home's time zone. Pausing, resuming, rescheduling, cancellation and failure reasons are part of the model. Scheduled executions belong to their routine and are automatically cancelled when that routine or its home is deleted.
-- **Automations:** react to a home mode or a measurement crossing a threshold, with a configurable cooldown between activations.
-- **Reported state:** availability, actual settings and measurements remain separate from desired settings. Asking a door to lock does not mean it is already locked.
+*The optional Home Assistant demo links all seven devices to authenticated virtual equipment. No physical hardware is needed.*
 
-## Read the model
+## Try it locally
 
-Start with [The home as a domain](docs/domain.md), then [Scenes and time](docs/scenes-and-time.md). [SDK 2.0 in this example](docs/sdk-2.md) connects the SDK capabilities to concrete code. The behavior tests under `src/test/java/io/fluxzero/home` are executable usage examples.
+Install [the Fluxzero CLI](https://github.com/fluxzero-io/fluxzero-cli#installation), **Java 25** and **Node.js 22.12+**. Git and the included Maven Wrapper are used below. No Fluxzero account, API token or Home Assistant installation is required for this first run.
 
-Descriptive data lives in dedicated values such as `HomeDetails`, `SpaceDetails` and `DeviceDetails`. Input constraints run before model and relationship checks. Creation and definition commands receive those values; a focused rename changes only the name. This example has not been deployed and uses the current schema without upcasters or explicit schema revisions. Start a fresh temporary runtime if a schema change makes old local example data incompatible.
-
-`Home` and `Space` share the `Place` contract. A space has one parent: `new AddSpace(livingRoom, groundFloor, details)` or directly `new AddSpace(garden, home, details)`. `new MoveSpace(livingRoom, home)` moves it and its contents back under the home. The home relationship follows from the layout; a space does not store a second home ID.
-
-`ReportDeviceStatus` receives one `deviceId`. It identifies the device and, with a separate prefix, the independent identity of its observations.
-
-All models use plain `@Model`. Device observations retain history too, allowing automations to compare previous and new readings. Device searches and automations use relationships within a known home; the existing composition paths maintain the necessary internal documents. The [storage and search guide](docs/sdk-2.md#storage-and-search-in-this-home) explains these choices.
-
-A comfortable evening looks like this:
-
-```java
-new DefineScene(evening, home, new SceneDetails("A pleasant evening"), List.of(
-    new DimLights(new InSpace(livingRoom), new LightLevel(25)),
-    new SetHeating(new InSpace(livingRoom), new RoomTemperature(new BigDecimal("21")))
-));
-
-new ActivateScene(evening);
-```
-
-The scene uses ordinary actions such as `DimLight` and `SetRoomTemperature`. Each concrete action contains its own small `@Apply`; the interfaces define contracts only. Routines and automations execute the scene and their progress together. A functional rejection is then recorded as a pause; a technical failure remains an error. Settings such as `LightLevel` carry their own input constraints. Scene activations remain in Model history even when the desired settings already match. No brand names, protocol fields or technical channel names are required.
-
-Automations choose a concrete trigger such as `new HomeBecomes(HomeMode.AWAY)` or a sensor's `MeasurementCrosses`. Each trigger defines which change counts and checks its own conditions. `DefineAutomation` connects that trigger to a scene and a cooldown. The model stores the end of that cooldown; executions live in history without separate counters or audit timestamps.
-
-Routines choose `new Once(moment)` or, for example, `new Weekly(Set.of(DayOfWeek.MONDAY), LocalTime.of(20, 0))`. Concrete timing patterns own their calendar rules; `RoutineTiming` defines only their contract.
-
-## Run locally
-
-Requirements: Git, the Fluxzero CLI, Java 25 and Node 22.12+. The repository includes the Maven Wrapper.
-
-Start the development environment; Maven resolves the published SDK from Fluxzero Packages:
-
-```bash
+```sh
+git clone https://github.com/fluxzero-io/fluxzero-sample-home.git
+cd fluxzero-sample-home
 fz dev
 ```
 
-Open the public URL printed by `fz dev`. Sign in through the local identity provider as **alex** (manage) or **sam** (view only). The environment starts the matching SDK runtime, backend, local IDP and Vite frontend dev server. React and CSS edits hot-reload without rebuilding Java. Initial frontend setup also checks the production bundle.
+Open the URL printed by `fz dev`. Sign in through the local identity provider as **alex** to manage the home, or **sam** for read-only access.
 
-The [interface guide](docs/interface.md) covers controls, scenes, routines, authentication, API discovery and production setup. The [example commands](examples/README.md) populate a small home with no physical devices or credentials. Optional Home Assistant links use the operator's configuration.
+The environment starts the matching SDK runtime, backend, identity provider and **Vite dev server**, and populates an example home. React and CSS edits hot-reload; Java changes use the managed compile and test loop. The first start downloads dependencies and checks the frontend production build.
 
-For CI or an explicitly requested full verification, outside an active development environment:
+Try creating a room, changing a light, activating **A pleasant evening**, and planning a routine. In this default profile, device settings are saved without sending them to equipment; devices remain **Not linked**. Rooms are part of Home and can be created independently of any integration.
 
-```bash
+Stop the environment with `fz dev stop`. Its Fluxzero runtime is temporary: a new environment starts from the example commands again.
+
+### Try the real Home Assistant API
+
+With Docker running a Linux container engine and Python 3 installed, switch to the optional profile:
+
+```sh
+fz dev restart --profile home-assistant
+```
+
+For a first start, use `fz dev --profile home-assistant`. This runs the official Home Assistant Demo integration, creates private local credentials and links all seven devices. It uses real bearer authentication and REST requests, with virtual lights, heating, shades and sensors.
+
+**[Test the integration step by step →](docs/testing-home-assistant.md)**
+
+The guide covers authenticated and rejected requests, device control, independent state observations, connection loss and recovery. It includes a workflow for coding agents. [Demo setup and lifecycle](dev/home-assistant/README.md) describes the container, credentials and reset behavior.
+
+## What to explore
+
+- **A flexible home:** buildings, floors, nested rooms, gardens, overlapping zones, residents and home modes.
+- **Recognizable intentions:** turn on a light, set a temperature, open the shades. Settings and observations remain distinct.
+- **Scenes:** target a device, space, zone or entire home. The domain commits all scene intentions together.
+- **Routines and automations:** one-off or weekly schedules in the home's timezone, threshold crossings, cooldowns and meaningful pause states.
+- **Everyday controls:** room creation, live device views, scene editing, routine management and household-scoped permissions.
+- **An external API:** Home Assistant interactions use Fluxzero commands, queries and the web gateway, with fixture tests and a real local demo.
+
+Atomic scene changes apply to Home's intentions; physical devices are controlled after commit and confirm independently. The core also models locks, media, ventilation, irrigation and charging. The current Home Assistant adapter supports lights, switches, temperature setpoints, covers and sensor observations. Device provisioning and automation definitions are currently command-driven. Direct Matter and KNX adapters are not included.
+
+## A short code tour
+
+| Start here | What it demonstrates |
+| --- | --- |
+| [AddSpace](src/main/java/io/fluxzero/home/command/AddSpace.java) and [Space](src/main/java/io/fluxzero/home/model/Space.java) | Typed identities, cohesive details, independent Models and recursive `@Parent` relationships. |
+| [FindDevices](src/main/java/io/fluxzero/home/query/FindDevices.java) | Search within a known home's relationships, without projecting every home. |
+| [ActivateScene](src/main/java/io/fluxzero/home/command/ActivateScene.java) | Ordinary device commands combined into one atomic Model commit. |
+| [RunRoutine](src/main/java/io/fluxzero/home/automation/RunRoutine.java) and [RoutineSchedules](src/main/java/io/fluxzero/home/automation/RoutineSchedules.java) | Owned schedules, current Graph reconciliation and functional workflow outcomes. |
+| [DeviceStatus](src/main/java/io/fluxzero/home/model/DeviceStatus.java) | A separate observation lifecycle, sharing one input ID with its device parent. |
+| [CallHomeAssistantService](src/main/java/io/fluxzero/home/homeassistant/CallHomeAssistantService.java) | A local message handler making an auditable external web request. |
+| [SceneBehaviorTest](src/test/java/io/fluxzero/home/SceneBehaviorTest.java) and [HomeAssistantRequestTest](src/test/java/io/fluxzero/home/homeassistant/HomeAssistantRequestTest.java) | Product behavior and API contracts through Fluxzero's `TestFixture`. |
+
+Read [SDK 2.0 in this example](docs/sdk-2.md) for the modeling and execution choices, then the [domain guide](docs/domain.md), [scenes and time](docs/scenes-and-time.md), [interface guide](docs/interface.md) and [Home Assistant adapter](docs/home-assistant.md). The [example commands](examples/README.md) are another executable entry point.
+
+## Develop and verify
+
+Use `fz dev` for the development loop. Coding agents should read [AGENTS.md](AGENTS.md) and use the [Fluxzero agent plugin](https://github.com/fluxzero-io/fluxzero-agent-plugins) for version-matched SDK guidance and managed build/test feedback.
+
+CI performs a clean frontend check and full backend verification without Docker, a Fluxzero account or repository secrets. Outside an active dev environment, the equivalent commands are:
+
+```sh
 (cd frontend && npm ci && npm run check)
 ./mvnw -B verify
 ```
 
-The SDK is pinned to `2.0.0-rc.13`. Local development and CI use the same published version; no separate SDK checkout is required. `fluxzero.defaults.version=2026.09.10` enables the new defaults for Model conflicts and routing. The local tools version is configured separately in the build file.
+The [Verify workflow](.github/workflows/verify.yml) runs on pushes and pull requests. The separate [cloud deployment workflow](.github/workflows/deploy-to-fluxzero-cloud.yml) is manual and requires an operator's cloud and identity configuration; see [production setup](docs/interface.md#identity-and-permissions).
 
-## Phase 2
+## Versions and license
 
-The first adapter connects [Home Assistant](docs/home-assistant.md): discover entities, explicitly link them to devices, control lights, switches, thermostat setpoints and window shades, and read sensor measurements. Local commands and queries contain their own REST interaction through Fluxzero web requests, with auditable HTTP traffic and SDK retries. TestFixture web stubs replace Home Assistant in tests; no physical hardware is needed to run the example. The observation path uses Fluxzero scheduling for periodic snapshots.
+App release **0.1.0** uses the published **Fluxzero SDK 2.0.0-rc.13**, pinned in `pom.xml`. It needs no SDK checkout or locally installed candidate artifacts. SDK 2.0 is still a release candidate; this app is an executable example, with no production deployment or schema-migration guarantee. See the [release tags](https://github.com/fluxzero-io/fluxzero-sample-home/releases) for reproducible source snapshots.
 
-[Matter and KNX](docs/standards.md) serve as references for device capabilities and complete home installations. Home Assistant is the first practical gateway. Direct brand adapters and a dedicated Matter controller have not been implemented.
-
-[The integration boundary](docs/integration-boundary.md) describes where adapters belong, including acknowledgements, unknown capabilities and user identity. Core commands and queries serve trusted application components. The public interface enforces household-scoped `Account` permissions; a resident's household role does not grant API access.
-
-To try real integration traffic without hardware, see the [local Home Assistant demo](dev/home-assistant/README.md). The optional `home-assistant` dev profile links all seven example devices to authenticated virtual devices; the normal `local` profile remains standalone.
+Licensed under [Apache-2.0](LICENSE). The house illustration and interface are original; the Fluxzero logo identifies the platform. Home Assistant is a separate project and this example is not affiliated with it.

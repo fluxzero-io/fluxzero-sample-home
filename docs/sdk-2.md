@@ -60,7 +60,7 @@ Search results show committed current documents, not historical event state or t
 
 Versioned agent documentation is supplied by the Fluxzero plugin from the published rc.13 archive. `AGENTS.md` records the version and source commit; the SDK documentation contains complete contracts and executable modeling recipes.
 
-## Choices following the Model contract fixes
+## Commands, relationships and workflow execution
 
 A scene remains a composition of ordinary device commands. This produces recognizable events and lets each command apply its own rules. `SceneAction` and `SceneTarget` define contracts without implementations. Concrete actions create commands; concrete selections read their part of the home Graph. The application contains no Model simulator or alternative dynamic-Model route to retest the SDK contract.
 
@@ -98,7 +98,7 @@ Local builds, CI and the deployment workflow resolve rc.13 as a published depend
 
 `GetHomeAssistantStates` and `CallHomeAssistantService` contain their own `@HandleQuery`/`@HandleCommand` with `Fluxzero.sendWebRequestAndWait`. They run locally within the calling workflow, without `@TrackSelf` or an extra consumer. `DiscoverHomeAssistantDevices` is also a local self-handling query. The normal gateway provides the auditable external web request. `HomeAssistantEndpoint` shares only configuration, request construction and status checks. The fixture dispatches ordinary messages and registers only an external HTTP stub. Standard credentials remain in their HTTP header, which Auditlog masks in visible records and downloads.
 
-An expected unreachable installation is mapped by the interaction handler to `HomeAssistantUnavailable`, a recognizable `FunctionalException`. The workflow records the current problem and schedules recovery. The service body is a concrete value within the local call; JSON sent to Home Assistant contains only `entity_id` and, where applicable, `brightness_pct`.
+An expected unreachable installation is mapped by the interaction handler to `HomeAssistantUnavailable`, a recognizable `FunctionalException`. The workflow records the current problem and schedules recovery. The service body is a concrete value within the local call; JSON sent to Home Assistant contains its REST fields: `entity_id` and, as appropriate, `brightness_pct`, `hs_color`, `temperature` or `position`. No internal command type metadata is sent.
 
 The post-commit event consumer delivers device settings. A retry contains only the device and connection and reads current intent through `loadCurrentGraph`. Navigating the Device Graph to its linked Model and status makes a missing or deleted link an ordinary empty relationship. When a link is deleted, `graph.current()` checks directly whether that same Model identity is still absent before cancelling a pending delivery attempt.
 
