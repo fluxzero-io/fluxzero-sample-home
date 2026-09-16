@@ -255,12 +255,6 @@ export function HomeDrawing() {
       <ellipse cx="277" cy="145" rx="15" ry="29" fill="#90a078" />
       <ellipse cx="314" cy="178" rx="13" ry="18" fill="#a4b08c" />
       <path d="m234 193 13 8-44 18-18-8Z" fill="#bbc6ac" />
-      <path
-        d="m19 214 297-113M49 228l285-110"
-        stroke="#c5cfb8"
-        strokeWidth=".6"
-        opacity=".4"
-      />
     </svg>
   );
 }
