@@ -56,14 +56,14 @@ class SceneBehaviorTest {
                 new SetHeating(new OneDevice(LIGHT), new RoomTemperature(new BigDecimal("21")))));
         house().whenCommand(invalid).expectExceptionalResult(IllegalCommandException.class).expectNoEvents()
                 .expectThat(f -> {
-                    assertTrue(Fluxzero.loadModel(LIGHT).get().desiredSettings().isEmpty());
+                    assertTrue(Fluxzero.loadModel(LIGHT).get().pendingSettings().isEmpty());
                     assertNull(Fluxzero.loadModel(EVENING).get());
                 });
     }
     @Test void missingSceneTargetsFailAtActivationWithoutPartialChanges() {
         house().givenCommands(evening(), new RemoveDevice(HEAT))
                 .whenCommand(new ActivateScene(EVENING)).expectExceptionalResult(IllegalCommandException.class).expectNoEvents()
-                .expectThat(f -> assertTrue(Fluxzero.loadModel(LIGHT).get().desiredSettings().isEmpty()));
+                .expectThat(f -> assertTrue(Fluxzero.loadModel(LIGHT).get().pendingSettings().isEmpty()));
     }
     @Test void sceneCannotReachIntoAnotherHome() {
         var other = new HomeId("other");
@@ -80,7 +80,7 @@ class SceneBehaviorTest {
                         new DimLights(new OneDevice(LIGHT), new LightLevel(20)))))
                 .whenCommand(new ActivateScene(EVENING))
                 .expectOnlyEvents(new DimLight(LIGHT, new LightLevel(20)), new ActivateScene(EVENING)).expectNoErrors()
-                .expectThat(f -> assertEquals(new LightLevel(20), Fluxzero.loadModel(LIGHT).get().desiredSettings().get(Capability.LIGHT_LEVEL)));
+                .expectThat(f -> assertEquals(new LightLevel(20), Fluxzero.loadModel(LIGHT).get().pendingSettings().get(Capability.LIGHT_LEVEL)));
     }
     @Test void aSceneUsedByARoutineCannotBeRemoved() {
         house(new RoutineSchedules()).givenCommands(evening(), once(NOW.plusSeconds(60)))
@@ -92,8 +92,8 @@ class SceneBehaviorTest {
         house().givenCommands(new DefineScene(EVENING, HOME, new SceneDetails("Lights out"), List.of(
                 new SwitchPower(new WholeHome(), new Power(false)))))
                 .whenCommand(new ActivateScene(EVENING)).expectNoErrors().expectThat(f -> {
-                    assertEquals(new Power(false), Fluxzero.loadModel(LIGHT).get().desiredSettings().get(Capability.POWER));
-                    assertTrue(Fluxzero.loadModel(HEAT).get().desiredSettings().isEmpty());
+                    assertEquals(new Power(false), Fluxzero.loadModel(LIGHT).get().pendingSettings().get(Capability.POWER));
+                    assertTrue(Fluxzero.loadModel(HEAT).get().pendingSettings().isEmpty());
                 });
     }
     @Test void emptySceneIsRejected() {
@@ -122,7 +122,7 @@ class SceneBehaviorTest {
                 // through an explicitly current view, as a live reader would see it.
                 home = Fluxzero.loadCurrentGraph(home.get().id());
                 assertEquals(new RoomTemperature(new BigDecimal("21")),
-                        home.find(HEAT, Device.class).orElseThrow().get().desiredSettings().get(Capability.TEMPERATURE));
+                        home.find(HEAT, Device.class).orElseThrow().get().pendingSettings().get(Capability.TEMPERATURE));
             }
         }
     }
@@ -136,8 +136,8 @@ class SceneBehaviorTest {
     @Test void aLaterRejectedStepRollsBackTheEntireScene() {
         house().givenCommands(evening()).whenCommand(new RejectAfterScene(EVENING, LIGHT))
                 .expectExceptionalResult(IllegalCommandException.class).expectNoEvents().expectThat(f -> {
-                    assertTrue(Fluxzero.loadModel(LIGHT).get().desiredSettings().isEmpty());
-                    assertTrue(Fluxzero.loadModel(HEAT).get().desiredSettings().isEmpty());
+                    assertTrue(Fluxzero.loadModel(LIGHT).get().pendingSettings().isEmpty());
+                    assertTrue(Fluxzero.loadModel(HEAT).get().pendingSettings().isEmpty());
                 });
     }
 }

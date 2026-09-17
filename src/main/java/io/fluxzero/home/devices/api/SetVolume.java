@@ -14,6 +14,6 @@ public record SetVolume(DeviceId deviceId, int percent) implements DeviceCommand
 
     @Apply
     Device apply(Device device) {
-        return device.withDesiredSettings(device.desiredSettings().with(setting()));
+        return device.withPendingSettings(device.pendingSettings().with(setting()));
     }
 }

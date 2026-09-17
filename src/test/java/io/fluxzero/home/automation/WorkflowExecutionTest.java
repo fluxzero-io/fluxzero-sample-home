@@ -69,8 +69,8 @@ class WorkflowExecutionTest {
         }
         result.expectNoEventsLike(ActivateScene.class).expectThat(f -> {
             f.cache().clear();
-            assertTrue(Fluxzero.loadModel(LIGHT).get().desiredSettings().isEmpty());
-            assertTrue(Fluxzero.loadModel(HEAT).get().desiredSettings().isEmpty());
+            assertTrue(Fluxzero.loadModel(LIGHT).get().pendingSettings().isEmpty());
+            assertTrue(Fluxzero.loadModel(HEAT).get().pendingSettings().isEmpty());
             if (routine) {
                 var actual = Fluxzero.loadModel(BEDTIME).get();
                 assertEquals(!functional, actual.enabled());

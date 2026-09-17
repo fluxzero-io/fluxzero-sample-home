@@ -45,7 +45,7 @@ class HomeAssistantTranslationTest {
     void anInvalidReadingIsUnknownAndNeverInventedAsZero() throws Exception {
         var state = sensor("temperature", "°C", "not-a-number");
         var device = new Device(new DeviceId("sensor"), new SpaceId("room"), new DeviceDetails("Sensor"), null,
-                Set.of(), Set.of(Measurement.TEMPERATURE), DeviceSettings.empty());
+                Set.of(), Set.of(Measurement.TEMPERATURE), DeviceSettings.empty(), null);
         var report = new HomeAssistantSnapshot(List.of(state), "°C").observe(device, Set.of(state.entityId()), Instant.EPOCH);
         assertEquals(Availability.UNKNOWN, report.availability());
         assertTrue(report.readings().isEmpty());
@@ -61,7 +61,7 @@ class HomeAssistantTranslationTest {
         var first = sensor("temperature", "°C", "20");
         var second = new HomeAssistantState("sensor.other", "21", first.attributes());
         var device = new Device(new DeviceId("sensor"), new SpaceId("room"), new DeviceDetails("Sensor"), null,
-                Set.of(), Set.of(Measurement.TEMPERATURE), DeviceSettings.empty());
+                Set.of(), Set.of(Measurement.TEMPERATURE), DeviceSettings.empty(), null);
         assertThrows(IllegalCommandException.class, () ->
                 new HomeAssistantSnapshot(List.of(first, second), "°C").validateBinding(device, Set.of(first.entityId(), second.entityId())));
     }

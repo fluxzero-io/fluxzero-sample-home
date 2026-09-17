@@ -46,8 +46,12 @@ export function roomIds(spaces, selected) {
   } while (result.size !== size);
   return result;
 }
-export function requestedOn(device) {
-  return setting(device.desiredSettings, "power")?.on;
+// A request temporarily leads the controls; after confirmation, the device leads again.
+export function controlSetting(view, kind) {
+  return setting(view?.device.pendingSettings, kind) ??
+    (view?.status?.availability === "ONLINE"
+      ? setting(view.status.reportedSettings, kind)
+      : undefined);
 }
 export function observation(view) {
   if (view.delivery?.problem)
@@ -55,32 +59,15 @@ export function observation(view) {
   if (!view.status) return { label: "No report", tone: "muted" };
   if (view.status.availability !== "ONLINE")
     return { label: titleCase(view.status.availability), tone: "warning" };
-  const desired = view.device.desiredSettings || [];
-  const matches = settingsMatch(view);
-  return {
-    label: !desired.length
-      ? "Online"
-      : matches
-        ? "Confirmed"
-        : "Awaiting confirmation",
-    tone: matches ? "good" : "pending",
-  };
-}
-function settingsMatch(view) {
-  return (view.device.desiredSettings || []).every((desired) => {
-    const reported = setting(view.status?.reportedSettings, desired.kind);
-    return (
-      reported &&
-      Object.keys(desired).every((key) => reported[key] === desired[key])
-    );
-  });
+  return view.device.pendingSettings?.length
+    ? { label: "Awaiting confirmation", tone: "pending" }
+    : { label: "Online", tone: "good" };
 }
 export function awaitingSync(view) {
   return Boolean(
     view.delivery &&
       !view.delivery.problem &&
-      view.device.desiredSettings?.length &&
-      (view.status?.availability !== "ONLINE" || !settingsMatch(view)),
+      view.device.pendingSettings?.length,
   );
 }
 export function homeClimate(views) {
@@ -91,7 +78,7 @@ export function homeClimate(views) {
     views.find(
       (view) =>
         view.device.capabilities.includes("TEMPERATURE") &&
-        setting(view.device.desiredSettings, "temperature"),
+        controlSetting(view, "temperature"),
     ) || views.find((view) => view.device.capabilities.includes("TEMPERATURE"));
   const source =
     thermostat ||
@@ -107,7 +94,7 @@ export function homeClimate(views) {
         ));
   return {
     spaceId: source?.device.spaceId,
-    set: setting(thermostat?.device.desiredSettings, "temperature")?.celsius,
+    set: controlSetting(thermostat, "temperature")?.celsius,
     measured: reading?.status.readings.TEMPERATURE,
   };
 }

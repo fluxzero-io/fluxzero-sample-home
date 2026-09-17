@@ -8,7 +8,7 @@ A home provides context rather than one large storage object. A lamp can be repl
 | `Space` | A building, floor, room, outdoor area or other place; occupies one position in a recursive tree. |
 | `Zone` | A named collection of spaces. Overlap is allowed; a zone does not own its spaces. |
 | `Resident` | A resident with a name, household role and presence. |
-| `Device` | A device in a space, with capabilities, supported measurements and desired settings. |
+| `Device` | A device in a space, with capabilities, supported measurements and pending control requests. |
 | `DeviceStatus` | Device observations with a timestamp, availability, settings and measurements. The current value is the latest complete report; its history provides previous readings for threshold detection. |
 | `Scene` | A named collection of intentions; activations are recorded in its Model history. |
 | `Routine` | A scene with a timing pattern, next execution, pause state and execution history. |
@@ -20,7 +20,7 @@ All these concepts are independent Models. Ownership relationships use `@Parent`
 
 Each named concept has its own immutable details value: `HomeDetails`, `SpaceDetails`, `DeviceDetails`, `ResidentDetails`, `ZoneDetails`, `SceneDetails`, `RoutineDetails` and `AutomationDetails`. The name belongs there, with the same limit of 1–120 characters. `SpaceDetails` also contains the kind of space; together they describe the place.
 
-Identity and relationships belong on the Model. A device label remains an alternative identity; capabilities, desired settings, household roles and time zones retain their own meaning. Current status, next execution, generations and cooldowns are separate from the description too. New descriptive fields can be added to the appropriate details value.
+Identity and relationships belong on the Model. A device label remains an alternative identity; capabilities, pending requests, household roles and time zones retain their own meaning. Current status, next execution, generations and cooldowns are separate from the description too. New descriptive fields can be added to the appropriate details value.
 
 `CreateHome` and `AddSpace` receive the complete description. `RenameSpace` receives only the new name and preserves the kind, parent and primary light. Input validation also checks nested details and rejects missing values.
 
@@ -48,6 +48,8 @@ Measurements have fixed units, such as °C, %, lx, W, kWh or ppm. Binary observa
 
 ## Intent, observation and access
 
-`Device.desiredSettings` describes what was requested. `DeviceStatus.reportedSettings` describes what an adapter observed. `Availability` describes reachability. The core keeps these meanings separate. Both sets of settings use `DeviceSettings`: an immutable collection with at most one value per capability. The capability follows from the value; callers do not supply a second key. In JSON, settings are an array of values with a `kind`, for example `[{"kind":"lightLevel","percent":25}]`. Duplicate capabilities and invalid values are rejected.
+`Device.pendingSettings` contains only unconfirmed requests. A newer online report removes matching values from that set in the same commit as the observation. `requestedAt` is the sampling boundary of the pending request and is cleared when it finishes; an older observation cannot acknowledge a newer request. Completed requests remain in the event history, not in a permanent desired-state policy. A physical switch or another app can subsequently change the device without Home trying to undo it. A later Home command requests only the controls that are then pending.
+
+`DeviceStatus.reportedSettings` describes what an adapter observed. `Availability` describes reachability. The core keeps these meanings separate. Both sets of settings use `DeviceSettings`: an immutable collection with at most one value per capability. The capability follows from the value; callers do not supply a second key. In JSON, settings are an array of values with a `kind`, for example `[{"kind":"lightLevel","percent":25}]`. Duplicate capabilities and invalid values are rejected.
 
 A resident role such as owner or guest is a household concept. The [public interface](interface.md) maps a validated identity to a separate `Account` with per-home permissions. It checks that membership and the home boundary before reading or changing household data.

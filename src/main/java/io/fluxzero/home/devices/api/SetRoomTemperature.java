@@ -16,6 +16,6 @@ public record SetRoomTemperature(DeviceId deviceId, @NotNull @Valid RoomTemperat
 
     @Apply
     Device apply(Device device) {
-        return device.withDesiredSettings(device.desiredSettings().with(temperature));
+        return device.withPendingSettings(device.pendingSettings().with(temperature));
     }
 }

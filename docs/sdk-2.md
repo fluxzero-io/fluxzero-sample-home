@@ -90,6 +90,10 @@ Ordinary event-sourced replay and historical observations remain part of the dom
 
 Local builds, CI and the deployment workflow resolve rc.15 as a published dependency. The SDK version is defined centrally in `pom.xml`.
 
+## Device requests and observations
+
+`Device.pendingSettings` is operational work, not a permanent household policy. Ordinary device commands stage requests; the Model's shared `@Apply` captures their sampling boundary from the message timestamp. `ReportDeviceStatus` atomically stores the independent observation and finishes matching requests. Completed requests remain in the SDK event history. The UI then follows physical changes, and future adapter delivery uses only outstanding settings.
+
 ## Home Assistant: committed intentions and external observations
 
 `HomeAssistantConnection` is a Model under Home. `HomeAssistantDevice` has both Device and connection as parents: it ceases to exist when either is deleted. The device is not deleted when its connection is removed. The combined entity alias includes connection identity and prevents duplicate links within that installation. Both Models remain ordinary event-sourced Models.

@@ -2,6 +2,7 @@ package io.fluxzero.home.homeassistant;
 
 import io.fluxzero.home.devices.api.DeviceCommand;
 import io.fluxzero.home.devices.api.DeviceId;
+import io.fluxzero.home.devices.api.model.Availability;
 import io.fluxzero.home.devices.api.model.DeviceStatus;
 import io.fluxzero.home.homeassistant.api.AcceptHomeAssistantObservation;
 import io.fluxzero.home.homeassistant.api.CallHomeAssistantService;
@@ -75,7 +76,13 @@ public class HomeAssistantIntegration {
         if (binding == null || !binding.connectionId().equals(request.connectionId())) return;
         var connection = Fluxzero.loadCurrentGraph(request.connectionId()).get();
         var device = Fluxzero.loadCurrentGraph(request.deviceId()).get();
-        if (connection == null || device == null || device.desiredSettings().isEmpty()) return;
+        if (connection == null || device == null) return;
+        if (device.pendingSettings().isEmpty()) {
+            Fluxzero.cancelSchedule(deliverySchedule(device.deviceId()));
+            if (binding.problem() != null) Fluxzero.sendCommandAndWait(
+                    new RecordHomeAssistantDeliveryProblem(device.deviceId(), connection.connectionId(), null));
+            return;
+        }
         try {
             var snapshot = Fluxzero.queryAndWait(new GetHomeAssistantStates(connection.connectionId()));
             for (var action : snapshot.actions(device, binding.entityIds())) {
@@ -108,7 +115,9 @@ public class HomeAssistantIntegration {
                 var previous = Fluxzero.loadCurrentGraph(device.deviceId()).childModels(DeviceStatus.class).stream().findFirst().orElse(null);
                 if (previous == null || previous.availability() != report.availability()
                         || !previous.reportedSettings().equals(report.reportedSettings())
-                        || !previous.readings().equals(report.readings())) Fluxzero.sendCommandAndWait(
+                        || !previous.readings().equals(report.readings())
+                        || report.availability() == Availability.ONLINE
+                        && !device.pendingSettings().withoutConfirmedBy(report.reportedSettings()).equals(device.pendingSettings())) Fluxzero.sendCommandAndWait(
                                 new AcceptHomeAssistantObservation(device.deviceId(), request.connectionId(), binding.entityIds(), report));
             }
             if (connection.problem() != null) Fluxzero.sendCommandAndWait(new RecordHomeAssistantProblem(request.connectionId(), null));

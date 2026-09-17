@@ -24,7 +24,7 @@ import {
   dateIn,
   observation,
   awaitingSync,
-  requestedOn,
+  controlSetting,
   setting,
   titleCase,
 } from "./home.js";
@@ -60,19 +60,15 @@ export function DeviceCard({
   const reportedOn =
     status?.availability === "ONLINE" &&
     setting(status.reportedSettings, "power")?.on === true;
-  const power =
-    requestedOn(device) ??
-    (status?.availability === "ONLINE"
-      ? setting(status.reportedSettings, "power")?.on
-      : undefined);
+  const power = controlSetting(view, "power")?.on;
   const state = observation(view);
   const syncing = busy || awaitingSync(view);
   const measurement = device.measurements.includes("TEMPERATURE")
     ? "TEMPERATURE"
     : device.measurements[0];
-  const light = setting(device.desiredSettings, "lightLevel");
-  const temp = setting(device.desiredSettings, "temperature");
-  const opening = setting(device.desiredSettings, "opening");
+  const light = controlSetting(view, "lightLevel");
+  const temp = controlSetting(view, "temperature");
+  const opening = controlSetting(view, "opening");
   return (
     <article className={`device-card ${reportedOn ? "is-on" : ""}`}>
       <div className="device-top">
@@ -199,9 +195,8 @@ export function Temperature({ value, disabled, commit }) {
 export function DeviceDetail({ view, roomName, zone, disabled, control }) {
   const d = view.device;
   const state = observation(view);
-  const [media, setMedia] = useState(
-    setting(d.desiredSettings, "playback")?.media || "",
-  );
+  const [mediaDraft, setMedia] = useState(null);
+  const media = mediaDraft ?? controlSetting(view, "playback")?.media ?? "";
   const send = (r, b) => control(r, b).catch(() => {});
   return (
     <div className="device-detail">
@@ -216,15 +211,15 @@ export function DeviceDetail({ view, roomName, zone, disabled, control }) {
         <p className="form-error">{view.delivery.problem}</p>
       )}
       <p className="control-caption">
-        Controls change requested settings. Device reports are shown below.
+        Device changes appear here automatically.
       </p>
       <div className="detail-controls">
         {d.capabilities.includes("POWER") && (
           <div className="setting-row">
-            <label>Requested power</label>
+            <label>Power</label>
             <BinaryControl
-              label="Requested power"
-              value={requestedOn(d)}
+              label="Power"
+              value={controlSetting(view, "power")?.on}
               disabled={disabled}
               choose={(on) => send(on ? "on" : "off")}
             />
@@ -233,16 +228,16 @@ export function DeviceDetail({ view, roomName, zone, disabled, control }) {
         {d.capabilities.includes("LIGHT_LEVEL") && (
           <Range
             label="Brightness"
-            value={setting(d.desiredSettings, "lightLevel")?.percent}
+            value={controlSetting(view, "lightLevel")?.percent}
             disabled={disabled}
             commit={(v) => control("brightness", { percent: v })}
           />
         )}
         {d.capabilities.includes("TEMPERATURE") && (
           <div className="setting-row">
-            <label>Requested temperature</label>
+            <label>Temperature</label>
             <Temperature
-              value={setting(d.desiredSettings, "temperature")?.celsius}
+              value={controlSetting(view, "temperature")?.celsius}
               disabled={disabled}
               commit={(v) => control("temperature", { celsius: v })}
             />
@@ -254,23 +249,23 @@ export function DeviceDetail({ view, roomName, zone, disabled, control }) {
               label="Hue"
               unit="°"
               max={359}
-              value={setting(d.desiredSettings, "lightColor")?.hue}
+              value={controlSetting(view, "lightColor")?.hue}
               disabled={disabled}
               commit={(v) =>
                 control("color", {
                   hue: v,
                   saturation:
-                    setting(d.desiredSettings, "lightColor")?.saturation ?? 100,
+                    controlSetting(view, "lightColor")?.saturation ?? 100,
                 })
               }
             />
             <Range
               label="Saturation"
-              value={setting(d.desiredSettings, "lightColor")?.saturation}
+              value={controlSetting(view, "lightColor")?.saturation}
               disabled={disabled}
               commit={(v) =>
                 control("color", {
-                  hue: setting(d.desiredSettings, "lightColor")?.hue ?? 0,
+                  hue: controlSetting(view, "lightColor")?.hue ?? 0,
                   saturation: v,
                 })
               }
@@ -284,8 +279,8 @@ export function DeviceDetail({ view, roomName, zone, disabled, control }) {
               key={c}
               label={CAPABILITIES[c].label}
               value={
-                setting(
-                  d.desiredSettings,
+                controlSetting(
+                  view,
                   {
                     OPENING: "opening",
                     VOLUME: "volume",
@@ -313,12 +308,12 @@ export function DeviceDetail({ view, roomName, zone, disabled, control }) {
               className="secondary"
               disabled={disabled}
               onClick={() => {
-                const locked = setting(d.desiredSettings, "lock")?.locked;
+                const locked = controlSetting(view, "lock")?.locked;
                 if (!locked || confirm("Unlock this door?"))
                   send(locked ? "unlock" : "lock");
               }}
             >
-              {setting(d.desiredSettings, "lock")?.locked ? "Unlock" : "Lock"}
+              {controlSetting(view, "lock")?.locked ? "Unlock" : "Lock"}
             </button>
           </div>
         )}
@@ -335,7 +330,12 @@ export function DeviceDetail({ view, roomName, zone, disabled, control }) {
               <button
                 className="secondary"
                 disabled={disabled || !media.trim()}
-                onClick={() => send("play", { media })}
+                onClick={async () => {
+                  try {
+                    await control("play", { media });
+                    setMedia(null);
+                  } catch {}
+                }}
               >
                 <Play size={15} />
                 Play
@@ -354,8 +354,8 @@ export function DeviceDetail({ view, roomName, zone, disabled, control }) {
           <div className="setting-row">
             <label>Watering</label>
             <BinaryControl
-              label="Requested watering"
-              value={setting(d.desiredSettings, "irrigation")?.watering}
+              label="Watering"
+              value={controlSetting(view, "irrigation")?.watering}
               disabled={disabled}
               choose={(on) => send(on ? "water" : "stop-watering")}
             />
@@ -365,19 +365,19 @@ export function DeviceDetail({ view, roomName, zone, disabled, control }) {
           <div className="setting-row">
             <label>Charging</label>
             <BinaryControl
-              label="Requested charging"
-              value={setting(d.desiredSettings, "charging")?.enabled}
+              label="Charging"
+              value={controlSetting(view, "charging")?.enabled}
               disabled={disabled}
               choose={(on) => send(on ? "charge" : "pause-charging")}
             />
           </div>
         )}
       </div>
-      <h3 className="subheading">Requested & reported</h3>
+      <h3 className="subheading">Pending & reported</h3>
       <div className="state-table">
         <div className="state-table-head">
           <span>Setting</span>
-          <span>Requested</span>
+          <span>Pending</span>
           <span>Reported</span>
         </div>
         {d.capabilities.map((c) => {
@@ -398,7 +398,7 @@ export function DeviceDetail({ view, roomName, zone, disabled, control }) {
             <div key={c}>
               <span>{CAPABILITIES[c]?.label || titleCase(c)}</span>
               <strong>
-                {formatSetting(setting(d.desiredSettings, kinds[c]), "Not set")}
+                {formatSetting(setting(d.pendingSettings, kinds[c]), "—")}
               </strong>
               <strong>
                 {formatSetting(

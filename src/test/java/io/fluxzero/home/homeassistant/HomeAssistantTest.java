@@ -11,6 +11,7 @@ import io.fluxzero.home.devices.api.DimLight;
 import io.fluxzero.home.devices.api.SetLightColor;
 import io.fluxzero.home.devices.api.SetOpening;
 import io.fluxzero.home.devices.api.SetRoomTemperature;
+import io.fluxzero.home.devices.api.TurnOn;
 import io.fluxzero.home.devices.api.model.Availability;
 import io.fluxzero.home.devices.api.model.Capability;
 import io.fluxzero.home.devices.api.model.DeviceDetails;
@@ -104,7 +105,7 @@ class HomeAssistantTest {
                 .expectCommands(new CallHomeAssistantService(CONNECTION,
                         new HomeAssistantAction("light", "turn_on", new HomeAssistantAction.DimEntity("light.reading", 25))))
                 .expectWebRequests(dimRequest(25)).expectThat(f -> {
-                    assertEquals(new LightLevel(25), Fluxzero.loadModel(LIGHT).get().desiredSettings().get(Capability.LIGHT_LEVEL));
+                    assertEquals(new LightLevel(25), Fluxzero.loadModel(LIGHT).get().pendingSettings().get(Capability.LIGHT_LEVEL));
                     assertEquals(new LightLevel(0), Fluxzero.loadModel(LIGHT, DeviceStatus.class).get().reportedSettings().get(Capability.LIGHT_LEVEL));
                 });
     }
@@ -195,7 +196,60 @@ class HomeAssistantTest {
                 .expectNoErrors().expectNoWebRequestLike(r -> r.getMethod().equals("POST")).expectThat(f -> {
                     var status = Fluxzero.loadModel(LIGHT, DeviceStatus.class).get();
                     assertEquals(new LightLevel(50), status.reportedSettings().get(Capability.LIGHT_LEVEL));
-                    assertTrue(Fluxzero.loadModel(LIGHT).get().desiredSettings().isEmpty());
+                    assertTrue(Fluxzero.loadModel(LIGHT).get().pendingSettings().isEmpty());
+                });
+    }
+
+    @ParameterizedTest @ValueSource(booleans = {false, true})
+    void aPhysicalSwitchWinsAfterConfirmationAndTheNextRequestIsFocused(boolean async) {
+        linked(async).givenCommands(new DimLight(LIGHT, new LightLevel(40)))
+                .given(f -> remote.snapshot = snapshot("on", 102, "68", "off"))
+                .whenTimeElapses(INTERVAL).expectNoErrors()
+                .expectThat(f -> assertTrue(Fluxzero.loadModel(LIGHT).get().pendingSettings().isEmpty()))
+                .andThen().given(f -> remote.snapshot = snapshot("off", 0, "68", "off"))
+                .whenTimeElapses(INTERVAL).expectNoErrors()
+                .expectNoWebRequestLike(r -> r.getMethod().equals("POST"))
+                .expectThat(f -> assertTrue(Fluxzero.loadModel(LIGHT).get().pendingSettings().isEmpty()))
+                .andThen().whenCommand(new TurnOn(LIGHT)).expectNoErrors()
+                .expectCommands(new CallHomeAssistantService(CONNECTION,
+                        new HomeAssistantAction("light", "turn_on", new HomeAssistantAction.SwitchEntity("light.reading"))))
+                .expectWebRequest(r -> r.getMethod().equals("POST")
+                        && r.<JsonNode>getPayloadAs(JsonNode.class).size() == 1);
+    }
+
+    @ParameterizedTest @ValueSource(booleans = {false, true})
+    void requestingAnAlreadyObservedValueStillFinishes(boolean async) {
+        linked(async).given(f -> remote.snapshot = snapshot("on", 102, "68", "off"))
+                .whenTimeElapses(INTERVAL).expectNoErrors().andThen()
+                .givenCommands(new DimLight(LIGHT, new LightLevel(40)))
+                .whenTimeElapses(INTERVAL).expectNoErrors()
+                .expectThat(f -> assertTrue(Fluxzero.loadModel(LIGHT).get().pendingSettings().isEmpty()));
+    }
+
+    @ParameterizedTest @ValueSource(booleans = {false, true})
+    void theSameHomeSettingCanBeRequestedAgainAfterPhysicalControl(boolean async) {
+        linked(async).givenCommands(new DimLight(LIGHT, new LightLevel(40)))
+                .given(f -> remote.snapshot = snapshot("on", 102, "68", "off"))
+                .whenTimeElapses(INTERVAL).expectNoErrors().andThen()
+                .given(f -> remote.snapshot = snapshot("on", 51, "68", "off"))
+                .whenTimeElapses(INTERVAL).expectNoErrors().andThen()
+                .whenCommand(new DimLight(LIGHT, new LightLevel(40)))
+                .expectNoErrors().expectWebRequests(dimRequest(40));
+    }
+
+    @Test
+    void anObservationCanFinishARequestBeforeItsDeliveryRetry() {
+        awaitingDelivery(false)
+                .whenTimeElapses(Duration.ofSeconds(1)).expectNoErrors().andThen()
+                .given(f -> remote.snapshot = snapshot("on", 51, "68", "off"))
+                .whenEvent(new RefreshHomeAssistant(CONNECTION))
+                .expectNoErrors().andThen()
+                .whenTimeElapses(INTERVAL).expectNoErrors()
+                .expectNoWebRequestLike(r -> r.getMethod().equals("POST"))
+                .expectOnlySchedules(new RefreshHomeAssistant(CONNECTION))
+                .expectThat(f -> {
+                    assertTrue(Fluxzero.loadModel(LIGHT).get().pendingSettings().isEmpty());
+                    assertNull(Fluxzero.loadGraph(LIGHT).childModels(HomeAssistantDevice.class).getFirst().problem());
                 });
     }
 

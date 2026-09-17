@@ -87,7 +87,7 @@ flowchart TD
     Scene -. selects devices .-> Device
 ```
 
-A space belongs to either the home or another space. Zones group spaces without owning them. Scenes select devices directly or through a space, zone or the whole home. `Device` stores desired settings; `DeviceStatus` has its own observation history. Routine and automation references do not make a scene their parent: removing a scene is refused while they still use it.
+A space belongs to either the home or another space. Zones group spaces without owning them. Scenes select devices directly or through a space, zone or the whole home. `Device` stores pending requests, which finish on confirmation; `DeviceStatus` has its own observation history. Routine and automation references do not make a scene their parent: removing a scene is refused while they still use it.
 
 <details>
 <summary>Integration and access models</summary>

@@ -16,6 +16,6 @@ public record DimLight(DeviceId deviceId, @NotNull @Valid LightLevel brightness)
 
     @Apply
     Device apply(Device device) {
-        return device.withDesiredSettings(device.desiredSettings().with(brightness));
+        return device.withPendingSettings(device.pendingSettings().with(brightness));
     }
 }

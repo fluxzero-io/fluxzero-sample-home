@@ -45,6 +45,13 @@ public record ReportDeviceStatus(@NotNull DeviceId deviceId,
             }
         }
     }
+    @Apply Device confirmRequest(Device device) {
+        if (availability != Availability.ONLINE || device.requestedAt() == null
+                || !observedAt.isAfter(device.requestedAt())) return device;
+        var pending = device.pendingSettings().withoutConfirmedBy(reportedSettings);
+        return device.withPendingSettings(pending).withRequestedAt(pending.isEmpty() ? null : device.requestedAt());
+    }
+
     @Apply DeviceStatus apply(@Nullable DeviceStatus status, Device device) {
         return new DeviceStatus(deviceId, observedAt, availability, reportedSettings, readings);
     }

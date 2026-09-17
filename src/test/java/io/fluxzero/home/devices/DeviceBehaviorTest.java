@@ -66,26 +66,26 @@ class DeviceBehaviorTest {
                 new AddSpace(LIVING, HOME, new SpaceDetails("Living", SpaceKind.ROOM)),
                 new AddDevice(LIGHT, LIVING, new DeviceDetails("Multifunction device"), null, EnumSet.allOf(Capability.class), Set.of()))
                 .whenCommand(command).expectOnlyEvents(command).expectThat(f -> {
-                    assertEquals(command.setting(), Fluxzero.loadModel(LIGHT).get().desiredSettings().get(command.setting().capability()));
+                    assertEquals(command.setting(), Fluxzero.loadModel(LIGHT).get().pendingSettings().get(command.setting().capability()));
                     assertNull(Fluxzero.loadModel(LIGHT, DeviceStatus.class).get());
                 });
     }
     @ParameterizedTest @ValueSource(ints = {-1, 101})
     void invalidBrightnessLeavesDeviceUntouched(int percent) {
         house().whenCommand(new DimLight(LIGHT, new LightLevel(percent))).expectExceptionalResult(ValidationException.class)
-                .expectNoEvents().expectThat(f -> assertTrue(Fluxzero.loadModel(LIGHT).get().desiredSettings().isEmpty()));
+                .expectNoEvents().expectThat(f -> assertTrue(Fluxzero.loadModel(LIGHT).get().pendingSettings().isEmpty()));
     }
     @Test void aLightCannotSetRoomTemperature() {
         house().whenCommand(new SetRoomTemperature(LIGHT, new RoomTemperature(new BigDecimal("21"))))
                 .expectExceptionalResult(IllegalCommandException.class).expectNoEvents();
     }
-    @Test void aNewerObservationWinsAndDesiredSettingsRemainIndependent() {
+    @Test void aNewerObservationWinsAndPendingRequestsRemainIndependent() {
         house().givenCommands(temperature(NOW.minusSeconds(10), "19"))
                 .whenCommand(temperature(NOW, "20")).expectNoErrors()
                 .andThen().whenCommand(temperature(NOW.minusSeconds(5), "18"))
                 .expectNoEvents().expectThat(f -> {
                     assertEquals(new BigDecimal("20"), Fluxzero.loadModel(SENSOR, DeviceStatus.class).get().readings().get(Measurement.TEMPERATURE));
-                    assertTrue(Fluxzero.loadModel(SENSOR).get().desiredSettings().isEmpty());
+                    assertTrue(Fluxzero.loadModel(SENSOR).get().pendingSettings().isEmpty());
                 });
     }
     @Test void aDuplicateObservationIsSuppressed() {
@@ -149,7 +149,7 @@ class DeviceBehaviorTest {
                                 Availability.ONLINE, report, Map.of()))
                 .whenExecuting(f -> f.cache().clear()).expectNoErrors().expectThat(f -> {
                     assertEquals(report, Fluxzero.loadModel(LIGHT, DeviceStatus.class).get().reportedSettings());
-                    assertEquals(new LightLevel(42), Fluxzero.loadModel(LIGHT).get().desiredSettings().get(Capability.LIGHT_LEVEL));
+                    assertEquals(new LightLevel(42), Fluxzero.loadModel(LIGHT).get().pendingSettings().get(Capability.LIGHT_LEVEL));
                 });
     }
 

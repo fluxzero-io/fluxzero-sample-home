@@ -104,7 +104,7 @@ One snapshot contains both measurements. Two sources for the same measurement or
 
 Classification and attributes follow the documentation for [lights](https://developers.home-assistant.io/docs/core/entity/light/), [sensors](https://developers.home-assistant.io/docs/core/entity/sensor/) and [binary sensors](https://developers.home-assistant.io/docs/core/entity/binary-sensor/). Unknown domains, units and unsupported capabilities are not advertised as working support.
 
-For combined lighting intentions, color and brightness share one `light.turn_on` call. Explicit off takes precedence over color and dimming; zero brightness also means off. The core stores the chosen dimensions independently. An API refresh only observes: manual control is not reversed every ten seconds to restore an old intention that has already been delivered.
+For combined lighting intentions, color and brightness share one `light.turn_on` call. Explicit off takes precedence over color and dimming; zero brightness also means off. The core keeps unconfirmed dimensions independently and removes each one when a newer online observation confirms it. An API refresh only observes: manual control is not reversed on each refresh to restore an old intention that has already been delivered.
 
 Locks, media, ventilation, irrigation and charging have not yet been mapped to Home Assistant. They remain available in the generic core model. Extending support means adding a concrete mapping and protocol example, including units, valid ranges and the meaning of reported state.
 
@@ -112,13 +112,19 @@ Temperature snapshots additionally query `GET /api/config` through the local `Ge
 
 Color readings are rounded to Home's whole-degree hue and whole-percent saturation; missing color and cover positions remain unknown. Cover movement is confirmed only by its observed position. As with lights, HTTP success never substitutes for a subsequent device report.
 
+## Physical controls and other apps
+
+Home is one controller, not a permanent desired-state enforcer. After Home's request has been observed, a wall switch, thermostat or another app can change the device. The next refresh updates Home's controls and does not send a corrective service call. A subsequent Home action contains only pending settings, so turning a lamp on does not replay its old brightness or color.
+
+A request remains pending until an online observation made after the request confirms that control. An HTTP acknowledgement alone does not complete it: a cover may still be moving. During that interval the requested control leads the UI and synchronization feedback remains visible. Once finished, the reported value leads again. Polling can miss short transitions; if a target was reached and changed again between observations, Home cannot infer that confirmation from the REST snapshot alone.
+
 ## Scheduling, failures and deletion
 
 A `RefreshHomeAssistant` schedule belongs to its connection through `@Parent`. The refresh interval is configurable from five seconds to one hour. The next refresh is scheduled even after a connection failure; `GetHomeAssistant` shows that current problem. An unreachable gateway says nothing certain about a lamp, so the adapter does not replace its last observation with invented offline readings.
 
-A missing entity or one reported as `unavailable` by Home Assistant does produce an offline device report. `unknown`, missing required values and invalid measurements produce unknown state without invented zero values. The adapter compares complete reports and publishes only changed content. `observedAt` is when the adapter samples the combined API snapshot, not a new physical measurement time for each individual sensor. Different HA `last_updated` fields are not merged into one fictitious original sensor timestamp.
+A missing entity or one reported as `unavailable` by Home Assistant does produce an offline device report. `unknown`, missing required values and invalid measurements produce unknown state without invented zero values. The adapter compares complete reports and publishes changed content. It also publishes a fresh matching report when needed to finish a pending request, even if that value was already observed before the request. `observedAt` is when the adapter samples the combined API snapshot, not a new physical measurement time for each individual sensor. Different HA `last_updated` fields are not merged into one fictitious original sensor timestamp.
 
-When the short SDK retries do not succeed, the link records a current delivery problem and the adapter schedules `DeliverHomeAssistantSettings`. That schedule contains the device and connection, without copied settings. The retry reads the latest device intention. After success, the delivery problem is cleared and retries stop; physical observations still come from a separate refresh.
+When the short SDK retries do not succeed, the link records a current delivery problem and the adapter schedules `DeliverHomeAssistantSettings`. That schedule contains the device and connection, without copied settings. The retry reads only the latest pending settings; it does not restore previously confirmed requests. After success, the delivery problem is cleared and retries stop; physical observations still come from a separate refresh.
 
 Scheduled attempts and ordinary device changes converge on one event consumer for physical execution. This provides one execution order without a custom thread pool or connection manager. It limits this example's throughput: one slow HTTP request can hold up other Home Assistant effects for several seconds. A larger application can deliberately partition this work by installation.
 

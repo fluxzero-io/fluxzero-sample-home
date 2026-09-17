@@ -104,7 +104,9 @@ Home polls every five seconds. A service's HTTP success is only acceptance: wait
 
 The Demo cover rounds to steps of ten and simulates movement. Use 0, 10, …, 100 for an exact match. Its temperature and motion sensors are synthetic and static; increasing the thermostat does not warm the reported room. Room sensor deliberately uses the demo's outside-temperature entity. These limitations belong to the demo equipment, not an invented Home confirmation.
 
-Run the read-only probe again to compare actual API values with Home's reported values. To test the reverse direction, sign into the separate HA UI using the private generated password and change a virtual lamp there. Home should observe that change; polling does not continually restore an intention that was already delivered.
+Run the read-only probe again to compare actual API values with Home's reported values. A confirmed request disappears from the **Pending** column; its history remains in Home's events.
+
+To exercise physical controls or another app, first set Reading lamp to 40% in Home and wait for confirmation. Sign into the separate HA UI using the private generated password, set that lamp to 20%, then turn it off. Home should follow both changes on the next refresh without displaying a new pending request or sending a corrective write. Turn it on again from Home: only power should be requested, retaining HA's last brightness rather than restoring Home's old 40%. This demo simulates a second controller; it requires no physical switch.
 
 ## 4. Exercise connection loss and recovery
 

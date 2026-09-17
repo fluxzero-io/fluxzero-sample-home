@@ -72,7 +72,7 @@ public record HomeAssistantSnapshot(List<HomeAssistantState> states, String temp
         validateBinding(device, entityIds);
         var result = new ArrayList<HomeAssistantAction>();
         for (var state : states) if (entityIds.contains(state.entityId())) {
-            result.addAll(state.actions(device.desiredSettings(), temperatureUnit));
+            result.addAll(state.actions(device.pendingSettings(), temperatureUnit));
         }
         return result;
     }

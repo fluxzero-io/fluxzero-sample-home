@@ -97,7 +97,7 @@ class AutomationBehaviorTest {
                 .whenCommand(new ChangeHomeMode(HOME, HomeMode.AWAY)).expectNoErrors().expectThat(f -> {
                     var automation = Fluxzero.loadModel(REACTION).get();
                     assertFalse(automation.enabled()); assertNotNull(automation.problem());
-                    assertTrue(Fluxzero.loadModel(LIGHT).get().desiredSettings().isEmpty());
+                    assertTrue(Fluxzero.loadModel(LIGHT).get().pendingSettings().isEmpty());
                 });
     }
     @ParameterizedTest @ValueSource(booleans = {false, true})

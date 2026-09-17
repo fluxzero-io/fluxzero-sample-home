@@ -14,6 +14,6 @@ public record SetOpening(DeviceId deviceId, int percent) implements DeviceComman
 
     @Apply
     Device apply(Device device) {
-        return device.withDesiredSettings(device.desiredSettings().with(setting()));
+        return device.withPendingSettings(device.pendingSettings().with(setting()));
     }
 }

@@ -93,14 +93,17 @@ export function Range({
   const last = useRef(value);
   const id = useId();
   useEffect(() => {
+    last.current = value;
     if (!active.current) {
       setDraft(value ?? null);
-      last.current = value;
     }
   }, [value, min]);
   const submit = async () => {
     active.current = false;
-    if (!dirty.current) return;
+    if (!dirty.current) {
+      setDraft(last.current ?? null);
+      return;
+    }
     dirty.current = false;
     if (draft !== last.current) {
       const previous = last.current;
@@ -118,7 +121,7 @@ export function Range({
       <div>
         <label htmlFor={id}>{label}</label>
         <output htmlFor={id}>
-          {draft == null ? "Not set" : `${draft}${unit}`}
+          {draft == null ? "—" : `${draft}${unit}`}
         </output>
       </div>
       <input
@@ -128,7 +131,7 @@ export function Range({
         max={max}
         step={step}
         value={draft ?? initial}
-        aria-valuetext={draft == null ? "Not set" : `${draft}${unit}`}
+        aria-valuetext={draft == null ? "Unknown" : `${draft}${unit}`}
         data-unknown={draft == null}
         disabled={disabled}
         style={{ "--range": `${((draft - min) / (max - min)) * 100}%` }}

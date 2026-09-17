@@ -26,5 +26,5 @@ public record AddDevice(DeviceId deviceId, SpaceId spaceId, @NotNull @Valid Devi
         return label == null || !label.isBlank();
     }
 
-    @Apply Device apply(Space space) { return new Device(deviceId, spaceId, details, label, capabilities, measurements, DeviceSettings.empty()); }
+    @Apply Device apply(Space space) { return new Device(deviceId, spaceId, details, label, capabilities, measurements, DeviceSettings.empty(), null); }
 }

@@ -14,6 +14,6 @@ public record SetFanSpeed(DeviceId deviceId, int percent) implements DeviceComma
 
     @Apply
     Device apply(Device device) {
-        return device.withDesiredSettings(device.desiredSettings().with(setting()));
+        return device.withPendingSettings(device.pendingSettings().with(setting()));
     }
 }

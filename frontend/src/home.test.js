@@ -2,16 +2,16 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   observation,
+  controlSetting,
   awaitingSync,
   homeClimate,
   roomIds,
   timingLabel,
-  requestedOn,
   sceneSummary,
 } from "./home.js";
 
 test("a requested setting is never treated as a physical acknowledgement", () => {
-  const device = { desiredSettings: [{ kind: "lightLevel", percent: 42 }] };
+  const device = { pendingSettings: [{ kind: "lightLevel", percent: 42 }] };
   assert.equal(observation({ device }).label, "No report");
   assert.equal(
     observation({
@@ -25,17 +25,17 @@ test("a requested setting is never treated as a physical acknowledgement", () =>
       device,
       status: {
         availability: "ONLINE",
-        reportedSettings: device.desiredSettings,
+        reportedSettings: device.pendingSettings,
       },
     }).label,
-    "Confirmed",
+    "Awaiting confirmation",
   );
   assert.equal(
     observation({
       device,
       status: {
         availability: "OFFLINE",
-        reportedSettings: device.desiredSettings,
+        reportedSettings: device.pendingSettings,
       },
     }).label,
     "Offline",
@@ -63,12 +63,14 @@ test("a room filter includes nested spaces regardless of their order", () => {
 
 test("explicit requested power off takes priority over an earlier brightness", () => {
   assert.equal(
-    requestedOn({
-      desiredSettings: [
-        { kind: "power", on: false },
-        { kind: "lightLevel", percent: 80 },
-      ],
-    }),
+    controlSetting({
+      device: {
+        pendingSettings: [
+          { kind: "power", on: false },
+          { kind: "lightLevel", percent: 80 },
+        ],
+      },
+    }, "power").on,
     false,
   );
 });
@@ -92,12 +94,12 @@ test("weekly timing is shown in weekday order and one-off timing in the home tim
 
 test("brightness alone does not invent a power request", () => {
   assert.equal(
-    requestedOn({ desiredSettings: [{ kind: "lightLevel", percent: 80 }] }),
+    controlSetting({ device: { pendingSettings: [{ kind: "lightLevel", percent: 80 }] } }, "power"),
     undefined,
   );
-  assert.equal(requestedOn({ desiredSettings: [] }), undefined);
+  assert.equal(controlSetting({ device: { pendingSettings: [] } }, "power"), undefined);
   assert.equal(
-    requestedOn({ desiredSettings: [{ kind: "power", on: true }] }),
+    controlSetting({ device: { pendingSettings: [{ kind: "power", on: true }] } }, "power").on,
     true,
   );
 });
@@ -105,7 +107,7 @@ test("brightness alone does not invent a power request", () => {
 test("an online device without a request is not called confirmed", () => {
   assert.equal(
     observation({
-      device: { desiredSettings: [] },
+      device: { pendingSettings: [] },
       status: { availability: "ONLINE" },
     }).label,
     "Online",
@@ -124,8 +126,8 @@ test("scene summaries describe their intentions, without claiming execution", ()
   );
 });
 
-test("sync feedback waits for an online matching report, not a service acknowledgement", () => {
-  const device = { desiredSettings: [{ kind: "power", on: true }] };
+test("sync feedback waits for the backend to finish the request, not a service acknowledgement", () => {
+  const device = { pendingSettings: [{ kind: "power", on: true }] };
   const linked = { device, delivery: {} };
   assert.equal(awaitingSync({ device }), false);
   assert.equal(awaitingSync(linked), true);
@@ -141,17 +143,17 @@ test("sync feedback waits for an online matching report, not a service acknowled
       ...linked,
       status: {
         availability: "ONLINE",
-        reportedSettings: device.desiredSettings,
+        reportedSettings: device.pendingSettings,
       },
     }),
-    false,
+    true,
   );
   assert.equal(
     awaitingSync({
       ...linked,
       status: {
         availability: "OFFLINE",
-        reportedSettings: device.desiredSettings,
+        reportedSettings: device.pendingSettings,
       },
     }),
     true,
@@ -161,7 +163,7 @@ test("sync feedback waits for an online matching report, not a service acknowled
     false,
   );
   assert.equal(
-    awaitingSync({ device: { desiredSettings: [] }, delivery: {} }),
+    awaitingSync({ device: { pendingSettings: [] }, delivery: {} }),
     false,
   );
 });
@@ -172,7 +174,7 @@ test("the climate summary pairs set and measured temperature in the same room", 
       spaceId: "living",
       capabilities: ["TEMPERATURE"],
       measurements: [],
-      desiredSettings: [{ kind: "temperature", celsius: 21 }],
+      pendingSettings: [{ kind: "temperature", celsius: 21 }],
     },
   };
   const sensor = (spaceId, celsius, availability = "ONLINE") => ({
@@ -201,4 +203,57 @@ test("the climate summary pairs set and measured temperature in the same room", 
     set: undefined,
     measured: undefined,
   });
+});
+test("controls follow physical changes after a Home request has finished", () => {
+  const view = {
+    device: { pendingSettings: [] },
+    delivery: {},
+    status: {
+      availability: "ONLINE",
+      reportedSettings: [
+        { kind: "power", on: false },
+        { kind: "lightLevel", percent: 0 },
+      ],
+    },
+  };
+  assert.equal(controlSetting(view, "power").on, false);
+  assert.equal(controlSetting(view, "lightLevel").percent, 0);
+  assert.equal(observation(view).label, "Online");
+  assert.equal(awaitingSync(view), false);
+  view.device.pendingSettings = [{ kind: "lightLevel", percent: 40 }];
+  assert.equal(controlSetting(view, "lightLevel").percent, 40);
+  assert.equal(controlSetting(view, "power").on, false);
+  assert.equal(awaitingSync(view), true);
+});
+
+test("observed brightness and color are usable before Home has sent any request", () => {
+  const view = {
+    device: { pendingSettings: [] },
+    status: {
+      availability: "ONLINE",
+      reportedSettings: [
+        { kind: "lightLevel", percent: 71 },
+        { kind: "lightColor", hue: 210, saturation: 70 },
+      ],
+    },
+  };
+  assert.equal(controlSetting(view, "lightLevel").percent, 71);
+  assert.deepEqual(controlSetting(view, "lightColor"), view.status.reportedSettings[1]);
+  assert.equal(controlSetting(view, "opening"), undefined);
+  assert.equal(controlSetting({ ...view, status: { ...view.status, availability: "OFFLINE" } }, "lightLevel"), undefined);
+});
+
+test("the climate summary uses the reported thermostat setpoint, not measured room temperature", () => {
+  const view = {
+    device: {
+      spaceId: "living", capabilities: ["TEMPERATURE"],
+      measurements: ["TEMPERATURE"], pendingSettings: [],
+    },
+    status: {
+      availability: "ONLINE",
+      reportedSettings: [{ kind: "temperature", celsius: 22 }],
+      readings: { TEMPERATURE: 19 },
+    },
+  };
+  assert.deepEqual(homeClimate([view]), { spaceId: "living", set: 22, measured: 19 });
 });

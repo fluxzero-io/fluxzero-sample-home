@@ -42,7 +42,7 @@ class RoutineBehaviorTest {
                 .whenCommand(new PauseRoutine(BEDTIME)).expectNoSchedules().expectNoMetricsLike(ScheduleAutoCancelled.class)
                 .andThen().whenTimeAdvancesTo(due).expectNoEvents()
                 .andThen().whenCommand(new RunRoutine(BEDTIME, 1, due)).expectNoEvents().expectNoSchedules()
-                .expectThat(f -> assertTrue(Fluxzero.loadModel(LIGHT).get().desiredSettings().isEmpty()));
+                .expectThat(f -> assertTrue(Fluxzero.loadModel(LIGHT).get().pendingSettings().isEmpty()));
     }
     @Test void revisedDeadlineReplacesOldGeneration() {
         var oldDue = NOW.plusSeconds(30); var newDue = NOW.plusSeconds(90);
@@ -141,7 +141,7 @@ class RoutineBehaviorTest {
                 .whenTimeAdvancesTo(due).expectNoErrors().expectNoSchedules().expectThat(f -> {
                     var routine = Fluxzero.loadModel(BEDTIME).get();
                     assertFalse(routine.enabled()); assertNotNull(routine.problem());
-                    assertTrue(Fluxzero.loadModel(LIGHT).get().desiredSettings().isEmpty());
+                    assertTrue(Fluxzero.loadModel(LIGHT).get().pendingSettings().isEmpty());
                 });
     }
     @ParameterizedTest @ValueSource(booleans = {false, true})

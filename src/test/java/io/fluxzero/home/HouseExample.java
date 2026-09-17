@@ -89,7 +89,7 @@ public final class HouseExample {
                 && new RunRoutine(BEDTIME, generation, due).equals(s.getPayload());
     }
     public static void assertEvening() {
-        assertEquals(new LightLevel(25), Fluxzero.loadModel(LIGHT).get().desiredSettings().get(Capability.LIGHT_LEVEL));
-        assertEquals(new RoomTemperature(new BigDecimal("21")), Fluxzero.loadModel(HEAT).get().desiredSettings().get(Capability.TEMPERATURE));
+        assertEquals(new LightLevel(25), Fluxzero.loadModel(LIGHT).get().pendingSettings().get(Capability.LIGHT_LEVEL));
+        assertEquals(new RoomTemperature(new BigDecimal("21")), Fluxzero.loadModel(HEAT).get().pendingSettings().get(Capability.TEMPERATURE));
     }
 }

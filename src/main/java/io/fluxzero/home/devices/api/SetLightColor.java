@@ -14,6 +14,6 @@ public record SetLightColor(DeviceId deviceId, int hue, int saturation) implemen
 
     @Apply
     Device apply(Device device) {
-        return device.withDesiredSettings(device.desiredSettings().with(setting()));
+        return device.withPendingSettings(device.pendingSettings().with(setting()));
     }
 }

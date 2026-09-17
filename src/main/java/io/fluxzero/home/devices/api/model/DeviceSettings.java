@@ -40,6 +40,17 @@ public record DeviceSettings(@NotNull @Valid List<@NotNull DeviceSetting> values
         return new DeviceSettings(updated);
     }
 
+    /** Remove only requests whose values have actually been observed. */
+    public DeviceSettings withoutConfirmedBy(DeviceSettings reported) {
+        return new DeviceSettings(values.stream().filter(request -> {
+            var actual = reported.get(request.capability());
+            if (request instanceof RoomTemperature target && actual instanceof RoomTemperature temperature) {
+                return target.celsius().compareTo(temperature.celsius()) != 0;
+            }
+            return !request.equals(actual);
+        }).toList());
+    }
+
     public DeviceSetting get(Capability capability) {
         return values.stream().filter(setting -> setting.capability() == capability).findFirst().orElse(null);
     }

@@ -113,14 +113,14 @@ class HomeQueryTest {
                     assertEvening();
                     assertNotNull(Fluxzero.loadModel(REACTION).get().cooldownEndsAt());
                     assertNull(Fluxzero.loadModel(otherAutomation).get().cooldownEndsAt());
-                    assertTrue(Fluxzero.loadModel(otherLight).get().desiredSettings().isEmpty());
+                    assertTrue(Fluxzero.loadModel(otherLight).get().pendingSettings().isEmpty());
                 })
                 .andThen().whenCommand(new ChangeHomeMode(otherHome, HomeMode.AWAY)).expectNoErrors()
                 .expectThat(f -> {
                     assertNotNull(Fluxzero.loadModel(REACTION).get().cooldownEndsAt());
                     assertNotNull(Fluxzero.loadModel(otherAutomation).get().cooldownEndsAt());
                     assertEquals(new LightLevel(10),
-                                 Fluxzero.loadModel(otherLight).get().desiredSettings().get(Capability.LIGHT_LEVEL));
+                                 Fluxzero.loadModel(otherLight).get().pendingSettings().get(Capability.LIGHT_LEVEL));
                 });
     }
 

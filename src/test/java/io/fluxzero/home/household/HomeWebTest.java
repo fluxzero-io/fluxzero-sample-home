@@ -130,7 +130,7 @@ class HomeWebTest {
                     HomeOverview view = r.getPayloadAs(HomeOverview.class);
                     assertEquals(HomePermission.MANAGE, view.permission());
                     var light = view.devices().stream().filter(d -> d.device().deviceId().equals(LIGHT)).findFirst().orElseThrow();
-                    assertEquals(new LightLevel(42), light.device().desiredSettings().get(Capability.LIGHT_LEVEL));
+                    assertEquals(new LightLevel(42), light.device().pendingSettings().get(Capability.LIGHT_LEVEL));
                     assertNull(light.status());
                     return true;
                 });
@@ -209,7 +209,7 @@ class HomeWebTest {
                 Set.of(Capability.values()), Set.of()));
         fixture.whenWebRequestByUser(OWNER.id(), request("POST", HOME_URL + "/devices/" + MULTI.getId() + "/" + route, body))
                 .expectWebResult(r -> r.getStatus() < 300)
-                .expectThat(f -> assertEquals(expected, Fluxzero.loadModel(MULTI).get().desiredSettings().get(expected.capability())));
+                .expectThat(f -> assertEquals(expected, Fluxzero.loadModel(MULTI).get().pendingSettings().get(expected.capability())));
     }
 
     @Test void aManagerCanCreateARoomInAnExistingFloor() {
@@ -288,7 +288,7 @@ class HomeWebTest {
         fixture.givenWebRequestByUser(OWNER, request("PUT", path, body))
                 .whenWebRequestByUser(OWNER, request("POST", path + "/activate", null))
                 .expectWebResult(r -> r.getStatus() < 300)
-                .expectThat(f -> assertEquals(new LightLevel(65), Fluxzero.loadModel(LIGHT).get().desiredSettings().get(Capability.LIGHT_LEVEL)));
+                .expectThat(f -> assertEquals(new LightLevel(65), Fluxzero.loadModel(LIGHT).get().pendingSettings().get(Capability.LIGHT_LEVEL)));
         fixture.whenWebRequestByUser(OWNER, request("DELETE", path, null)).expectWebResult(r -> r.getStatus() < 300)
                 .expectThat(f -> assertTrue(Fluxzero.loadModel(new SceneId("reading")).isEmpty()));
     }
@@ -387,7 +387,7 @@ class HomeWebTest {
                         && "close".equals(r.getMetadata().get("function")) && "1008".equals(r.getPayload()));
         fixture.whenWebRequest(browser("POST", HOME_URL + "/devices/" + LIGHT.getId() + "/on", null, token))
                 .expectExceptionalResult(UnauthorizedException.class)
-                .expectThat(f -> assertNull(Fluxzero.loadModel(LIGHT).get().desiredSettings().get(Capability.POWER)));
+                .expectThat(f -> assertNull(Fluxzero.loadModel(LIGHT).get().pendingSettings().get(Capability.POWER)));
     }
 
     @Test void invalidCallbackCannotCreateASession() {
