@@ -144,7 +144,7 @@ Follow [Fluxzero Get started](https://fluxzero.io/get-started) to set up your co
 
 > Follow docs/testing-home-assistant.md against the local demo. Use the existing Fluxzero development environment, verify authentication without revealing credentials, control a virtual light through Home, compare its reported state with HA, and exercise temporary connection loss. Restore the demo and report the observations and any failures.
 
-The agent should select SDK **2.0.0-rc.13** with `docs_start`, inspect `get_status`, and reuse the active environment. For this optional profile, start or switch it with the CLI command above. Follow `wait_for_change` and `get_test_status` after code changes. Do not run a second backend, watcher or Maven/npm verification loop alongside `fz dev`.
+The agent should select SDK **2.0.0-rc.15** with `docs_start`, inspect `get_status`, and reuse the active environment. For this optional profile, start or switch it with the CLI command above. Follow `wait_for_change` and `get_test_status` after code changes. Do not run a second backend, watcher or Maven/npm verification loop alongside `fz dev`.
 
 Use the browser to drive Home, not a replacement HTTP client that bypasses its domain commands. Read-only API probes are useful for independent confirmation. A probe succeeding is not enough to establish that Home sent the intended request or processed its observation.
 
