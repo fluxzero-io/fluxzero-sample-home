@@ -223,6 +223,61 @@ class HomeWebTest {
         fixture.whenWebRequest(browser("GET", HOME_URL, null, token)).expectWebResult(r -> r.getStatus() == 200);
     }
 
+    @Test void aNewLocalDemoUserCanManageOnlyTheExampleHome() {
+        home().atFixedTime(Instant.now()).withProperty("environment", "local")
+                .withProperty("home.demo.home-id", HOME.getId());
+        var cookies = new LinkedHashMap<String, String>();
+        assertEquals("/", completeLogin("visitor", cookies).getHeader("Location"));
+        String token = cookies.get("home_session");
+        fixture.whenWebRequest(browser("PUT", HOME_URL + "/mode", Map.of("mode", "AWAY"), token))
+                .expectWebResult(r -> r.getStatus() < 300)
+                .expectThat(f -> {
+                    var account = Fluxzero.loadModel(new AccountId("visitor")).get();
+                    assertEquals(Map.of(HOME, HomePermission.MANAGE), account.homes());
+                    assertEquals("visitor", account.details().name());
+                    assertEquals(HomeMode.AWAY, Fluxzero.loadModel(HOME).get().mode());
+                });
+        fixture.whenWebRequest(browser("GET", "/api/homes/other", null, token))
+                .expectExceptionalResult(UnauthorizedException.class);
+    }
+
+    @ParameterizedTest @ValueSource(strings = {"", "production", "preview"})
+    void demoConfigurationCannotGrantAccessOutsideTheLocalEnvironment(String environment) {
+        home().atFixedTime(Instant.now()).withProperty("environment", environment)
+                .withProperty("home.demo.home-id", HOME.getId());
+        var cookies = new LinkedHashMap<String, String>();
+        assertEquals("/?signin=access", completeLogin("visitor", cookies).getHeader("Location"));
+        assertFalse(cookies.containsKey("home_session"));
+        fixture.whenGet(HOME_URL).expectExceptionalResult(UnauthenticatedException.class)
+                .expectThat(f -> assertTrue(Fluxzero.loadModel(new AccountId("visitor")).isEmpty()));
+    }
+
+    @Test void localLoginWithoutDemoConfigurationStillRequiresAnInvitation() {
+        home().atFixedTime(Instant.now()).withProperty("environment", "local");
+        var cookies = new LinkedHashMap<String, String>();
+        assertEquals("/?signin=access", completeLogin("visitor", cookies).getHeader("Location"));
+        assertFalse(cookies.containsKey("home_session"));
+    }
+
+    @Test void demoLoginPreservesAnExplicitViewerRole() {
+        home().atFixedTime(Instant.now()).withProperty("environment", "local")
+                .withProperty("home.demo.home-id", HOME.getId());
+        var cookies = new LinkedHashMap<String, String>();
+        assertEquals("/", completeLogin("sam", cookies).getHeader("Location"));
+        String token = cookies.get("home_session");
+        fixture.whenWebRequest(browser("GET", HOME_URL, null, token))
+                .expectWebResult(r -> r.getStatus() == 200);
+        fixture.whenWebRequest(browser("PUT", HOME_URL + "/mode", Map.of("mode", "AWAY"), token))
+                .expectExceptionalResult(UnauthorizedException.class);
+    }
+
+    @Test void anInvalidDemoCallbackCannotProvisionAnAccount() {
+        home().withProperty("environment", "local").withProperty("home.demo.home-id", HOME.getId())
+                .whenGet("/app/callback?code=invalid&state=wrong")
+                .expectWebResult(r -> "/?signin=login".equals(r.getHeader("Location")))
+                .expectNoCommands();
+    }
+
     WebResponse completeLogin(String username, Map<String, String> cookies) {
         WebResponse login = exchange(WebRequest.get("/app/login").build(), cookies);
         WebResponse authorize = exchange(WebRequest.get(login.getHeader("Location")).build(), cookies);

@@ -21,9 +21,9 @@ fz dev --profile home-assistant
 
 If Home is already running, use `fz dev restart --profile home-assistant`. A full restart creates a fresh, seeded Home runtime. The Home Assistant container reuses its own local data. The first run downloads the container image and can take several minutes.
 
-Open the Home URL printed by the CLI and sign in as **alex**. The overview should eventually show **7 of 7 linked**. Open Connections if an observation or delivery problem is shown. The separate Home Assistant UI URL is listed by `fz dev status`; it is not Home's frontend URL.
+Open the Home URL printed by the CLI and sign in with any new username, or use **alex**. The local demo grants new users management access to the example home. The overview should eventually show **7 of 7 linked**. Open Connections if an observation or delivery problem is shown. The separate Home Assistant UI URL is listed by `fz dev status`; it is not Home's frontend URL.
 
-The profile provisions a real HA user and long-lived bearer token, then loads the connection properties into the backend. Home's browser never receives that token. The Home login (`alex` or read-only `sam`) and the HA login (`demo`, with a generated password) are separate identities.
+The profile provisions a real HA user and long-lived bearer token, then loads the connection properties into the backend. Home's browser never receives that token. The Home login (any local username, with `sam` reserved for the read-only example) and the HA login (`demo`, with a generated password) are separate identities.
 
 Local files under `dev/home-assistant/.state/` are ignored by Git:
 
@@ -160,6 +160,6 @@ Use the browser to drive Home, not a replacement HTTP client that bypasses its d
 | Home shows 0 of 7 linked. | The `home-assistant` profile is selected and its startup commands succeeded. |
 | HA rejects the generated token. | The URL and credentials belong to the same `.state` installation. Restart the profile to reload configuration; do not copy in a token from another installation. |
 | A control changes but never confirms. | Inspect Connections, reported settings and the read-only API probe. For lights, check power; for demo covers, use multiples of ten. |
-| Home login fails. | Use `alex` or `sam` through Home's local IDP. HA's `demo` user is a different account. |
+| Home login fails. | Use Home's local IDP with any username; `sam` remains read-only. Automatic access requires the local demo profile. HA's `demo` user is a different account. |
 
 Finish with `fz dev stop`, or return to the standalone sample with `fz dev restart --profile local`. Normal restarts preserve HA credentials. A full reset is optional and destructive to this demo's own data; follow the [setup guide](../dev/home-assistant/README.md#authentication-and-local-data) only when you actually need one.

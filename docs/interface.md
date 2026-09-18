@@ -6,9 +6,9 @@ The English, responsive interface puts common actions on device tiles and keeps 
 
 Run `fz dev` from the repository root and open the public URL it prints. The environment owns the SDK runtime, backend, local identity provider and Vite dev server. Node 22.12+ is required for the frontend. Its initial setup installs locked dependencies, runs the focused frontend checks and builds production assets once. Subsequent React and CSS edits use Vite hot module replacement; they do not require a Java rebuild. Backend edits go through the managed compilation and focused test loop.
 
-Sign in through the local IDP as **alex** to manage the example home, or **sam** to view it. These are development identities provisioned by `examples/11-*` and `12-*`, not production credentials or a public signup route. Unknown identities are refused. A fresh temporary runtime reloads the examples; ordinary application reloads preserve state.
+Sign in through the local IDP with any username. In the local demo profiles, a new validated identity automatically receives management access to the example home. Existing accounts retain their explicit permissions: **alex** is a manager and **sam** is read-only, provisioned by `examples/11-*` and `12-*`. A fresh temporary runtime reloads the examples; ordinary application reloads preserve state.
 
-An identity without a Home account sees **No access yet**, with **Use another account** and **Sign out**. Account switching ends the identity provider's remembered session before starting a fresh login, so repeated sign-in cannot trap someone on the same refused account. Accounts whose household access has been revoked have the same recovery actions. The app never grants access merely because authentication succeeded.
+Outside the open local demo, an identity without a Home account sees **No access yet**, with **Use another account** and **Sign out**. Account switching ends the identity provider's remembered session before starting a fresh login, so repeated sign-in cannot trap someone on the same refused account. Accounts whose household access has been revoked have the same recovery actions.
 
 The dev gateway routes `/api`, `/app` and the managed IDP's `/login` to Fluxzero, and everything else to Vite. Its IDP callback may use the `/_fluxzero` mount. The encrypted, short-lived login cookie therefore covers the origin root.
 
@@ -25,7 +25,9 @@ Further layout changes, residents, automation definitions and adapter provisioni
 
 ## Identity and permissions
 
-The BFF follows OIDC authorization code with PKCE through the official Fluxzero IDP client. Only a validated subject with a pre-provisioned `Account` receives a Home session. `Account` is deliberately separate from `Resident`: presence and household role do not grant API access.
+The BFF follows OIDC authorization code with PKCE through the official Fluxzero IDP client. A validated subject needs an `Account` before receiving a Home session. `Account` is deliberately separate from `Resident`: presence and household role do not grant API access.
+
+The local demo is an explicit provisioning policy: when `environment=local` (`ENVIRONMENT`) and `home.demo.home-id` (`HOME_DEMO_HOME_ID`) names an existing home, first login creates a new account through the system-authorized `GrantHomeAccess` command with `MANAGE` permission for that home only. Both checked-in development profiles set the demo home to `example-home`. Existing accounts, names, revoked memberships and explicit roles are not overwritten. The setting is absent from production application properties and ignored outside the local environment; production still requires operator provisioning. Authentication, reserved-subject rejection and all protected-route checks run normally in the demo.
 
 A trusted operator sends `GrantHomeAccess(accountId, details, homeId, permission)` as the system user. Use the exact identity-provider subject as `AccountId` input. `RevokeHomeAccess(accountId, homeId)` removes that membership. These provisioning commands have no public HTTP routes and require `SYSTEM`.
 
@@ -35,7 +37,7 @@ A trusted operator sends `GrantHomeAccess(accountId, details, homeId, permission
 | `CONTROL` | Yes | Yes | No |
 | `MANAGE` | Yes | Yes | Yes |
 
-Every public control request checks current account membership and the target's relation to the selected home. Core commands remain available to trusted application components. Authentication alone never gives access to every home.
+Every public control request checks current account membership and the target's relation to the selected home. Core commands remain available to trusted application components. The demo grant is limited to its single configured home; authentication never gives access to every home.
 
 The browser receives an opaque `HttpOnly; SameSite=Lax` cookie, also `Secure` on HTTPS. Only its SHA-256 digest is stored in Fluxzero's document store, allowing multiple app instances to share sessions. Expiry is capped by the ID token and eight hours; Fluxzero scheduling removes expired records. Logout deletes the session immediately. Requests and socket refreshes enforce expiry independently of cleanup delivery. No access or refresh token is stored in browser JavaScript.
 

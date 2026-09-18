@@ -12,6 +12,8 @@ Follow the domain-first layout described in README.md: `household`, `devices`, `
 
 Write repository content in English, including documentation, filenames, diagrams, code comments, user-facing messages and example display names. Preserve protocol identifiers, units and intentional invalid-input test data.
 
+Local demo profiles deliberately grant a new validated identity management access to the configured example home. This requires both `environment=local` and `home.demo.home-id` from the development configuration. Preserve existing accounts and explicit permissions, including the read-only `sam` example. Outside this opt-in demo, unknown identities still need operator provisioning. Keep PKCE/token validation, reserved-subject rejection and normal household authorization in both modes.
+
 Read `README.md` and the relevant product documents in `docs/` before changing the domain. Keep this application on published SDK `2.0.0-rc.15` unless the user requests an upgrade. Maven resolves it from Fluxzero Packages; no SDK checkout or local candidate build is required.
 
 Select the exact project version through `docs_start`. For rc.15 the documentation source commit is `cad64c709739407f291c31b730514e41fcfbf571`; the plugin resolves the published archive without a local archive override.

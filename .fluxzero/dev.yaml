@@ -6,6 +6,12 @@ profiles:
     fastCompiler: true
     idp: managed
     backendPaths: [/app, /login]
+    apps: [home-demo]
+    applicationConfig:
+      home-demo:
+        application: fluxzero-home
+        env:
+          HOME_DEMO_HOME_ID: example-home
     frontend:
       directory: frontend
       setupCommand: "npm ci --prefer-online --no-audit --no-fund && npm run check"
@@ -22,6 +28,7 @@ profiles:
       home-demo:
         application: fluxzero-home
         env:
+          HOME_DEMO_HOME_ID: example-home
           FLUXZERO_CONFIG_LOCATIONS: "file:dev/home-assistant/.state/home.properties"
     services:
       homeAssistant:

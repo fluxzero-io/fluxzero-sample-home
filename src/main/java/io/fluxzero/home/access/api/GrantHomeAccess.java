@@ -14,7 +14,7 @@ import jakarta.validation.constraints.NotNull;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/** Operator provisioning; never exposed as an anonymous HTTP or login operation. */
+/** System-authorized provisioning by an operator or the explicitly enabled local demo after validated login. */
 @RequiresAnyRole("SYSTEM")
 public record GrantHomeAccess(@NotNull AccountId accountId, @NotNull @Valid AccountDetails details,
                               @NotNull HomeId homeId, @NotNull HomePermission permission) {

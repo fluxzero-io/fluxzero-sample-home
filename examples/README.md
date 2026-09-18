@@ -8,7 +8,7 @@ Creation and definition commands use `details`. Scene actions have their own `ki
 
 The files are numbered in execution order. The local development configuration loads them once per temporary runtime. They contain no real devices or production data. Every fresh runtime starts over; domain commands reject attempts to silently overwrite existing identities.
 
-For more examples, including zone scenes, daylight-saving transitions, presence and sensor reactions, see the Java behavior tests. Open the public URL printed by `fz dev` for the control interface. Sign in as **alex** to manage this example or **sam** for a read-only view. Files 11 and 12 provision these local IDP subjects with application-owned household access.
+For more examples, including zone scenes, daylight-saving transitions, presence and sensor reactions, see the Java behavior tests. Open the public URL printed by `fz dev` for the control interface. Any new local username automatically receives management access to the example home. Files 11 and 12 preconfigure **alex** as a manager and **sam** as a read-only viewer; these explicit roles are preserved when signing in.
 
 Changing an example file can cause the development environment to submit it again to the same runtime. An existing identity is then correctly rejected. Use a fresh temporary runtime to rebuild the example home; do not erase an existing installation's data for this purpose.
 

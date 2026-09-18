@@ -32,7 +32,7 @@ fz dev
 
 </details>
 
-Open the local URL shown by your agent or the CLI. Sign in through the local identity provider as **alex** to manage the home, or **sam** for read-only access.
+Open the local URL shown by your agent or the CLI and sign in through the local identity provider with any username. New local demo users automatically receive management access to the example home. The preconfigured **alex** is also a manager; **sam** keeps read-only access for trying that role.
 
 The environment starts the matching SDK runtime, backend, identity provider and **Vite dev server**, and populates an example home. React and CSS edits hot-reload; Java changes use the managed compile and test loop. The first start downloads dependencies and checks the frontend production build.
 

@@ -1,8 +1,13 @@
 package io.fluxzero.home.access;
 
 import io.fluxzero.home.access.api.AccountId;
+import io.fluxzero.home.access.api.GrantHomeAccess;
+import io.fluxzero.home.access.api.model.AccountDetails;
 import io.fluxzero.home.access.api.model.HomePermission;
+import io.fluxzero.home.access.api.model.HomeUser;
+import io.fluxzero.home.household.api.HomeId;
 import io.fluxzero.home.household.api.model.Home;
+import io.fluxzero.idp.client.JwtClaims;
 import io.fluxzero.idp.client.OidcClient;
 import io.fluxzero.idp.client.OidcClientCredentials;
 import io.fluxzero.idp.client.OidcLoginState;
@@ -28,7 +33,7 @@ import org.springframework.stereotype.Component;
 import static io.fluxzero.sdk.configuration.ApplicationProperties.getProperty;
 import static io.fluxzero.sdk.configuration.ApplicationProperties.requireProperty;
 
-/** OIDC/PKCE is identical locally and in production; first login never grants household access. */
+/** OIDC/PKCE is identical locally and in production; only the explicit local demo grants first-login access. */
 @Component
 @NoUserRequired
 @Path("/app")
@@ -50,7 +55,9 @@ public class AppAuthEndpoint {
             var config = config();
             var tokens = new OidcClient(config).exchangeCode(code, pending.get().codeVerifier());
             var claims = TokenValidators.validate(TokenValidationRequest.idToken(tokens.idToken(), config).withNow(Fluxzero.currentTime()));
-            if (claims.subject().startsWith("$") || Fluxzero.loadModel(new AccountId(claims.subject())).isEmpty()) return failed("access");
+            if (claims.subject().startsWith("$")) return failed("access");
+            provisionDemoAccount(claims);
+            if (Fluxzero.loadModel(new AccountId(claims.subject())).isEmpty()) return failed("access");
             BrowserSessions.delete(request.getMetadata());
             var expires = Fluxzero.currentTime().plus(Duration.ofHours(8));
             if (claims.expiresAt().isBefore(expires)) expires = claims.expiresAt();
@@ -61,6 +68,16 @@ public class AppAuthEndpoint {
         } catch (TokenValidationException e) {
             return failed("login");
         }
+    }
+
+    private void provisionDemoAccount(JwtClaims claims) {
+        String demoHome = getProperty("home.demo.home-id");
+        if (!"local".equals(getProperty("environment")) || demoHome == null || demoHome.isBlank()) return;
+        var accountId = new AccountId(claims.subject());
+        if (!Fluxzero.loadModel(accountId).isEmpty()) return;
+        String name = claims.name() == null || claims.name().isBlank() ? claims.subject() : claims.name();
+        HomeUser.SYSTEM.run(() -> Fluxzero.sendCommandAndWait(new GrantHomeAccess(
+                accountId, new AccountDetails(name), new HomeId(demoHome), HomePermission.MANAGE)));
     }
 
     @HandleGet("/auth/session")
