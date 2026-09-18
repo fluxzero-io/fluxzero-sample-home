@@ -8,6 +8,8 @@ Run `fz dev` from the repository root and open the public URL it prints. The env
 
 Sign in through the local IDP as **alex** to manage the example home, or **sam** to view it. These are development identities provisioned by `examples/11-*` and `12-*`, not production credentials or a public signup route. Unknown identities are refused. A fresh temporary runtime reloads the examples; ordinary application reloads preserve state.
 
+An identity without a Home account sees **No access yet**, with **Use another account** and **Sign out**. Account switching ends the identity provider's remembered session before starting a fresh login, so repeated sign-in cannot trap someone on the same refused account. Accounts whose household access has been revoked have the same recovery actions. The app never grants access merely because authentication succeeded.
+
 The dev gateway routes `/api`, `/app` and the managed IDP's `/login` to Fluxzero, and everything else to Vite. Its IDP callback may use the `/_fluxzero` mount. The encrypted, short-lived login cookie therefore covers the origin root.
 
 ## What is available
@@ -36,6 +38,8 @@ A trusted operator sends `GrantHomeAccess(accountId, details, homeId, permission
 Every public control request checks current account membership and the target's relation to the selected home. Core commands remain available to trusted application components. Authentication alone never gives access to every home.
 
 The browser receives an opaque `HttpOnly; SameSite=Lax` cookie, also `Secure` on HTTPS. Only its SHA-256 digest is stored in Fluxzero's document store, allowing multiple app instances to share sessions. Expiry is capped by the ID token and eight hours; Fluxzero scheduling removes expired records. Logout deletes the session immediately. Requests and socket refreshes enforce expiry independently of cleanup delivery. No access or refresh token is stored in browser JavaScript.
+
+`POST /app/logout` and `POST /app/switch-account` require the same origin and request header as other mutations. They delete the Home session and clear the Home session/login cookies, returning a `redirectUrl` for browser navigation through the IDP client's discovered end-session endpoint. Logout returns to `/`; switching returns to `/app/login`. Configure the identity provider to allow both absolute post-logout return URLs and to advertise its end-session endpoint. A local-only logout would retain the IDP session and silently select the previous account again.
 
 Mutations require `X-Home-Request: 1` and reject a foreign `Origin`. WebSocket opens also reject foreign origins. This interface is same-origin; no permissive CORS configuration is added. Protected snapshots and authentication responses use `Cache-Control: no-store`.
 

@@ -1278,7 +1278,7 @@ input[type="range"]:disabled {
   margin-bottom: 20px;
   letter-spacing: -1.5px;
 }
-.signin-content > p {
+.signin-content > p:not(.form-error) {
   font-size: 15px;
   line-height: 1.8;
   color: #9cae8b;
@@ -1289,6 +1289,12 @@ input[type="range"]:disabled {
   justify-content: space-between;
   min-width: 220px;
   padding: 15px 20px;
+  width: 100%;
+}
+.signin-signout {
+  display: block;
+  margin: 16px auto 0;
+  color: var(--muted);
 }
 .powered-by {
   display: inline-flex;

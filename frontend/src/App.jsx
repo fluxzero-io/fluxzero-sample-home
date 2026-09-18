@@ -50,6 +50,7 @@ const modes = {
 export function App() {
   const [account, setAccount] = useState(null);
   const [authChecked, setAuthChecked] = useState(false);
+  const [authBusy, setAuthBusy] = useState(false);
   const [homeId, setHomeId] = useState("");
   const [data, setData] = useState(null);
   const [page, setPage] = useState("overview");
@@ -213,16 +214,22 @@ export function App() {
     setNavOpen(false);
     window.scrollTo({ top: 0, behavior: "instant" });
   };
-  const logout = async () => {
+  const endSession = async (path) => {
+    setAuthBusy(true);
+    setError("");
     try {
-      await api("/app/logout", { method: "POST" });
-      setAccount(null);
-      setHomeId("");
-      setData(null);
+      const result = await api(path, { method: "POST" });
+      window.location.assign(result.redirectUrl);
     } catch (e) {
+      setError(e.message);
       setToast({ text: e.message, error: true });
+      setAuthBusy(false);
     }
   };
+  const logout = () => endSession("/app/logout");
+  const switchAccount = () => endSession("/app/switch-account");
+  const signInProblem = new URLSearchParams(location.search).get("signin");
+  const accessDenied = signInProblem === "access";
   if (!authChecked)
     return (
       <div className="loading-page">
@@ -244,27 +251,38 @@ export function App() {
               home<span className="brand-dot">.</span>
             </span>
           </div>
-          <h1>Welcome home.</h1>
+          <h1>{accessDenied ? "No access yet." : "Welcome home."}</h1>
           <p>
-            One place for your rooms,
-            <br />
-            your comforts, your everyday.
+            {accessDenied ? "Ask a household manager to invite you, or use another account." : (
+              <>One place for your rooms,<br />your comforts, your everyday.</>
+            )}
           </p>
           {error && (
             <p className="form-error" role="alert">
               {error}
             </p>
           )}
-          {new URLSearchParams(location.search).has("signin") && (
+          {signInProblem && (
             <p className="form-error" role="alert">
-              {new URLSearchParams(location.search).get("signin") === "access"
-                ? "Your account has not been invited to this home yet."
+              {accessDenied
+                ? "This account doesn't have access to a home yet."
                 : "Sign-in could not be completed. Please try again."}
             </p>
           )}
-          <a href="/app/login" className="primary">
-            Sign in <ArrowRight size={18} />
-          </a>
+          {accessDenied ? (
+            <>
+              <button className="primary" onClick={switchAccount} disabled={authBusy}>
+                Use another account <ArrowRight size={18} />
+              </button>
+              <button className="signin-signout" onClick={logout} disabled={authBusy}>
+                Sign out
+              </button>
+            </>
+          ) : (
+            <a href="/app/login" className="primary">
+              Sign in <ArrowRight size={18} />
+            </a>
+          )}
           <a
             className="powered-by"
             href="https://fluxzero.io"
@@ -289,12 +307,14 @@ export function App() {
       <Empty
         title="No homes yet"
         action={
-          <button className="secondary" onClick={logout}>
-            Sign out
-          </button>
+          <div className="form-actions">
+            <button className="secondary" onClick={logout} disabled={authBusy}>Sign out</button>
+            <button className="primary" onClick={switchAccount} disabled={authBusy}>Use another account</button>
+          </div>
         }
       >
         Ask your household owner to grant access.
+        {error && <span className="form-error" role="alert">{error}</span>}
       </Empty>
     );
   const canControl = data?.permission !== "VIEW";

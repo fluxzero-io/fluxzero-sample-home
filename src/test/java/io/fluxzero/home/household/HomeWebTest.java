@@ -178,8 +178,67 @@ class HomeWebTest {
                 .expectWebResult(r -> r.getStatus() < 300)
                 .expectThat(f -> assertEquals(HomeMode.AWAY, Fluxzero.loadModel(HOME).get().mode()));
         String token = cookies.get("home_session");
-        fixture.givenWebRequest(browser("POST", "/app/logout", null, token))
-                .whenWebRequest(browser("GET", HOME_URL, null, token)).expectExceptionalResult(UnauthenticatedException.class);
+        WebResponse signedOut = endIdentitySession("/app/logout", cookies);
+        assertEquals(BASE + "/", signedOut.getHeader("Location"));
+        assertFalse(cookies.containsKey("home_session"));
+        assertFalse(cookies.containsKey("home_login"));
+        fixture.whenWebRequest(browser("GET", HOME_URL, null, token)).expectExceptionalResult(UnauthenticatedException.class);
+        WebResponse nextLogin = exchange(WebRequest.get("/app/login").build(), cookies);
+        WebResponse nextAuthorization = exchange(WebRequest.get(nextLogin.getHeader("Location")).build(), cookies);
+        assertEquals("/login", URI.create(nextAuthorization.getHeader("Location")).getPath(),
+                "signing out must leave the next user a choice of identity");
+    }
+
+    @Test void anUninvitedAccountCanSwitchToAnInvitedAccount() {
+        home().atFixedTime(Instant.now());
+        var cookies = new LinkedHashMap<String, String>();
+        WebResponse refused = completeLogin("uninvited", cookies);
+        assertEquals("/?signin=access", refused.getHeader("Location"));
+        assertFalse(cookies.containsKey("home_session"));
+        fixture.whenGet(HOME_URL).expectExceptionalResult(UnauthenticatedException.class)
+                .expectThat(f -> assertTrue(Fluxzero.loadModel(new AccountId("uninvited")).isEmpty()));
+
+        // Ordinary sign-in still reuses the identity provider's remembered, uninvited identity.
+        WebResponse retry = exchange(WebRequest.get("/app/login").build(), cookies);
+        WebResponse remembered = exchange(WebRequest.get(retry.getHeader("Location")).build(), cookies);
+        assertEquals("/app/callback", URI.create(remembered.getHeader("Location")).getPath());
+
+        WebResponse signedOut = endIdentitySession("/app/switch-account", cookies);
+        assertEquals(BASE + "/app/login", signedOut.getHeader("Location"));
+        assertFalse(cookies.containsKey("home_login"));
+        WebResponse accepted = completeLogin("alex", cookies);
+        assertEquals("/", accepted.getHeader("Location"));
+        fixture.whenWebRequest(browser("PUT", HOME_URL + "/mode", Map.of("mode", "AWAY"), cookies.get("home_session")))
+                .expectWebResult(r -> r.getStatus() < 300)
+                .expectThat(f -> assertEquals(HomeMode.AWAY, Fluxzero.loadModel(HOME).get().mode()));
+    }
+
+    @ParameterizedTest @ValueSource(strings = {"/app/logout", "/app/switch-account"})
+    void anotherOriginCannotEndTheBrowserSession(String path) {
+        home();
+        String token = session(OWNER);
+        fixture.whenWebRequest(WebRequest.post(path).header("Cookie", "home_session=" + token)
+                        .header("X-Home-Request", "1").header("Origin", "https://other.example").build())
+                .expectExceptionalResult(UnauthorizedException.class);
+        fixture.whenWebRequest(browser("GET", HOME_URL, null, token)).expectWebResult(r -> r.getStatus() == 200);
+    }
+
+    WebResponse completeLogin(String username, Map<String, String> cookies) {
+        WebResponse login = exchange(WebRequest.get("/app/login").build(), cookies);
+        WebResponse authorize = exchange(WebRequest.get(login.getHeader("Location")).build(), cookies);
+        assertEquals("/login", URI.create(authorize.getHeader("Location")).getPath());
+        WebResponse signedIn = exchange(WebRequest.post(authorize.getHeader("Location"))
+                .header("Content-Type", "application/x-www-form-urlencoded").payload("username=" + username).build(), cookies);
+        URI callback = URI.create(signedIn.getHeader("Location"));
+        return exchange(WebRequest.get(callback.getRawPath() + "?" + callback.getRawQuery()).build(), cookies);
+    }
+
+    WebResponse endIdentitySession(String path, Map<String, String> cookies) {
+        WebResponse response = exchange(request("POST", path, null), cookies);
+        assertEquals(200, response.getStatus());
+        assertEquals("no-store", response.getHeader("Cache-Control"));
+        Map<?, ?> navigation = response.getPayloadAs(Map.class);
+        return exchange(WebRequest.get(navigation.get("redirectUrl").toString()).build(), cookies);
     }
 
 

@@ -19,6 +19,7 @@ import io.fluxzero.sdk.web.Path;
 import io.fluxzero.sdk.web.QueryParam;
 import io.fluxzero.sdk.web.WebRequest;
 import io.fluxzero.sdk.web.WebResponse;
+import java.net.URI;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Objects;
@@ -75,9 +76,22 @@ public class AppAuthEndpoint {
 
     @HandlePost("/logout")
     WebResponse logout(WebRequest request) {
+        return endSession(request, "/");
+    }
+
+    @HandlePost("/switch-account")
+    WebResponse switchAccount(WebRequest request) {
+        return endSession(request, "/app/login");
+    }
+
+    private WebResponse endSession(WebRequest request, String returnPath) {
         BrowserRequests.requireSameOrigin(request);
         BrowserSessions.delete(request.getMetadata());
-        return WebResponse.builder().status(204).header("Cache-Control", "no-store")
+        String returnTo = URI.create(requireProperty("fluxzero.auth.external-base-url")).resolve(returnPath).toString();
+        String redirectUrl = new OidcClient(config()).endSessionUrl(returnTo);
+        // Navigate the browser so the identity provider can clear its own session cookie too.
+        return WebResponse.builder().payload(Map.of("redirectUrl", redirectUrl)).header("Cache-Control", "no-store")
+                .header("Set-Cookie", cookie(LOGIN_COOKIE, "", "/", 0))
                 .header("Set-Cookie", cookie(BrowserSessions.COOKIE, "", "/", 0)).build();
     }
 
