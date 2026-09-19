@@ -1,0 +1,259 @@
+---
+version: 1
+milestones:
+- id: "home-spaces"
+  title: "Make the home your own"
+  description: "Organize rooms and find the devices that belong to them. Retrospectively\
+    \ recorded from the existing project; dates below indicate when this history was\
+    \ recorded."
+  features:
+  - id: "create-rooms"
+    title: "Create rooms where they belong"
+    kind: "feature"
+    status: "done"
+    description: ""
+    acceptance:
+    - "Managers can create a room directly in the home or inside an existing floor."
+    - "Room creation respects household boundaries and management permissions."
+    createdAt: "2026-09-19T16:40:12.156820Z"
+    updatedAt: "2026-09-19T16:40:12.156820Z"
+    history:
+    - at: "2026-09-19T16:40:12.156820Z"
+      status: "done"
+      verification: "Recorded retrospectively from existing documentation and the\
+        \ latest reported passing HomeWebTest scenario: A manager can create a room.\
+        \ This records previously implemented behavior, not a new end-to-end test\
+        \ run."
+  - id: "find-devices"
+    title: "Find devices throughout the home"
+    kind: "feature"
+    status: "done"
+    description: "The interface includes Devices, room filters and device search."
+    acceptance:
+    - "Devices can be viewed together or filtered by room, including nested spaces."
+    - "Moving a device or space updates home-scoped search results."
+    createdAt: "2026-09-19T16:40:12.163070Z"
+    updatedAt: "2026-09-19T16:40:12.163070Z"
+    history:
+    - at: "2026-09-19T16:40:12.163070Z"
+      status: "done"
+      verification: "Recorded retrospectively from existing documentation and the\
+        \ latest reported passing HomeQueryTest scenario: Home scoped search tracks.\
+        \ This records previously implemented behavior, not a new end-to-end test\
+        \ run."
+  - id: "household-permissions"
+    title: "Give people the right level of access"
+    kind: "feature"
+    status: "done"
+    description: ""
+    acceptance:
+    - "Viewers can see the home but cannot control it."
+    - "Control and management actions respect the current household membership."
+    createdAt: "2026-09-19T16:40:12.167016Z"
+    updatedAt: "2026-09-19T16:40:12.167016Z"
+    history:
+    - at: "2026-09-19T16:40:12.167016Z"
+      status: "done"
+      verification: "Recorded retrospectively from existing documentation and the\
+        \ latest reported passing HomeWebTest scenario: Viewer can read but cannot\
+        \ control. This records previously implemented behavior, not a new end-to-end\
+        \ test run."
+- id: "everyday-control"
+  title: "Control everyday comfort"
+  description: "Control devices while keeping requested and observed settings distinct.\
+    \ Retrospectively recorded from the existing project; dates below indicate when\
+    \ this history was recorded."
+  features:
+  - id: "device-controls"
+    title: "Control lights, heating and shades"
+    kind: "feature"
+    status: "done"
+    description: "The core also supports locks, playback, ventilation, irrigation\
+      \ and charging. Physical delivery depends on the selected integration."
+    acceptance:
+    - "Available controls match each device’s supported capabilities."
+    - "The interface separates pending requests from reported settings and measurements."
+    createdAt: "2026-09-19T16:40:12.176868Z"
+    updatedAt: "2026-09-19T16:40:12.176868Z"
+    history:
+    - at: "2026-09-19T16:40:12.176868Z"
+      status: "done"
+      verification: "Recorded retrospectively from existing documentation and the\
+        \ latest reported passing HomeWebTest scenario: Every control route binds.\
+        \ This records previously implemented behavior, not a new end-to-end test\
+        \ run."
+  - id: "physical-controls"
+    title: "Keep following physical switches and other controllers"
+    kind: "feature"
+    status: "done"
+    description: ""
+    acceptance:
+    - "A completed Home request does not override later physical device changes."
+    - "The next request changes only the settings the user asks for."
+    createdAt: "2026-09-19T16:40:12.181325Z"
+    updatedAt: "2026-09-19T16:40:12.181325Z"
+    history:
+    - at: "2026-09-19T16:40:12.181325Z"
+      status: "done"
+      verification: "Recorded retrospectively from existing documentation and the\
+        \ latest reported passing DeviceRequestTest scenario: Confirmed requests do\
+        \ not outlive physical control. This records previously implemented behavior,\
+        \ not a new end-to-end test run."
+  - id: "live-household"
+    title: "See household changes without reloading"
+    kind: "feature"
+    status: "done"
+    description: ""
+    acceptance:
+    - "Open viewers receive committed household changes."
+    - "Revoked access closes the live view and prevents further control."
+    createdAt: "2026-09-19T16:40:12.185913Z"
+    updatedAt: "2026-09-19T16:40:12.185913Z"
+    history:
+    - at: "2026-09-19T16:40:12.185913Z"
+      status: "done"
+      verification: "Recorded retrospectively from existing documentation and the\
+        \ latest reported passing HomeWebTest scenario: Two open viewers both receive.\
+        \ This records previously implemented behavior, not a new end-to-end test\
+        \ run."
+- id: "scenes-routines"
+  title: "Set the rhythm of the day"
+  description: "Compose scenes and let routines or household changes activate them.\
+    \ Retrospectively recorded from the existing project; dates below indicate when\
+    \ this history was recorded."
+  features:
+  - id: "compose-scenes"
+    title: "Activate several device settings as one scene"
+    kind: "feature"
+    status: "done"
+    description: "Scene intentions are committed together. Physical equipment confirms\
+      \ each change independently."
+    acceptance:
+    - "A scene can target a device, room, zone or the whole home."
+    - "An invalid step prevents partially applying the scene’s requested settings."
+    createdAt: "2026-09-19T16:40:12.194200Z"
+    updatedAt: "2026-09-19T16:40:12.194200Z"
+    history:
+    - at: "2026-09-19T16:40:12.194200Z"
+      status: "done"
+      verification: "Recorded retrospectively from existing documentation and the\
+        \ latest reported passing SceneBehaviorTest scenario: A later rejected step\
+        \ rolls back. This records previously implemented behavior, not a new end-to-end\
+        \ test run."
+  - id: "schedule-routines"
+    title: "Schedule, pause and resume routines"
+    kind: "feature"
+    status: "done"
+    description: ""
+    acceptance:
+    - "Residents with management access can plan one-off and weekly routines."
+    - "Routines can be paused, resumed and removed, using the home’s timezone."
+    createdAt: "2026-09-19T16:40:12.198211Z"
+    updatedAt: "2026-09-19T16:40:12.198211Z"
+    history:
+    - at: "2026-09-19T16:40:12.198211Z"
+      status: "done"
+      verification: "Recorded retrospectively from existing documentation and the\
+        \ latest reported passing HomeWebTest scenario: Routines can be planned. This\
+        \ records previously implemented behavior, not a new end-to-end test run."
+  - id: "react-to-home"
+    title: "Activate scenes when the home changes"
+    kind: "feature"
+    status: "done"
+    description: "Automation definitions are currently command-driven; this entry\
+      \ does not claim an automation editor in the UI."
+    acceptance:
+    - "Automations can react to entering a home mode or crossing a sensor threshold."
+    - "Cooldowns prevent repeated activations while the condition remains unchanged."
+    createdAt: "2026-09-19T16:40:12.203237Z"
+    updatedAt: "2026-09-19T16:40:12.203237Z"
+    history:
+    - at: "2026-09-19T16:40:12.203237Z"
+      status: "done"
+      verification: "Recorded retrospectively from existing documentation and the\
+        \ latest reported passing AutomationBehaviorTest scenario: A later reading\
+        \ above the threshold. This records previously implemented behavior, not a\
+        \ new end-to-end test run."
+- id: "connected-home"
+  title: "Connect to Home Assistant"
+  description: "Control supported equipment and observe what actually happened. Retrospectively\
+    \ recorded from the existing project; dates below indicate when this history was\
+    \ recorded."
+  features:
+  - id: "home-assistant-control"
+    title: "Control supported Home Assistant devices"
+    kind: "feature"
+    status: "done"
+    description: "A real authenticated local demo links seven virtual devices. Direct\
+      \ Matter and KNX adapters are not included."
+    acceptance:
+    - "Linked lights, switches, temperature setpoints and covers can receive supported\
+      \ commands."
+    - "Service acknowledgement is kept separate from independent device observations."
+    createdAt: "2026-09-19T16:40:12.210898Z"
+    updatedAt: "2026-09-19T16:40:12.210898Z"
+    history:
+    - at: "2026-09-19T16:40:12.210898Z"
+      status: "done"
+      verification: "Recorded retrospectively from existing documentation and the\
+        \ latest reported passing HomeAssistantTest scenario: Heating uses a setpoint.\
+        \ This records previously implemented behavior, not a new end-to-end test\
+        \ run."
+  - id: "connection-recovery"
+    title: "Recover from connection loss without losing the home"
+    kind: "feature"
+    status: "done"
+    description: ""
+    acceptance:
+    - "Disconnecting the adapter leaves Home devices intact."
+    - "After recovery, fresh reports lead the interface without inventing device readings."
+    createdAt: "2026-09-19T16:40:12.214993Z"
+    updatedAt: "2026-09-19T16:40:12.214993Z"
+    history:
+    - at: "2026-09-19T16:40:12.214993Z"
+      status: "done"
+      verification: "Recorded retrospectively from existing documentation and the\
+        \ latest reported passing HomeAssistantTest scenario: Disconnected gateway\
+        \ does not invent. This records previously implemented behavior, not a new\
+        \ end-to-end test run."
+- id: "getting-access"
+  title: "Get into the home"
+  description: "Complete the local demo login and recover from an account without\
+    \ access. Retrospectively recorded from the existing project; dates below indicate\
+    \ when this history was recorded."
+  features:
+  - id: "demo-access"
+    title: "Try the example home with a local demo account"
+    kind: "feature"
+    status: "done"
+    description: ""
+    acceptance:
+    - "A newly validated local demo user can manage the example home."
+    - "Existing viewer roles remain read-only and production access stays closed by\
+      \ default."
+    createdAt: "2026-09-19T16:40:12.222708Z"
+    updatedAt: "2026-09-19T16:40:12.222708Z"
+    history:
+    - at: "2026-09-19T16:40:12.222708Z"
+      status: "done"
+      verification: "Recorded retrospectively from existing documentation and the\
+        \ latest reported passing HomeWebTest scenario: A new local demo user can\
+        \ manage. This records previously implemented behavior, not a new end-to-end\
+        \ test run."
+  - id: "switch-account"
+    title: "Switch accounts after access is refused"
+    kind: "bug"
+    status: "done"
+    description: "Retrospective record of the completed login recovery fix."
+    acceptance:
+    - "An account without access can switch to an invited account."
+    - "Changing accounts does not bypass household authorization."
+    createdAt: "2026-09-19T16:40:12.226480Z"
+    updatedAt: "2026-09-19T16:40:12.226480Z"
+    history:
+    - at: "2026-09-19T16:40:12.226480Z"
+      status: "done"
+      verification: "Recorded retrospectively from existing documentation and the\
+        \ latest reported passing HomeWebTest scenario: An uninvited account can switch.\
+        \ This records previously implemented behavior, not a new end-to-end test\
+        \ run."
