@@ -158,6 +158,6 @@ The [Verify workflow](.github/workflows/verify.yml) runs on pushes and pull requ
 
 ## Versions and license
 
-The current checkout uses the published **Fluxzero SDK 2.0.0-rc.15**, pinned in `pom.xml`. It needs no SDK checkout or locally installed candidate artifacts. SDK 2.0 is still a release candidate; this app is an executable example, with no production deployment or schema-migration guarantee. See the [release tags](https://github.com/fluxzero-io/fluxzero-sample-home/releases) for reproducible source snapshots.
+The current checkout uses the published **Fluxzero SDK 2.0.0**, pinned in `pom.xml`. It needs no SDK checkout or locally installed candidate artifacts. This app is an executable example, with no production deployment or schema-migration guarantee. See the [release tags](https://github.com/fluxzero-io/fluxzero-sample-home/releases) for reproducible source snapshots.
 
 Licensed under [Apache-2.0](LICENSE). The house illustration and interface are original; the Fluxzero logo identifies the platform. Home Assistant is a separate project and this example is not affiliated with it.

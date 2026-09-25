@@ -1,6 +1,6 @@
 # SDK 2.0 in this example
 
-The build imports the published `io.fluxzero:fluxzero-bom:2.0.0-rc.15` from Fluxzero Packages. The Maven Compiler also runs the matching SDK annotation processor to generate model and type indexes. The application, tests and local runtime use the same SDK version; no local SDK build is required.
+The build imports the published `io.fluxzero:fluxzero-bom:2.0.0` from Fluxzero Packages. The Maven Compiler also runs the matching SDK annotation processor to generate model and type indexes. The application, tests and local runtime use the same SDK version; no local SDK build is required.
 
 | SDK capability | Concrete use |
 | --- | --- |
@@ -58,7 +58,7 @@ The application does not use legacy Aggregates for new state. Scene steps are va
 
 Search results show committed current documents, not historical event state or transactional read dependencies. Domain rules therefore continue to use injected Models/Graphs. The scheduler deliberately requests the current routine through `eventGraph.current()`. During that call, the SDK establishes a fresh storage boundary for the same Model identity; the original Graph retains its event-bound state. `loadCurrentGraph` remains appropriate when reconciling from an ID alone. Domain assertions stay on the injected Graph to preserve transactional read dependencies.
 
-Versioned agent documentation is supplied by the Fluxzero plugin from the published rc.15 archive. `AGENTS.md` records the version and source commit; the SDK documentation contains complete contracts and executable modeling recipes.
+Versioned agent documentation is supplied by the Fluxzero plugin from the published 2.0.0 archive. `AGENTS.md` records the version and source commit; the SDK documentation contains complete contracts and executable modeling recipes.
 
 ## Commands, relationships and workflow execution
 
@@ -80,7 +80,7 @@ Routine and Automation have no execution counters or copied last-executed timest
 
 The routine consumer reconciles current state on one tracker, including after a historical event. Its handler with a sole Graph parameter receives both direct changes and cascade deletion. For an absent routine, the consumer does nothing: `@Parent` on `RunRoutine.routineId` lets the SDK cancel the stored execution. Pausing, completion and rescheduling remain explicit schedule effects of the current routine. Deadlines and generations still protect against old or already delivered commands.
 
-The parent must already be committed when an execution is scheduled; the existing post-commit consumer satisfies that requirement. Cancellation is asynchronous and also works without an active application consumer. The local TestServer belongs to SDK rc.15. A separately deployed Runtime must support this ownership feature. `RoutineOwnershipTest` proves cleanup without a routine consumer and verifies that recreating the same ID does not make an old stored execution valid again.
+The parent must already be committed when an execution is scheduled; the existing post-commit consumer satisfies that requirement. Cancellation is asynchronous and also works without an active application consumer. The local TestServer belongs to SDK 2.0.0. A separately deployed Runtime must support this ownership feature. `RoutineOwnershipTest` proves cleanup without a routine consumer and verifies that recreating the same ID does not make an old stored execution valid again.
 
 ## Example data and publication
 
@@ -88,7 +88,7 @@ This application has not been deployed and starts with the current details schem
 
 Ordinary event-sourced replay and historical observations remain part of the domain. Automations compare event-bound before/after state without source-revision deduplication or requiring the source to have remained unchanged since the event. Behavior tests check triggers, cooldowns and pausing; technical redelivery guarantees belong to the SDK and Runtime. Full durable execution is not a guarantee of the pinned SDK version. Routine generations distinguish rescheduling and are not schema revisions. Reloading, previous readings and schedule cleanup remain covered. Observation retention is a separate product decision.
 
-Local builds, CI and the deployment workflow resolve rc.15 as a published dependency. The SDK version is defined centrally in `pom.xml`.
+Local builds, CI and the deployment workflow resolve 2.0.0 as a published dependency. The SDK version is defined centrally in `pom.xml`.
 
 ## Device requests and observations
 
