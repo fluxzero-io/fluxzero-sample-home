@@ -13,7 +13,10 @@ The demo is the official Home Assistant **2026.9.2** image with its [Demo integr
 
 ## 1. Start the environment
 
-From the repository root, after installing the [quickstart prerequisites](../README.md#try-it-locally):
+After installing the [quickstart prerequisites](../README.md#try-it-locally), enter
+`/fluxzero:devboard` in your coding agent and select **home-assistant** under
+**Profile**. Use **App preview** for Home and **Startup** to inspect the connection
+and device-link commands. Alternatively, from the repository root:
 
 ```sh
 fz dev --profile home-assistant
@@ -106,6 +109,8 @@ The Demo cover rounds to steps of ten and simulates movement. Use 0, 10, …, 10
 
 Run the read-only probe again to compare actual API values with Home's reported values. A confirmed request disappears from the **Pending** column; its history remains in Home's events.
 
+### Change a device outside Home
+
 To exercise physical controls or another app, first set Reading lamp to 40% in Home and wait for confirmation. Sign into the separate HA UI using the private generated password, set that lamp to 20%, then turn it off. Home should follow both changes on the next refresh without displaying a new pending request or sending a corrective write. Turn it on again from Home: only power should be requested, retaining HA's last brightness rather than restoring Home's old 40%. This demo simulates a second controller; it requires no physical switch.
 
 ## 4. Exercise connection loss and recovery
@@ -146,7 +151,7 @@ Follow [Fluxzero Get started](https://fluxzero.io/get-started) to set up your co
 
 > Follow docs/testing-home-assistant.md against the local demo. Use the existing Fluxzero development environment, verify authentication without revealing credentials, control a virtual light through Home, compare its reported state with HA, and exercise temporary connection loss. Restore the demo and report the observations and any failures.
 
-The agent should select SDK **2.0.0** with `docs_start`, inspect `get_status`, and reuse the active environment. For this optional profile, start or switch it with the CLI command above. Follow `wait_for_change` and `get_test_status` after code changes. Do not run a second backend, watcher or Maven/npm verification loop alongside `fz dev`.
+The agent should select SDK **2.0.0** with `docs_start`, inspect `get_status`, and reuse the active environment. Use Devboard's profile selector or the plugin's managed environment workflow to select the optional profile. Follow `wait_for_change` and `get_test_status` after code changes. Do not run a second backend, watcher or Maven/npm verification loop alongside `fz dev`.
 
 Use the browser to drive Home, not a replacement HTTP client that bypasses its domain commands. Read-only API probes are useful for independent confirmation. A probe succeeding is not enough to establish that Home sent the intended request or processed its observation.
 

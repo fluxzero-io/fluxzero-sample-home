@@ -1,8 +1,28 @@
 # The integration boundary
 
-The first phase provides an executable domain core. A device's brand or protocol is not a reason to create a different home, space or scene model.
+Home's domain describes household behavior independently of equipment brands or protocols. A device's brand or protocol is not a reason to create a different home, space or scene model.
 
-The first phase-2 adapter uses the [Home Assistant REST API](home-assistant.md). [Matter and KNX](standards.md) are references for the generic model. The adapter supports an explicit initial subset; a broad core model does not mean every API feature has already been mapped.
+The implemented adapter uses the [Home Assistant REST API](home-assistant.md). [Matter and KNX](standards.md) are references for the generic model. The adapter supports an explicit subset; a broad core model does not mean every API feature has already been mapped.
+
+## Connection and access models
+
+```mermaid
+flowchart TD
+    Account -. grants access .-> Home
+    Home --> Space
+    Space --> Device
+    Home --> HomeAssistantConnection
+    Device --> HomeAssistantDevice
+    HomeAssistantConnection --> HomeAssistantDevice
+```
+
+Solid arrows run from parent to child. A `HomeAssistantDevice` link has two parents:
+the Home device and its Home Assistant connection. Deleting either parent removes
+the link; deleting a connection leaves the Home device intact. The dotted reference
+from `Account` grants access without ownership. An account has a separate lifecycle
+from a resident, whose household role and presence do not grant API access.
+
+## From a request to an observation
 
 The existing separation is:
 

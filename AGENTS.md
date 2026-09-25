@@ -8,7 +8,7 @@ Use the plugin as the single documentation source; do not add repository-local F
 
 ## Fluxzero Home
 
-Follow the domain-first layout described in README.md: `household`, `devices`, `scenes`, `automation`, `access` and `homeassistant`. Put commands, queries and typed IDs in the owning domain's `api`, Models and values in `api.model`, and separate handlers/endpoints directly in the domain. Self-handling messages remain in `api`. Preserve the root type registration, explicit endpoint authentication/routes and shared OpenAPI configuration when moving classes.
+Follow the domain-first layout described in [the development guide](docs/development.md#source-layout): `household`, `devices`, `scenes`, `automation`, `access` and `homeassistant`. Put commands, queries and typed IDs in the owning domain's `api`, Models and values in `api.model`, and separate handlers/endpoints directly in the domain. Self-handling messages remain in `api`. Preserve the root type registration, explicit endpoint authentication/routes and shared OpenAPI configuration when moving classes.
 
 Write repository content in English, including documentation, filenames, diagrams, code comments, user-facing messages and example display names. Preserve protocol identifiers, units and intentional invalid-input test data.
 
