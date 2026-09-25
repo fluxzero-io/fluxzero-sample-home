@@ -1,19 +1,15 @@
 # Fluxzero Home
 
-**A home that listens.**
-
 [![Verify](https://github.com/fluxzero-io/fluxzero-sample-home/actions/workflows/verify.yml/badge.svg)](https://github.com/fluxzero-io/fluxzero-sample-home/actions/workflows/verify.yml)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 
-A working home automation example built with **Fluxzero Java SDK 2.0.0**.
-Arrange rooms, control devices, compose scenes and plan daily routines through a
-React interface, with a real Home Assistant integration for connected equipment.
+A home automation example built with **Fluxzero Java SDK 2.0.0**. It includes
+room management, device controls, scenes, scheduled routines, a React UI and a
+Home Assistant integration.
 
-The example starts with familiar household rules. A scene changes its requests
-together, a paused routine must not run, and a physical light switch remains useful
-after someone has used the app. Fluxzero provides Models, relationships, history,
-message handling and scheduling; Home expresses what those capabilities mean for
-the people living there.
+The Java backend uses Fluxzero Models, relationships, event history, message
+handling and scheduling. Application rules cover atomic scene changes, routine
+execution and device changes made through physical controls or other apps.
 
 ![Home dashboard with room navigation, scenes, lighting, heating, window shades and observed temperature](docs/images/dashboard.png)
 
@@ -106,7 +102,7 @@ In your coding agent, use the Fluxzero plugin command:
 /fluxzero:devboard
 ```
 
-Devboard brings the development environment together in one place:
+Devboard provides:
 
 - **App preview:** use Home directly inside Devboard, with live updates while you develop.
 - **Tests:** inspect test results and failures from the managed development loop.
@@ -121,14 +117,14 @@ Use the **Profile** selector to switch between `local` and `home-assistant`. Swi
 
 ### Explore the home
 
-1. **Make room.** Open **Rooms → New room**, name it **Study** and choose its location.
+1. **Create a room.** Open **Rooms → New room**, name it **Study** and choose its location.
    It appears in Rooms and the device navigation immediately. No integration is needed;
    the new room is empty until devices are added through commands.
-2. **Set the scene.** Change Reading lamp brightness to 60%, then activate
+2. **Activate a scene.** Change Reading lamp brightness to 60%, then activate
    **A pleasant evening**. Home requests 25% brightness and a 21 °C heating setting
    together. In `local`, these are saved requests: devices stay **Not linked** and
    **No report**. Brightness does not implicitly turn a light on.
-3. **Plan ahead.** In **Routines**, create a **Once** routine for **Lights out** a few
+3. **Schedule a routine.** In **Routines**, create a **Once** routine for **Lights out** a few
    minutes in the future. Pause it and check that the next execution disappears;
    resume before its deadline and let it run. Try a **Weekly** routine to see the
    home's timezone and repeat days. Removing a routine also removes its scheduled work.
