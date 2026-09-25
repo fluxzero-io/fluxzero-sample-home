@@ -40,6 +40,23 @@ Try creating a room, changing a light, activating **A pleasant evening**, and pl
 
 Stop the environment with `fz dev stop`. Its Fluxzero runtime is temporary: a new environment starts from the example commands again.
 
+### Explore with Devboard
+
+In your coding agent, use the Fluxzero plugin command:
+
+```text
+/fluxzero:devboard
+```
+
+Devboard brings the development environment together in one place:
+
+- **App preview:** use Home directly inside Devboard, with live updates while you develop.
+- **Tests:** inspect test results and failures from the managed development loop.
+- **Progress and Startup:** follow recorded feature progress and inspect startup actions.
+- **Monitoring:** explore the audit trail, logs, traces and documents.
+
+Use the **Profile** selector to switch between `local` and `home-assistant`. Switching restarts the environment with the selected configuration; the Home Assistant profile requires the [setup described below](#try-the-real-home-assistant-api).
+
 ### Try the real Home Assistant API
 
 With Docker running a Linux container engine and Python 3 installed, switch to the optional profile:
