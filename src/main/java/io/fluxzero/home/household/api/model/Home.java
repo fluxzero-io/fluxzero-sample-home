@@ -7,6 +7,6 @@ import java.time.ZoneId;
 import lombok.With;
 
 /** A household’s home, its local time zone and current way of living. */
-@Model
+@Model(searchable = true)
 @With
 public record Home(@EntityId HomeId id, HomeDetails details, ZoneId timeZone, HomeMode mode) implements Place {}
