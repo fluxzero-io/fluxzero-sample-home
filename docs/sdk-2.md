@@ -1,6 +1,6 @@
 # SDK 2.0 in this example
 
-The build imports the published `io.fluxzero:fluxzero-bom:2.0.0` from Fluxzero Packages. The Maven Compiler also runs the matching SDK annotation processor to generate model and type indexes. The application, tests and local runtime use the same SDK version; no local SDK build is required.
+The build imports the published `io.fluxzero:fluxzero-bom:2.16.0` from Fluxzero Packages. The Maven Compiler also runs the matching SDK annotation processor to generate model and type indexes. The application, tests and local runtime use the same SDK version; no local SDK build is required.
 
 | SDK capability | Concrete use |
 | --- | --- |
@@ -15,7 +15,7 @@ The build imports the published `io.fluxzero:fluxzero-bom:2.0.0` from Fluxzero P
 | Input validation before Model checks | Jakarta constraints and pure `@AssertTrue` methods validate names, roles, capabilities, cooldowns, triggers, timing patterns and measurements. `@Valid` includes concrete nested values. `@AssertLegal` then enforces model- and relationship-dependent rules. |
 | Delegated Model assertions | `@AssertLegal` on `DefineAutomation.trigger` lets the concrete `MeasurementCrosses` check its sensor and measurement capability through the pinned home Graph. |
 | Explicit event publication | `ActivateScene` uses `@Apply(eventPublication = ALWAYS)` and returns the existing scene: activation history without copied audit fields. |
-| Purposeful storage and history | All Models use plain `@Model`. Device observations also need history to recognize threshold crossings. |
+| Purposeful storage and history | Home activates search for its composed descendants; all Models retain event sourcing. Device observations also need history to recognize threshold crossings. |
 | Creation compatibility and relationships | The SDK rejects duplicate creation; `AddSpace` requires one existing destination. `MoveSpace` preserves the original home boundary. |
 | Complete Graph-change handlers | `RoutineSchedules` reads the current routine with `eventGraph.current()` and reconciles status and deadlines, including after an older event. |
 | Schedules with `@Parent` | `RunRoutine.routineId` ties an execution to its Routine's lifetime. Direct and cascading deletion cancel stored executions without application cleanup. |
@@ -43,22 +43,22 @@ The application does not use legacy Aggregates for new state. Scene steps are va
 
 ## Storage and search in this home
 
-`Home`, `Space`, `Device`, `Zone`, `Resident`, `Scene`, `Routine`, `Automation` and `DeviceStatus` use plain `@Model`. Their own event streams remain the source for loading and reloading. `DeviceStatus` contains only the current report; the event-bound Graph supplies the previous observation through `previous()`. This comparison remains available after clearing caches and after later reports, without a duplicate `previousReadings` field.
+`Home` uses `@Model(searchable = true)` to activate search for its composed descendants. `Space`, `Device`, `Zone`, `Resident`, `Scene`, `Routine`, `Automation` and `DeviceStatus` keep plain `@Model`. Their own event streams remain the source for loading and reloading. `DeviceStatus` contains only the current report; the event-bound Graph supplies the previous observation through `previous()`. This comparison remains available after clearing caches and after later reports, without a duplicate `previousReadings` field.
 
 | Application question | Route used | Why this storage is sufficient |
 | --- | --- | --- |
 | How is this known home arranged? | `GetHome` loads `Graph<Home>` by HomeId. | Loading by identity and navigating relationships require no direct document projection on `Home`. |
-| Which devices in this home can dim? | `FindDevices` searches `Device` through `whereAncestor(homeId)` and filters on `capabilities`. | The existing `devices` composition path maintains indexed internal device documents. The known home needs no document of its own for this. |
-| Which automations match this change? | `HomeReactions` searches through `whereParent(homeId)`. | The existing `automations` composition path maintains internal documents for this bounded selection. |
+| Which devices in this home can dim? | `FindDevices` searches `Device` through `whereAncestor(homeId)` and filters on `capabilities`. | The searchable Home scope includes devices through the composed space tree. The ancestor filter separates homes. |
+| Which automations match this change? | `HomeReactions` searches through `whereParent(homeId)`. | The searchable Home scope includes automations; the parent filter selects only this home. |
 | What did the device actually report? | `GetDeviceStatus` loads with `loadModel(deviceId, DeviceStatus.class)`. | The independent observation history reconstructs the current report; the relationship to the device stays the same. |
 
-`Fluxzero.search(Device.class)` without home selection returns no devices with this configuration. A global device list is not a current application query. Supporting it would require a deliberate direct document projection justified by that new requirement. Search visibility is not access control.
+Unscoped `Fluxzero.search(Device.class)` can return devices from every home. Search visibility is not access control: endpoint authorization and explicit home filters enforce the application boundary.
 
-`GetHome` uses a relationship Graph loaded by identity. This differs from `searchGraph(Home.class)`, for which the current plain home root has no document. A searchable projection of complete homes should be added only when a concrete query needs one; the application does not materialize an entire home for every sensor reading.
+`GetHome` uses a relationship Graph loaded by identity. Search maintains indexed nodes; the default Graph projection mode does not materialize an entire home for every sensor reading. Persistence, search activation and Graph materialization are separate choices.
 
 Search results show committed current documents, not historical event state or transactional read dependencies. Domain rules therefore continue to use injected Models/Graphs. The scheduler deliberately requests the current routine through `eventGraph.current()`. During that call, the SDK establishes a fresh storage boundary for the same Model identity; the original Graph retains its event-bound state. `loadCurrentGraph` remains appropriate when reconciling from an ID alone. Domain assertions stay on the injected Graph to preserve transactional read dependencies.
 
-Versioned agent documentation is supplied by the Fluxzero plugin from the published 2.0.0 archive. `AGENTS.md` records the version and source commit; the SDK documentation contains complete contracts and executable modeling recipes.
+Versioned agent documentation is supplied by the Fluxzero plugin from the published 2.16.0 archive. `pom.xml` selects the version; the SDK documentation contains complete contracts and executable modeling recipes.
 
 ## Commands, relationships and workflow execution
 
@@ -80,7 +80,7 @@ Routine and Automation have no execution counters or copied last-executed timest
 
 The routine consumer reconciles current state on one tracker, including after a historical event. Its handler with a sole Graph parameter receives both direct changes and cascade deletion. For an absent routine, the consumer does nothing: `@Parent` on `RunRoutine.routineId` lets the SDK cancel the stored execution. Pausing, completion and rescheduling remain explicit schedule effects of the current routine. Deadlines and generations still protect against old or already delivered commands.
 
-The parent must already be committed when an execution is scheduled; the existing post-commit consumer satisfies that requirement. Cancellation is asynchronous and also works without an active application consumer. The local TestServer belongs to SDK 2.0.0. A separately deployed Runtime must support this ownership feature. `RoutineOwnershipTest` proves cleanup without a routine consumer and verifies that recreating the same ID does not make an old stored execution valid again.
+The parent must already be committed when an execution is scheduled; the existing post-commit consumer satisfies that requirement. Cancellation is asynchronous and also works without an active application consumer. The local TestServer belongs to SDK 2.16.0. A separately deployed Runtime must support this ownership feature. `RoutineOwnershipTest` proves cleanup without a routine consumer and verifies that recreating the same ID does not make an old stored execution valid again.
 
 ## Example data and publication
 
@@ -88,7 +88,7 @@ This application has not been deployed and starts with the current details schem
 
 Ordinary event-sourced replay and historical observations remain part of the domain. Automations compare event-bound before/after state without source-revision deduplication or requiring the source to have remained unchanged since the event. Behavior tests check triggers, cooldowns and pausing; technical redelivery guarantees belong to the SDK and Runtime. Full durable execution is not a guarantee of the pinned SDK version. Routine generations distinguish rescheduling and are not schema revisions. Reloading, previous readings and schedule cleanup remain covered. Observation retention is a separate product decision.
 
-Local builds, CI and the deployment workflow resolve 2.0.0 as a published dependency. The SDK version is defined centrally in `pom.xml`.
+Local builds, CI and the deployment workflow resolve 2.16.0 as a published dependency. The SDK version is defined centrally in `pom.xml`.
 
 ## Device requests and observations
 

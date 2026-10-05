@@ -48,7 +48,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class HomeQueryTest {
     @ParameterizedTest
     @ValueSource(booleans = {false, true})
-    void homeScopedSearchFiltersComponentsWithoutPublicModelCollections(boolean asynchronous) {
+    void homeScopedSearchSeparatesHomesWithinTheSearchableGraph(boolean asynchronous) {
         var otherHome = new HomeId("other-home");
         var otherRoom = new SpaceId("other-room");
         var otherLight = new DeviceId("other-light");
@@ -59,8 +59,9 @@ class HomeQueryTest {
                 .whenQuery(new FindDevices(HOME, Capability.LIGHT_LEVEL))
                 .expectResult((List<Device> devices) -> ids(devices).equals(Set.of(LIGHT)))
                 .expectThat(f -> {
-                    assertTrue(Fluxzero.search(Home.class).fetchAll().isEmpty());
-                    assertTrue(Fluxzero.search(Device.class).fetchAll().isEmpty());
+                    assertEquals(Set.of(HOME, otherHome), Fluxzero.search(Home.class).<Home>fetchAll().stream()
+                            .map(Home::id).collect(Collectors.toSet()));
+                    assertEquals(Set.of(LIGHT, HEAT, SENSOR, otherLight), ids(Fluxzero.search(Device.class).fetchAll()));
                 })
                 .andThen().whenQuery(new FindDevices(HOME, null))
                 .expectResult((List<Device> devices) -> ids(devices).equals(Set.of(LIGHT, HEAT, SENSOR)))
@@ -92,7 +93,7 @@ class HomeQueryTest {
 
     @ParameterizedTest
     @ValueSource(booleans = {false, true})
-    void modeChangesSelectOnlyTheirHomesAutomationWithoutAPublicCollection(boolean asynchronous) {
+    void modeChangesSelectOnlyTheirHomesAutomation(boolean asynchronous) {
         var otherHome = new HomeId("other-home");
         var otherRoom = new SpaceId("other-room");
         var otherLight = new DeviceId("other-light");
@@ -109,7 +110,8 @@ class HomeQueryTest {
                 new DefineAutomation(otherAutomation, otherHome, new AutomationDetails("Leaving other home"), otherScene, trigger, Duration.ZERO))
                 .whenCommand(new ChangeHomeMode(HOME, HomeMode.AWAY)).expectNoErrors()
                 .expectThat(f -> {
-                    assertTrue(Fluxzero.search(Automation.class).fetchAll().isEmpty());
+                    assertEquals(Set.of(REACTION, otherAutomation), Fluxzero.search(Automation.class).<Automation>fetchAll().stream()
+                            .map(Automation::automationId).collect(Collectors.toSet()));
                     assertEvening();
                     assertNotNull(Fluxzero.loadModel(REACTION).get().cooldownEndsAt());
                     assertNull(Fluxzero.loadModel(otherAutomation).get().cooldownEndsAt());

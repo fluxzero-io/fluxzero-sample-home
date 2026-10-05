@@ -3,7 +3,7 @@
 [![Verify](https://github.com/fluxzero-io/fluxzero-sample-home/actions/workflows/verify.yml/badge.svg)](https://github.com/fluxzero-io/fluxzero-sample-home/actions/workflows/verify.yml)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 
-A home automation example built with **Fluxzero Java SDK 2.0.0**. It includes
+A home automation example built with **Fluxzero Java SDK 2.16.0**. It includes
 room management, device controls, scenes, scheduled routines, a React UI and a
 Home Assistant integration.
 
@@ -216,7 +216,7 @@ The [example commands](examples/README.md) are another executable entry point.
 
 ## Versions and license
 
-The current checkout uses the published **Fluxzero SDK 2.0.0**, pinned in `pom.xml`.
+The current checkout uses the published **Fluxzero SDK 2.16.0**, pinned in `pom.xml`.
 It needs no SDK checkout or locally installed candidate artifacts. This is an
 executable example, with no production deployment or schema-migration guarantee.
 See the [release tags](https://github.com/fluxzero-io/fluxzero-sample-home/releases)
