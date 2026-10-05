@@ -150,3 +150,17 @@ is manual and requires the operator's cloud and identity configuration. Local de
 access is not production account provisioning. This example does not claim a
 production deployment, physical hardware qualification or historical-schema
 migration support.
+
+## Dependency updates
+
+Dependabot checks Maven, frontend npm packages, GitHub Actions and the Docker
+base image daily. Fluxzero SDK updates have their own pull request, separate
+from other Maven updates, so their application checks are easy to identify.
+Minor and patch updates merge automatically only after the required frontend
+and backend verification passes against an up-to-date main branch. Major and
+unclassified updates require manual review. A failing SDK compatibility test
+keeps the update open; it is not retried or skipped to permit a merge.
+
+Auto-merge uses the repository's built-in GitHub token and requires no additional
+secrets. Keep the main-branch verification check required when changing CI job
+names or repository rules. The deployment workflow remains manual.
