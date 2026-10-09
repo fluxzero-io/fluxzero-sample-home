@@ -22,7 +22,7 @@
   <properties>
     <spring-boot.version>4.1.1</spring-boot.version>
     <jetty.version>12.1.14</jetty.version>
-    <fluxzero.version>2.16.0</fluxzero.version>
+    <fluxzero.version>2.16.2</fluxzero.version>
     <java.version>25</java.version>
     <fluxzero-idp.version>0.20.2</fluxzero-idp.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
