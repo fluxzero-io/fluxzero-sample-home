@@ -24,7 +24,7 @@
     <jetty.version>12.1.14</jetty.version>
     <fluxzero.version>2.16.2</fluxzero.version>
     <java.version>25</java.version>
-    <fluxzero-idp.version>0.20.2</fluxzero-idp.version>
+    <fluxzero-idp.version>0.21.0</fluxzero-idp.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <fluxzero.package.tag>${project.version}</fluxzero.package.tag>
