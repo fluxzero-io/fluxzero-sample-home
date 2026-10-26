@@ -20,11 +20,11 @@
     <url>https://github.com/fluxzero-io/fluxzero-sample-home</url>
   </scm>
   <properties>
-    <spring-boot.version>4.1.1</spring-boot.version>
+    <spring-boot.version>4.1.2</spring-boot.version>
     <jetty.version>12.1.14</jetty.version>
     <fluxzero.version>2.25.9</fluxzero.version>
     <java.version>25</java.version>
-    <fluxzero-idp.version>0.26.0</fluxzero-idp.version>
+    <fluxzero-idp.version>0.26.3</fluxzero-idp.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <fluxzero.package.tag>${project.version}</fluxzero.package.tag>
@@ -142,7 +142,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
-          <version>3.6.0</version>
+          <version>3.6.1</version>
           <configuration>
             <argLine>-javaagent:${org.mockito:mockito-core:jar}</argLine>
             <systemPropertyVariables>
@@ -216,7 +216,7 @@
       <plugin>
         <groupId>io.fluxzero.tools</groupId>
         <artifactId>fluxzero-maven-plugin</artifactId>
-        <version>1.20.12</version>
+        <version>1.20.20</version>
         <configuration>
           <packageName>fluxzero-home</packageName>
           <images>
