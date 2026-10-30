@@ -24,7 +24,7 @@
     <jetty.version>12.1.14</jetty.version>
     <fluxzero.version>2.26.0</fluxzero.version>
     <java.version>25</java.version>
-    <fluxzero-idp.version>0.26.4</fluxzero-idp.version>
+    <fluxzero-idp.version>0.27.0</fluxzero-idp.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <fluxzero.package.tag>${project.version}</fluxzero.package.tag>
@@ -216,7 +216,7 @@
       <plugin>
         <groupId>io.fluxzero.tools</groupId>
         <artifactId>fluxzero-maven-plugin</artifactId>
-        <version>1.20.20</version>
+        <version>1.20.21</version>
         <configuration>
           <packageName>fluxzero-home</packageName>
           <images>
