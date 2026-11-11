@@ -216,7 +216,7 @@
       <plugin>
         <groupId>io.fluxzero.tools</groupId>
         <artifactId>fluxzero-maven-plugin</artifactId>
-        <version>1.21.4</version>
+        <version>1.21.6</version>
         <configuration>
           <packageName>fluxzero-home</packageName>
           <images>
