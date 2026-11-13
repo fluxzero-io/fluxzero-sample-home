@@ -21,7 +21,7 @@
   </scm>
   <properties>
     <spring-boot.version>4.1.2</spring-boot.version>
-    <jetty.version>12.1.14</jetty.version>
+    <jetty.version>12.1.15</jetty.version>
     <fluxzero.version>2.26.7</fluxzero.version>
     <java.version>25</java.version>
     <fluxzero-idp.version>0.28.1</fluxzero-idp.version>
@@ -216,7 +216,7 @@
       <plugin>
         <groupId>io.fluxzero.tools</groupId>
         <artifactId>fluxzero-maven-plugin</artifactId>
-        <version>1.21.6</version>
+        <version>1.21.8</version>
         <configuration>
           <packageName>fluxzero-home</packageName>
           <images>
