@@ -5,10 +5,12 @@ import io.fluxzero.home.devices.api.model.Device;
 import io.fluxzero.home.devices.api.model.DeviceSettings;
 import io.fluxzero.home.devices.api.model.DeviceStatus;
 import io.fluxzero.home.devices.api.model.Measurement;
+import io.fluxzero.sdk.Fluxzero;
 import io.fluxzero.sdk.common.Message;
 import io.fluxzero.sdk.modeling.AssertLegal;
 import io.fluxzero.sdk.persisting.eventsourcing.Apply;
 import io.fluxzero.sdk.persisting.eventsourcing.InterceptApply;
+import io.fluxzero.sdk.tracking.handling.HandleCommand;
 import io.fluxzero.sdk.tracking.handling.IllegalCommandException;
 import jakarta.annotation.Nullable;
 import jakarta.validation.Valid;
@@ -26,6 +28,12 @@ public record ReportDeviceStatus(@NotNull DeviceId deviceId,
     @AssertTrue(message = "Report values within each measurement's range.")
     boolean hasValidReadings() {
         return readings.entrySet().stream().allMatch(entry -> entry.getKey().accepts(entry.getValue()));
+    }
+
+    @HandleCommand
+    void handle(Message command) {
+        wasObservedByPublication(command);
+        Fluxzero.assertAndApply(command);
     }
 
     @AssertLegal
